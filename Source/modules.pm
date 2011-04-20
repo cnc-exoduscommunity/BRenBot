@@ -1,0 +1,1688 @@
+#!/usr/bin/perl
+
+package modules;
+use strict;
+
+use POE;
+use POE::Kernel;	# Needed for successful pp compile
+use POE::Session;	# Needed for successful pp compile
+use Date::Calc qw( Delta_YMDHMS Time_to_Date);
+use XML::Simple;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
+
+
+use brdatabase;
+use RenRem;
+use brconfig;
+use brAuth;
+
+
+my @modules;
+our @recs;
+my $os = $^O;
+
+my $mapSettings;			# Map settings XML hash array
+our $donatelimit	= 0;	# Donate limit for current map
+our $maprules		= "";	# Rules for current map
+our $minelimit		= 30;	# Mine limit for current map
+our $vehiclelimit	= 8;	# Current vehicle limit
+
+
+
+
+# Prints a message to the console with the timestamp of the message. It also supports messages
+# made up of multiple parts sent one after the other, for instance 'Trying to do X...' followed
+# by 'success' or 'failure', without adding newlines and extra timestamps. Note that a newline
+# will automatically be output if a non-multipart message or a new multipart message is sent
+# whilst expecting the continuation of another multipart message.
+#
+# Parameters
+# Message					Message to be output to the console
+# Multipart Type			1 for the start of a message, 2 for middle sections, 3 for end
+my $console_output_multipart_status = 0;
+sub console_output
+{
+	my $message = shift;
+	my $multipart_type = shift;
+
+	# If this is not a multipart message, the start of a new one, or a continuation of
+	# one when we are not expecting a continuation, output timestamp
+	if ( !defined($multipart_type) || $multipart_type == 1 || $console_output_multipart_status != 1 )
+	{
+		# If a current multipart message is in progress then end it now
+		if ( $console_output_multipart_status == 1 )
+			{ print "\n"; }
+
+		# Get current timestamp
+		my ($second,$minute,$hour,undef,undef,undef,undef,undef,undef)=localtime(time);
+
+		# Output timestamp
+		printf ( "[%02d:%02d:%02d] ",$hour,$minute,$second);
+
+		# Set new multipart message status
+		$console_output_multipart_status = ( defined($multipart_type) && $multipart_type == 1 ) ? 1 : 0;
+	}
+
+	# Output message
+	print $message;
+
+	# If this is not a multipart message, or the end of one, output newline
+	if ( !defined($multipart_type) || $multipart_type == 3 )
+	{
+		print "\n";
+
+		# Set new multipart message status
+		$console_output_multipart_status = 0;
+	}
+}
+
+
+
+sub RenRemCMD
+{
+	RenRem::RenRemCMD(@_);
+}
+
+sub RenRemCMDtimed
+{
+	RenRem::RenRemCMDtimed(@_);
+}
+
+sub is_valid_user
+{
+	my $name = lc(shift);		$name =~ s/'/''/g;
+	my $password = md5_hex(shift);
+
+	my @array = brdatabase::execute_query( "SELECT * FROM auth_users WHERE LOWER(name) = '$name'" );
+	my $db_password = $array[0]->{'password'};
+	return 1 if ( $db_password eq $password );
+	return 0;
+}
+
+
+# Checks if the name specified is in the users table
+sub user_exists
+{
+	my $name = lc(shift);		$name =~ s/'/''/g;
+
+	my @array = brdatabase::execute_query( "SELECT * FROM auth_users WHERE LOWER(name)='$name'" );
+
+	return 1 if ( scalar(@array) == 1 );
+	return 0;
+
+}
+
+sub add_user
+{
+	my $name = lc(shift);		$name =~ s/'/''/g;
+	my $password = md5_hex(shift);
+
+	brdatabase::execute_query( "INSERT INTO auth_users ( name, password ) VALUES ( '$name', '$password' )", 1 );
+}
+
+sub del_user
+{
+	my $name = lc(shift);		$name =~ s/'/''/g;
+
+	brdatabase::execute_query( "DELETE FROM auth_users WHERE LOWER(name) = '$name'", 1 );
+}
+
+
+sub time_difference
+{
+	my $timestamp1 = shift;
+	my $timestamp2 = shift;
+
+	my ( $year1, $month1, $day1, $hour1, $min1, $sec1 ) = BRTime_To_Date( $timestamp2 );
+	my ( $year2, $month2, $day2, $hour2, $min2, $sec2 ) = BRTime_To_Date( $timestamp1 );
+
+
+  	my ($D_y,$D_m,$D_d, $Dh,$Dm,$Ds) =
+	 	Delta_YMDHMS($year1,$month1,$day1, $hour1,$min1,$sec1,
+				   	$year2,$month2,$day2, $hour2,$min2,$sec2);
+
+	my $result_text;
+
+	$result_text .= "$D_y years, " if ($D_y);
+	$result_text .= "$D_m months, " if ($D_m);
+	$result_text .= "$D_d days, " if ($D_d);
+	$result_text .= "$Dh hours, " if ($Dh);
+	$result_text .= "$Dm minutes, " if ($Dm);
+	$result_text .= "$Ds seconds, " if ($Ds);
+
+	chop $result_text;
+	chop $result_text;
+	return $result_text;
+}
+
+
+# Gets the bot's uptime
+sub get_uptime
+{
+	my $result_text = time_difference ( time(), shift );
+	$result_text =~ s/\-//g;		# Because the values are negative, remove the - signs to get the uptime
+	return $result_text;
+}
+
+sub del_ban
+{
+	my $id = shift;
+	my @array = brdatabase::execute_query( "SELECT * FROM bans WHERE id = $id" );
+	if (@array != 0)
+	{
+		brdatabase::execute_query( "DELETE FROM bans WHERE id = $id", 1 );
+		return 1;
+	}
+
+	return 0;
+}
+
+
+
+
+###################################################
+####
+## Functions related to kicks (24 hour bans)
+####
+###################################################
+
+# Kicks a player from the server and optionally records it in the database as a 24 hour ban
+#
+# Parameters
+#	Target				ID or name of player to be kicked
+#	Kicker				Name of the person who kicked them
+#	Reason				Reason for them being kicked from the server
+#	Temporary_Ban		Set to 1 to ban the player for 24 hours
+sub kick_player
+{
+	my $target = shift;			$target =~ s/'/''/g;
+	my $kicker = shift;			$kicker =~ s/'/''/g;
+	my $reason = shift;			$reason =~ s/'/''/g;
+	my $temporary_ban = shift;
+
+	# Get data for the player to be kicked
+	my ( $result, %player ) = playerData::getPlayerData ( $target, 1 );
+	return if ( $result != 1 );
+
+	# Prepare the message for the server announcement and message to the kicked player
+	my $message = 'been kicked';
+	$message .= ' and given a 24hr ban' if $temporary_ban;
+	$message .= ' from the server by '.$kicker.' for '.$reason;
+
+	# Send the server announcement and the message to the kicked player
+	RenRemCMD ( 'msg [BR] '.$player{'name'}.' has '.$message );
+	RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message );
+
+	# Kick the player from the server (1 second delay to allow the pamsg to reach them)
+	my $command = 'kick '.$player{'id'};
+	$command .= ' '.$reason if ($brconfig::ssgm_version >= 4);
+	RenRemCMDtimed ( $command, 1 );
+
+	# Write a kick record to the log
+	brdatabase::writeLog ( 1, "[KICK] $player{name} ($player{ip}) was kicked by $kicker for '$reason'." );
+
+	# If necessary also record the kick in the database for a 24hr ban
+	if ( $temporary_ban )
+	{
+		my $serial = ( exists ( $player{'serial'} ) ) ? $player{'serial'} : "";
+		brdatabase::execute_query ( "INSERT INTO kicks ( name, ip, serial, kicker, reason, timestamp ) VALUES ( '$player{name}', '$player{ip}', '$serial', '$kicker', '$reason', ".time()." )", 1 );
+	}
+
+	# Otherwise they are allowed straight back into the server so issue the allow command
+	# unless we are running SSGM 4.0 or higher (where it is depreciated)
+	elsif ( $brconfig::ssgm_version < 4 )
+	{
+		RenRemCMDtimed ( 'allow '.$player{'id'}, 5 );
+	}
+}
+
+
+# Removes a kick record from the database
+sub remove_kick
+{
+	my $name = lc(shift);		$name =~ s/'/''/g;
+
+	my @array = brdatabase::execute_query( "SELECT * FROM kicks WHERE LOWER(name) = '$name'" );
+	if ( scalar(@array) > 0 )
+	{
+		brdatabase::execute_query ( "DELETE FROM kicks WHERE LOWER(name) = '$name'", 1 );
+		return 1;
+	}
+	return 0;
+}
+
+
+# Checks if the specified player is kicked, and if they are kicks them out
+sub check_kicks
+{
+	my $name = shift;			$name =~ s/'/''/g;
+
+	# Before we start clear any out of date kicks (older than 24 hours)
+	brdatabase::execute_query ( "DELETE FROM kicks WHERE timestamp <= " . (time()-86400), 1 );
+
+	# Data should already be in the playerData array - Exact match only
+	my ( $result, %player ) = playerData::getPlayerData ( $name, 1 );
+	return 0 if ( $result != 1 );
+	return 1 if ( $player{'kicked'} && $player{'kicked'} == 1 );
+
+	# Now look for any entries in the kicks table
+	my $serial = ( exists ( $player{'serial'} ) ) ? "OR serial = '$player{serial}'" : "";
+	my @array = brdatabase::execute_query( "SELECT * FROM kicks WHERE LOWER(name) = '".lc($player{'name'})."' OR ip = '$player{ip}' $serial" );
+
+	if ( scalar(@array) > 0 )
+	{
+		my ( undef, undef, $day, $hour, $minute, undef ) = BRTime_To_Date( $array[0]->{'timestamp'} );
+		my ( undef, undef, $daynow, undef, undef, undef ) = BRTime_To_Date( time() );
+
+		my $kickday = ( $daynow == $day ) ? "today" : "yesterday";
+		my $reasonSuffix = ( lc($player{'name'}) eq lc($array[0]->{'name'}) ) ? "" : ( $player{'ip'} eq $array[0]->{'ip'} ) ? " (IP Matched)" : " (Serial Matched)";
+		RenRemCMD( "msg [BR] $player{name} was KICKED $kickday at $hour.$minute by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.$reasonSuffix );
+
+		if ( get_module( "bhs" ) )
+			{ RenRemCMD( "pamsg $player{id} You were KICKED $kickday at $hour.$minute by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.". You may return to the server in ".((86400-(time()-$array[0]->{'timestamp'}))/60)." minutes" ); }
+
+		RenRemCMD( "kick $player{id}" );
+		playerData::setKeyValue ( $player{'id'}, "kicked", 1 );
+		return 1;
+	}
+
+	return 0;
+}
+
+
+
+
+###################################################
+####
+## Functions related to the banning system
+####
+###################################################
+
+# Bans a player from the server and records it in the database
+#
+# Parameters
+#	Target				ID or name of player to be banned
+#	banner				Name of the person who banned them
+#	Reason				Reason for them being banning them from the server
+sub ban_player
+{
+	my $target = shift;					$target =~ s/'/''/g;
+	my $banner = shift;					$banner =~ s/'/''/g;
+	my $reason = shift;					$reason =~ s/'/''/g;
+
+	# Get data for the player to be banned
+	my ( $result, %player ) = playerData::getPlayerData ( $target, 1 );
+	return if ( $result != 1 );
+
+	# Prepare the message for the server announcement and message to the banned player
+	my $message = 'been banned from the server by '.$banner.' for '.$reason;
+
+	# Send the server announcement and the message to the banned player
+	RenRemCMD ( 'msg [BR] '.$player{'name'}.' has '.$message );
+	RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message );
+
+	# If using SSGM >= 4.0 then use the ban console command (1 second delay to allow the pamsg to reach them)
+	if ( $brconfig::ssgm_version >= 4 )
+		{ RenRemCMDtimed ( 'ban '.$player{'id'}.' '.$reason, 1 ); }
+
+	# Otherwise use the kick command to evict them (1 second delay to allow the pamsg to reach them)
+	else
+		{ RenRemCMDtimed ( 'kick '.$player{'id'}, 1 ); }
+
+
+	# Create a record of the ban
+	record_ban ( $player{'name'}, $banner, $reason, $player{'ip'}, $player{'serial'} );
+}
+
+
+
+
+# Creates a ban record in the database
+#
+# Parameters
+#	Player				Name to be banned from the server
+#	banner				Name of the person who banned them
+#	Reason				Reason for them being banning them from the server
+#	Serial				Serial hash to be banned from the server
+#	IP					IP Address to be banned from the server
+sub record_ban
+{
+	my $name = shift;					$name =~ s/'/''/g;
+	my $banner = shift;					$banner =~ s/'/''/g;
+	my $reason = shift;					$reason =~ s/'/''/g;
+	my $ip = shift;
+	my $serial = shift;
+
+	my $timestamp = time();
+	brdatabase::execute_query ( "INSERT INTO bans ( name, ip, serial, banner, reason, timestamp ) VALUES ( '$name', '$ip', '$serial', '$banner', '$reason', '$timestamp' )", 1 );
+
+	# Get the ban id
+	my @maxBanID = brdatabase::execute_query ( "SELECT MAX(id) as id FROM bans" );
+	my $banid = $maxBanID[0]->{'id'};
+
+	# Write the ban to the logs table
+	if ( length($name) > 0 )
+		{ brdatabase::writeLog ( 2, "[BAN] $name ($ip) was banned by $banner for '$reason'. (Ban ID $banid)" ); }
+	elsif ( $ip =~ m/\.\*/ )
+		{ brdatabase::writeLog ( 2, "[BAN] IP range $ip was banned by $banner for '$reason'. (Ban ID $banid)" ); }
+	else
+		{ brdatabase::writeLog ( 2, "[BAN] IP $ip was banned by $banner for '$reason'. (Ban ID $banid)" ); }
+}
+
+
+
+sub is_banned
+{
+	my $name = shift;					$name =~ s/'/''/g;
+
+	# Data should already be in the playerData array - Exact match only
+	my ( $result, %player ) = playerData::getPlayerData ( $name, 1 );
+	return if ( $result != 1 );
+
+
+	# Generate query string
+	my $whereCondition = "WHERE LOWER(name) = '".lc($name)."'";
+
+	if ( $player{'serial'} )
+		{ $whereCondition .= " OR serial = '".$player{'serial'}."'"; }
+
+	if ( $player{'ip'} ne "X.X.X.X" )
+	{
+		$whereCondition .= " OR ip = '".$player{'ip'}."'";
+
+		# IP range matching
+		if ( $player{'ip'} =~ m/(\d+\.\d+\.\d+)\.\d+/ )
+			{ $whereCondition .= " OR ip = '".$1.".*'"; }
+	}
+
+	# Now run the query and see if we get any results
+	my @bansArray = brdatabase::execute_query( "SELECT * FROM bans $whereCondition" );
+	if (scalar(@bansArray) > 0)
+	{
+		my ( $year, $month, $day, $hour, $min, $sec ) = BRTime_To_Date( $bansArray[0]->{'timestamp'} );
+		return ( 1, "'".$bansArray[0]->{'reason'}."' (Ban ID ".$bansArray[0]->{'id'}.")", $bansArray[0]->{'banner'}, "$month.$day.$year" );
+	}
+
+
+	# If we get down to here there were no bans found, so return 0.
+	return 0;
+}
+
+
+# Checks for RG serial ban - must ran AFTER is_banned due to the
+# time it takes for RG to scan the user and get their serial
+#
+# PARAM		string		Players username
+#
+# RETURN ( $result, $comment, $banner, $timestamp )
+# 0 - No serial ban found
+# 1 - Serial ban found
+sub is_serial_banned
+{
+	my $serial = shift;
+
+	if ( $serial )
+	{
+		my @array = brdatabase::execute_query( "SELECT * FROM bans WHERE serial = '$serial'" );
+		if (scalar(@array) > 0)
+		{
+			my ( $year, $month, $day, $hour, $min, $sec ) = BRTime_To_Date($array[0]->{'timestamp'});
+			return ( 1, $array[0]->{'reason'}." (serial matched)", $array[0]->{'banner'}, "$month.$day.$year" );
+		}
+	}
+
+	return 0;		# No serial to check, or no ban found
+}
+
+
+###################################################
+####
+## Functions related to join messages (module join_messages)
+####
+###################################################
+
+sub get_joinmessage
+{
+	my $name = lc(shift);
+	$name =~ s/'/''/g;
+
+	my @array = brdatabase::execute_query( "SELECT * FROM join_messages WHERE LOWER(name) = '$name'" );
+	if ( scalar(@array) > 0 )
+		{ return $array[0]->{'message'}; }
+	return undef;
+}
+
+sub show_joinmessage
+{
+	my $name = shift;
+	my $message = get_joinmessage($name);
+	if ( defined($message) )
+	{
+		RenRemCMD( "msg [$name] $message" );
+	}
+}
+
+sub set_joinmessage
+{
+	my $name = lc(shift);
+	my $message = shift;
+	$name =~ s/'/''/g;
+	$message =~ s/'/''/g;
+
+	my @count = brdatabase::execute_query( "SELECT * FROM join_messages WHERE LOWER(name) = '$name'" );
+	if (scalar(@count) == 0)
+		{ brdatabase::execute_query( "INSERT INTO join_messages ( name, message ) VALUES ( '$name','$message' )", 1 ); }
+	else
+		{ brdatabase::execute_query( "UPDATE join_messages SET message = '$message' WHERE LOWER(name) = '$name'", 1 ); }
+}
+
+
+###################################################
+####
+## Various functions for controlling and querying
+## module information
+####
+###################################################
+
+## Fetches current module information from the database
+sub load_modules
+{
+	@modules = brdatabase::execute_query( "SELECT * FROM modules ORDER BY name ASC" );
+}
+
+
+## Changes the status of a module to on or off
+sub set_module
+{
+	my $module = lc(shift);
+	my $status = shift;
+
+	brdatabase::execute_query( "UPDATE modules SET status = $status WHERE LOWER(name) = '$module'", 1 );
+	load_modules();
+}
+
+
+## Used by outside files to get the current module statuses
+sub get_modules
+{
+	return ( @modules );
+}
+
+
+## Gets the status of a specified module
+sub get_module
+{
+	my $module = shift;
+
+	foreach ( @modules )
+	{
+		if ( $_->{name} eq $module )
+		{
+			return $_->{'status'};
+		}
+	}
+}
+
+
+## Gets the description of a specified module
+sub get_module_description
+{
+	my $module = lc( shift );
+
+	foreach ( @modules )
+	{
+		if ( lc( $_->{name} ) eq $module )
+		{
+			return ( 1, $_->{'description'} );
+		}
+	}
+
+	return 0;
+}
+
+
+## Used when BRenBot is loaded to ensure all modules are present
+## in the database, and adds them if they are not found
+sub check_modules
+{
+	my %modulesList =
+	(
+		teammessages => "Displays team (f3) chat messages in IRC",
+		pingresponse => "BR reports ping when players request it",
+		join_messages => "Enables !setjoin / !viewjoin on the server",
+		gamespy_players => "Displays Players in ASE",
+		recommend => "Enables the recommendation system",
+		gameresults => "Enables automatic recommendations after each map",
+		gamelog => "Support for gamelog server side mod",
+		bhs => "Support for Tiberian Technologies / Blackhand Studios FDS library (ppage, pamsg etc)",
+		new_gi => "!gi shows info on one line instead of five lines",
+		donate => "Allows players to donate money to their teammates (bhs only)",
+		autorecs => "Enables automatic recommendations based on gameplay (gamelog only)",
+		map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit, donate limit and map rules.",
+		ssgmlog => "Support for ssgm logging (Beacon, Game Results, BW alerts etc)",
+		autobalance => "Enables the autobalance module, which attempts to make teams even when a new map loads.",
+		BRenBot_dll => "Enables support for extended console commands inside BRenBot.dll"
+	);
+
+	while ( (my $k, my $v) = each %modulesList )
+	{
+		my @array = brdatabase::execute_query( "SELECT * FROM modules WHERE name = '$k'" );
+		if ( scalar(@array) == 0 )
+		{
+			# Module not found, add it to the database and set it to enabled, not locked
+			my $query = "INSERT INTO modules ( name, status, description, locked ) VALUES ('$k', 1, '$v', 0 )";
+			brdatabase::execute_query( $query, 1 );
+		}
+	}
+}
+
+
+
+
+
+###################################################
+####
+## Functions related to recommendation system
+## (modules recommend, autorecs, gameresults)
+####
+###################################################
+
+
+# Adds a recommentation record for a player
+sub recommend_player
+{
+	my $name = shift;					$name =~ s/'/''/g;
+	my $recommender = shift;			$recommender =~ s/'/''/g;
+	my $reason = shift;					$reason =~ s/'/''/g;
+
+	# Announce recommendation
+	modules::RenRemCMD( "msg $name has been recommended by $recommender for: $reason" );
+
+	# Does a record exist for this player?
+	my @recData = brdatabase::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );
+	if ( scalar(@recData) > 0 )
+		# Record exists, update it
+		{ brdatabase::execute_query ( "UPDATE recommendations SET recommendations = recommendations + 1 WHERE LOWER(name) = '".lc($name)."'", 1 ); }
+	else
+		# Record does not exist, insert as new record
+		{ brdatabase::execute_query ( "INSERT INTO recommendations ( name, recommendations ) VALUES ( '$name', 1 )", 1 ); }
+
+	# Record the recommendation in the recent history
+	brdatabase::execute_query ( "INSERT INTO recommendations_recent_history ( timestamp, recommender, recommendee, isN00b, reason ) VALUES ( ".time().", '$recommender', '$name', 0, '$reason' )" );
+
+
+}
+
+
+# Gets the current recommendation count for a player
+sub get_recommendation
+{
+	my $name = lc(shift);				$name =~ s/'/''/g;
+
+	my @recData = brdatabase::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '$name'" );
+	if ( scalar(@recData) > 0 )
+		{ return $recData[0]->{'recommendations'}; }
+	return 0;
+}
+
+
+# Adds a n00b record for a player
+sub n00b_player
+{
+	my $name = shift;					$name =~ s/'/''/g;
+	my $n00ber = shift;					$n00ber =~ s/'/''/g;
+	my $reason = shift;					$reason =~ s/'/''/g;
+
+	# Announce recommendation
+	modules::RenRemCMD( "msg $name has been marked a n00b by $n00ber for: $reason");
+
+	# Does a record exist for this player?
+	my @recData = brdatabase::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );
+	if ( scalar(@recData) > 0 )
+		# Record exists, update it
+		{ brdatabase::execute_query ( "UPDATE recommendations SET n00bs = n00bs + 1 WHERE LOWER(name) = '".lc($name)."'", 1 ); }
+	else
+		# Record does not exist, insert as new record
+		{ brdatabase::execute_query ( "INSERT INTO recommendations ( name, n00bs ) VALUES ( '$name', 1 )", 1 ); }
+
+	# Record the n00bing in the recent history
+	brdatabase::execute_query ( "INSERT INTO recommendations_recent_history ( timestamp, recommender, recommendee, isN00b, reason ) VALUES ( ".time().", '$n00ber', '$name', 1, '$reason' )" );
+}
+
+
+# Gets the current recommendation count for a player
+sub get_n00b
+{
+	my $name = lc(shift);				$name =~ s/'/''/g;
+
+	my @recData = brdatabase::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '$name'" );
+	if ( scalar(@recData) > 0 )
+		{ return $recData[0]->{'n00bs'}; }
+	return 0;
+}
+
+
+# Marks a player as rec ignored, so they cannot recieve or give recommendations
+sub rec_ignore
+{
+	my $name = lc(shift);				$name =~ s/'/''/g;
+	brdatabase::execute_query( "INSERT IGNORE INTO recommendations_ignored_users (name) VALUES ( '$name' )", 1 );
+}
+
+
+# Checks if a specific player is marked as rec ignored
+sub is_rec_ignored
+{
+	my $name = lc(shift);				$name =~ s/'/''/g;
+
+	my @array = brdatabase::execute_query( "SELECT * FROM recommendations_ignored_users WHERE LOWER(name) = '$name'" );
+	return 1 if (scalar(@array) >= 1);
+	return 0;
+}
+
+
+# Unmarks a player as rec ignored, so they can give and recieve recommendations again
+sub rec_allow
+{
+	my $name = lc(shift);				$name =~ s/'/''/g;
+	brdatabase::execute_query( "DELETE FROM recommendations_ignored_users WHERE LOWER(name) = '$name'", 1 );
+}
+
+
+# Checks whether recommender can recommend (or n00b if isN00b = 1) recommendee at this time.
+#
+# PARAMS
+# 1		String		Recommender
+# 2		String		Recommendee
+# 3		Integer		isN00b
+#
+# RETURN: Integer
+# 0 = Already recommended (or n00bed) recomendee today
+# 1 = OK
+# 2 = Recommender has exceeded daily recommendations & n00bs quota
+sub can_recommend
+{
+	my $recommender = lc(shift);		$recommender =~ s/'/''/g;
+	my $recommendee = lc(shift);		$recommendee =~ s/'/''/g;
+	my $isN00b = shift;
+
+	# Wipe records older than 1 week
+	my $cutoff = time() - 604800;
+	brdatabase::execute_query ( "DELETE FROM recommendations_recent_history WHERE timestamp < $cutoff", 1 );
+
+	# We are only interested in activity in the last 24 hours
+	$cutoff = time() - 86400;
+
+	# Check to see if recommender has recommended (or n00bed) recommendee since the cutoff point
+	my @result = brdatabase::execute_query ( "SELECT COUNT(*) AS count FROM recommendations_recent_history WHERE LOWER(recommender) = '$recommender' AND LOWER(recommendee) = '$recommendee' AND isN00b = $isN00b AND timestamp >= $cutoff" );
+	if ( $result[0]->{'count'} > 0 ) { return 0; }
+
+	# Check to see if recommender has exceeded their recommendations & n00bs quota
+	@result = brdatabase::execute_query ( "SELECT COUNT(*) AS count FROM recommendations_recent_history WHERE LOWER(recommender) = '$recommender' AND timestamp >= $cutoff" );
+	if ( $result[0]->{'count'} >= 5 ) { return 2; }
+
+	# No problems found, OK to recommend / n00b
+	return 1;
+}
+
+
+# Read recommendation lines from recs.txt
+sub read_recs
+{
+	# read recs
+	open ( FILE, "<recs.txt" ) or die ( "Can't open recs.txt" );
+	while ( <FILE> )
+	{
+		chomp $_;
+		if ( $_ =~ /\[(.+);(.+?)\](.+)/ )
+		{
+			my $min = ( $1 < $2 ) ? $1 : $2;
+			my $max = ( $1 < $2 ) ? $2 : $1;
+
+			# Remove line breaks here instead of later on, and trim whitespace
+			my $message = $3;
+			$message =~ s/\n//g;
+			$message =~ s/\r//g;
+			chomp $message;
+
+			my %hash = (
+				'min' => $min,
+				'max' => $max,
+				'message' => $message
+			);
+
+			push (@recs, \%hash);
+		}
+	}
+	close ( FILE );
+}
+
+# Gets a line from the recommendations file
+sub get_recommend_line
+{
+	my $name = shift;
+	my $rec = shift;
+	my $team = shift;
+
+	my $otherteam = ( lc($team) eq "gdi" ) ? "Nod" : "GDI";
+	srand();
+
+	my $maxrecs = scalar(@recs);
+	my $line;
+
+	# If loopCount goes above 25 bail out and use default setting
+	my $match=0;
+	my $loopCount = 0;
+	while ( $match == 0 && $loopCount++ < 25 )
+	{
+		my $rand = int(rand($maxrecs));
+		my %hash = %{$recs[$rand]};
+		if ( ($rec >= $hash{min}) && ($rec <= $hash{max}) )
+		{
+			$line = $hash{message};
+			$match = 1;
+		}
+	}
+
+	if ( $match == 0 ) { $line = "%nick has %rec recommendations."; }
+
+	$line =~ s/\%nick/$name/ig;
+	$line =~ s/\%rec/$rec/ig;
+	$line =~ s/\%team/$team/ig;
+	$line =~ s/\%otherteam/$otherteam/ig;
+
+	return $line;
+}
+
+# Shows current recommendations for a player when they join the game
+sub show_recommendations
+{
+	my $name = shift;
+
+	my $count = get_recommendation( $name );
+	my $n00bcount = get_n00b( $name );
+	my $recs = $count - $n00bcount;
+
+
+	POE::Session->create
+	(
+		inline_states =>
+		{
+			_start => sub
+			{
+				$_[HEAP]->{next_alarm_time} = int( time() ) + 5;
+				$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
+			},
+			tick => sub
+			{
+				# Check they are still ingame, no point showing it otherwise
+				my ( $result, %player ) = playerData::getPlayerData( $name );
+				if ( $result == 1 )
+				{
+					if ( $recs == 0 )
+						{ RenRemCMD( "msg [BR] $name does not have any recommendations." ); }
+					else
+					{
+						my $line = get_recommend_line( $name, $recs, $player{'side'} );
+						RenRemCMD( "msg [BR] $line" );
+					}
+				}
+			},
+		}
+	);
+
+	undef $count;
+	undef $n00bcount;
+}
+
+
+
+
+###################################################
+####
+## Functions related to getting and storing players
+## bandwidth data
+####
+###################################################
+
+sub get_bandwidth
+{
+	my ($playerid) = @_;
+
+	if (!$playerid)
+	{
+		my %playerlist = playerData::getPlayerList();
+		while ( my ( $id, $player ) = each ( %playerlist ) )
+		{
+			RenRemCMD("GETBW $id");
+		}
+	}
+	else
+	{
+		RenRemCMD("GETBW $playerid");
+	}
+}
+
+
+
+###################################################
+####
+## Functions for getting the mod status of a player
+####
+###################################################
+
+# Returns true if the user is a half mod, false otherwise
+sub IsHalfMod
+{
+	my ($name)=@_;
+	$name=lc($name);
+
+	if ( $brconfig::halfMods{$name} )
+	{
+		# Check they are authed
+		my $authStatus = brAuth::is_user_authed( $name );
+
+		if ( $authStatus == 1 || ( $brconfig::config_moderators_force_auth == 0 && $authStatus == 2 ) )
+		{ return 1; }
+	}
+
+	return 0;
+}
+
+# Returns true if the user is a full mod, false otherwise
+sub IsFullMod
+{
+	my ($name)=@_;
+	$name=lc($name);
+
+	if ( $brconfig::fullMods{$name} )
+	{
+		# Check they are authed
+		my $authStatus = brAuth::is_user_authed( $name );
+
+		if ( $authStatus == 1 || ( $brconfig::config_moderators_force_auth == 0 && $authStatus == 2 ) )
+		{ return 1; }
+	}
+
+	return 0;
+}
+
+# Returns true if the user is an admin, false otherwise
+sub IsAdmin
+{
+	my ($name)=@_;
+	$name=lc($name);
+
+	if ( $brconfig::admins{$name} )
+	{
+		# Check they are authed
+		my $authStatus = brAuth::is_user_authed( $name );
+
+		if ( $authStatus == 1 || ( $brconfig::config_moderators_force_auth == 0 && $authStatus == 2 ) )
+		{ return 1; }
+	}
+
+	return 0;
+}
+
+# Returns true if the user is a temporary mod, false otherwise
+sub IsTempMod
+{
+	my $name = lc($_[0]);
+
+	if ( $main::tempMods{$name} )
+	{
+		# Check they are authed
+		if ( brAuth::is_user_authed($name) != 0 )
+		{ return 1; }
+	}
+
+	return 0;
+}
+
+
+
+###################################################
+####
+## Functions for adding or removing temp moderators
+####
+###################################################
+
+sub AddTempModerator
+{
+	my ($name) = @_;
+
+	my ( $result, %player ) = playerData::getPlayerData( $name );
+	if ( $result == 1 )
+	{
+		$main::tempMods{lc($player{'name'})} = $player{'name'};
+		RenRemCMD( "msg [BR] $player{'name'} has been made a temporary game moderator." );
+	}
+	elsif ( $result == 2 )
+	{
+		RenRemCMD( "msg [BR] $name is not unique, please be more specific." );
+	}
+	else
+	{
+		RenRemCMD( "msg [BR] $name was not found ingame." );
+	}
+
+	return;
+}
+
+sub DelTempModerator
+{
+	my ($name) = @_;
+
+	my ( $result, %player ) = playerData::getPlayerData( $name );
+	if ( $result == 1 )
+	{
+		if ( $main::tempMods{lc($player{'name'})} )
+		{
+			delete $main::tempMods{lc($player{'name'})};
+			RenRemCMD( "msg $player{name} is no longer a temporary game moderator." );
+			return;
+		}
+
+		RenRemCMD( "msg [BR] $player{'name'} was not a temporary game moderator to begin with." );
+	}
+	elsif ( $result == 2 )
+	{
+		RenRemCMD( "msg [BR] $name is not unique, please be more specific." );
+	}
+	else
+	{
+		RenRemCMD( "msg [BR] $name has not been found." );
+	}
+
+	return;
+}
+
+
+
+
+
+###################################################
+####
+## Functions related to automatic announcements system
+####
+###################################################
+
+
+# Initialises the automatic announcements system and creates the session
+sub AutoAnnounce_Init
+{
+	# If the message interval is configured to 0 then we do not need to create the session as it is disabled
+	if ( $brconfig::config_autoannounceinterval > 0 )
+	{
+		POE::Session->create
+		( inline_states =>
+			{
+				_start => sub
+				{
+					$_[KERNEL]->alarm( tick => int( time() ) + $brconfig::config_autoannounceinterval );
+				},
+				tick => sub
+				{
+					AutoAnnounce_DoAnnoucement();
+					$_[KERNEL]->alarm( tick => int( time() ) + $brconfig::config_autoannounceinterval );
+				},
+			},
+		);
+	}
+}
+
+
+# Randomly chooses an announcement from the announcements file and sends it to the server
+sub AutoAnnounce_DoAnnoucement
+{
+	my $index        = rand @brconfig::autoannounce;
+	my $announcement = $brconfig::autoannounce[$index];
+
+	if ($announcement =~ /TIMECOOKIE/i)
+	{
+		$announcement = modules::get_date_time( "The local server time is hh:mm:ss" );
+	}
+
+	# Abort if selected announcement requires results of previous match and they are
+	# not available
+	if (($announcement =~ /MOST.+COOKIE/i) and (!($results::mostkills)))
+	{
+		return;
+	}
+
+	if ($announcement =~ /MOSTKILLCOOKIE/i)
+	{
+		$announcement = $results::mostkills;
+	}
+
+	if ($announcement =~ /MOSTDEATHCOOKIE/i)
+	{
+		$announcement = $results::mostdeaths;
+	}
+
+	if ($announcement =~ /MOSTKDCOOKIE/i)
+	{
+		$announcement = $results::mostkd;
+	}
+
+	if ( serverStatus::getCurrentPlayers() > 0 && length($announcement) > 0 )
+	{
+		modules::RenRemCMD( "msg [BR] $announcement" );
+	}
+}
+
+
+
+
+
+
+###################################################
+####
+## Miscellaneous functions
+####
+###################################################
+
+sub display_error
+{
+	my $error = shift;
+	return if (!$error);
+
+	brIRC::ircmsg ( "Runtime Error: $error" );
+	modules::console_output ( "Runtime Error: $error" );
+
+# 	POE::Session->create
+# 	( inline_states =>
+# 		{ _start => sub {
+# 			$_[KERNEL]->post( IRC => privmsg => CHANNEL,  "Runtime Error: $error");
+
+# 			}
+# 		}
+# 	);
+
+}
+
+sub match_map
+{
+	my $mapname = $_[0];
+
+	my $matched=0;
+
+	foreach (@brconfig::installed_maps)
+	{
+		if ($_ =~ m/(.*?)$mapname(.+)/gi)
+		{
+			$matched++;
+#				print "DEBUG: matched map: $_\n";
+		}
+	}
+	if ($matched > 1)
+	{
+#		print "DEBUG: too many matches. not unique\n";
+		return (undef, 2);
+	}
+	else
+	{
+		foreach (@brconfig::installed_maps)
+		{
+
+			if ($_ =~ m/(.*)$mapname(.*)/i)
+			{
+
+				my $result_map = $_;
+				return ("$result_map",1);
+			}
+		}
+	} # end of else
+	return (undef, 3) if ($matched == 0);
+
+}
+
+
+# Sets the next map in the rotation to the specified map
+sub write_configfile
+{
+	my $mapname  = shift;
+	my $config;
+
+	open ( FDSfile, $brconfig::config_fdsconfigfile );
+	while ( <FDSfile> )
+	{
+		$config .= $_;
+	}
+	close ( FDSfile );
+
+	my $nextmap = GetNextMap( serverStatus::getMap() );
+	return 0 if (!$nextmap);
+
+	# If we have already changed the next map once we must NOT backup the FDS config again
+	if ( brdatabase::get_global('nextmap_changed') )
+	{
+		modules::console_output ( "Map rotation has already been changed once this map, skipping backup of FDS config file." );
+	}
+	else
+	{
+		modules::console_output ( "Backing up FDS config file." );
+		open (FDSfile, ">svrcfg_cnc.ini.old");
+		print FDSfile $config;
+		close (FDSfile);
+	}
+
+	modules::console_output ( "Setting MapName$nextmap->{id} to $mapname." );
+	$config =~ s/MapName$nextmap->{id}=.+/MapName$nextmap->{id}=$mapname/g;
+
+	open (FDSfile, ">$brconfig::config_fdsconfigfile");
+	print FDSfile $config;
+	close (FDSfile);
+
+	# Record the fact that we have changed the next map
+	brdatabase::set_global( 'nextmap_changed', '1' );
+
+	# Read the new map list into the brconfig maplist
+	brconfig::readServerSettings();
+}
+
+
+
+
+sub GetNextMap
+{
+	# Get map number from the gameinfo array
+	my $currentMap = serverStatus::getMapNum();
+	my $nextmap = ( defined $brconfig::maplist[$currentMap+1] )
+		? $brconfig::maplist[$currentMap+1]
+		: $brconfig::maplist[0];
+
+
+	return $nextmap if ( defined $nextmap );
+
+	return undef;
+}
+
+sub padd_string
+{
+	my $maxlength = shift;
+	my $string	= shift;
+
+	my $output = $string;
+
+	for (my $i=1; $i <= $maxlength - length($string); $i++)
+	{
+		$output .= " ";
+	}
+	return $output;
+}
+
+sub GetRotation
+{
+	my @array;
+	my $currentMap = serverStatus::getMapNum();
+	push ( @array, "The map rotation includes:" );
+
+	for (my $i =0; $i <= scalar( @brconfig::maplist ) -1; $i +=4 )
+	{
+		my $mapName1 = ( $i == $currentMap )
+			? '[' . $brconfig::maplist[$i]->{'mapname'} . ']'
+			: $brconfig::maplist[$i]->{'mapname'};
+
+		my $mapName2 = ( ( $i+1 ) == $currentMap )
+			? '[' . $brconfig::maplist[$i+1]->{'mapname'} . ']'
+			: $brconfig::maplist[$i+1]->{'mapname'};
+
+		my $mapName3 = ( ( $i+2 ) == $currentMap )
+			? '[' . $brconfig::maplist[$i+2]->{'mapname'} . ']'
+			: $brconfig::maplist[$i+2]->{'mapname'};
+
+		my $mapName4 = ( ( $i+3 ) == $currentMap )
+			? '[' . $brconfig::maplist[$i+3]->{'mapname'} . ']'
+			: $brconfig::maplist[$i+3]->{'mapname'};
+
+		$mapName1 =~ s/\.mix//i;			$mapName1 =~ s/c\&c_//i;
+		$mapName2 =~ s/\.mix//i;			$mapName2 =~ s/c\&c_//i;
+		$mapName3 =~ s/\.mix//i;			$mapName3 =~ s/c\&c_//i;
+		$mapName4 =~ s/\.mix//i;			$mapName4 =~ s/c\&c_//i;
+
+		push ( @array, "$mapName1  $mapName2  $mapName3  $mapName4" );
+	}
+	return @array;
+
+}
+
+sub GetInstalledMaps
+{
+	my @array;
+	push (@array, "The following maps are installed:");
+	for (my $i=0;$i<=scalar(@brconfig::installed_maps);$i=$i+4)
+	{
+		push (@array, "$brconfig::installed_maps[$i] $brconfig::installed_maps[$i+1] $brconfig::installed_maps[$i+2] $brconfig::installed_maps[$i+3]");
+	}
+	return @array;
+}
+
+sub IsMapInRotation
+{
+	# returns 1 if the map is in the rotation
+	my $map = shift;
+	foreach (@brconfig::maplist)
+	{
+
+	  	if ($map eq $_->{'mapname'})
+	  	{
+	  		return 1;
+	  	}
+
+	}
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+# This routine gets the current date, and spits out
+# the proper current logfile name we should be opening.
+#
+# You pass it a string (filename) and it automatically
+# replaces MM DD YYYY HH MM SS with the current time digits.
+sub get_date_time
+{
+	my $string = $_[0];
+
+	my ($second,$minute,$hour,$day,$month,$year,$weekday,$yearday,$dst_flag)=localtime(time);
+
+	$year  += 1900;
+	my $year_short = substr ( $year, 2 );
+	$month += 1;
+
+	if ($second < 10) {$second ="0".$second;}
+	if ($hour   < 10) {$hour   ="0".$hour;}
+	if ($minute < 10) {$minute ="0".$minute;}
+
+#	The actual substition of the matched strings for values.
+	$string =~ s/YYYY/$year/;
+	$string =~ s/YY/$year_short/;
+	$string =~ s/DD/$day/;
+	$string =~ s/MM/$month/;
+	$string =~ s/ss/$second/;
+	$string =~ s/hh/$hour/;
+	$string =~ s/mm/$minute/;
+
+	return $string;
+}
+
+sub get_linux_date_time
+{
+	my $string = $_[0];
+
+	my ($second,$minute,$hour,$day,$month,$year,$weekday,$yearday,$dst_flag)=localtime(time);
+
+	my $year_short = substr ( $year, 2 );
+
+	if ($second < 10) {$second ="0".$second;}
+	if ($hour   < 10) {$hour   ="0".$hour;}
+	if ($minute < 10) {$minute ="0".$minute;}
+
+#	The actual substition of the matched strings for values.
+	$string =~ s/YYYY/$year/;
+	$string =~ s/YY/$year_short/;
+	$string =~ s/DD/$day/;
+	$string =~ s/MM/$month/;
+	$string =~ s/ss/$second/;
+	$string =~ s/hh/$hour/;
+	$string =~ s/mm/$minute/;
+
+	return $string;
+}
+
+sub get_past_date_time
+# This routine gets the current date, and spits out
+# the proper current logfile name we should be opening.
+#
+# You pass it a string (filename) and it automatically
+# replaces MM DD YYYY HH MM SS with the current time digits.
+#
+# !!This routine will not work without the Time::localtime function/module!!
+
+{
+	my $string = $_[0];
+	my $timestamp = $_[1];
+
+
+	my ($second,$minute,$hour, $day,$month,$year, $weekday,$yearday,$dst_flag)=localtime($timestamp);
+
+	$year = $year + 1900;
+	my $year_short = substr ( $year, 2 );
+	$month++;
+
+#   Convert single digits to double digits
+#   ie "1" becomes "01".
+
+	if ($month  < 10) {$month  ="0".$month;}
+	if ($day	< 10) {$day	="0".$day;}
+	if ($second < 10) {$second ="0".$second;}
+	if ($hour   < 10) {$hour   ="0".$hour;}
+	if ($minute < 10) {$minute ="0".$minute;}
+
+#   The actual substition of the matched strings for values.
+	$string =~ s/YYYY/$year/;
+	$string =~ s/YY/$year_short/;
+	$string =~ s/DD/$day/;
+	$string =~ s/MM/$month/;
+	$string =~ s/ss/$second/;
+	$string =~ s/hh/$hour/;
+	$string =~ s/mm/$minute/;
+
+	return $string;
+}
+
+
+
+# Converts a timestamp to a date using Time_To_Date and then formats with with
+# prefixed 0's
+sub BRTime_To_Date
+{
+	my ( $year, $month, $day, $hour, $min, $sec ) = Time_to_Date( shift );
+
+	# Prefix each with a 0 if its less than 10
+	if ($month  < 10) {$month  ="0".$month;}
+	if ($day	< 10) {$day	="0".$day;}
+	if ($sec	< 10) {$sec ="0".$sec;}
+	if ($hour   < 10) {$hour   ="0".$hour;}
+	if ($min	< 10) {$min ="0".$min;}
+
+	return ( $year, $month, $day, $hour, $min, $sec );
+}
+
+
+
+# Gets the SERVERS ip address
+sub get_ip
+{
+	my $config_ip;
+	my $config_botmode = $brconfig::config_botmode;
+
+	if ($config_botmode eq "LFDS")
+	{
+		my $ip = `/sbin/ifconfig eth0`;
+		if ( $ip =~ m/inet ad(.+?):(.+?)\s/i )
+		{
+			$config_ip = $2;
+		}
+	}
+	else
+	{
+		my $ip = `ipconfig`;
+		$ip =~ /IP Address.+?(\d+.\d+.\d+.\d+)/;
+		$config_ip=$1;
+	}
+
+	return $config_ip;
+}
+
+
+
+# Takes a playername and add's moderator symbols (if applicable)
+sub parseModName
+{
+	my $name		= shift;
+	my $addIRCcodes	= shift;
+	my $returnName	= $name;
+
+	# If we want IRC codes set them up now
+	my $bold = "";		my $underline = "";
+	if ( $addIRCcodes eq '1' )
+	{
+		$bold = "";			$underline = "";
+	}
+
+	# If moderator symbols are enabled show them, otherwise dont
+	if ( $brconfig::config_moderator_symbols == 1)
+	{
+		$returnName = $underline.$brconfig::config_temp_mod_symbol.$name.$underline if ( IsTempMod( $name ) );
+		$returnName = $bold.$brconfig::config_half_mod_symbol.$name.$bold if ( IsHalfMod( $name ) );
+		$returnName = $bold.$brconfig::config_full_mod_symbol.$name.$bold if ( IsFullMod( $name ) );
+		$returnName = $bold.$brconfig::config_admin_symbol.$name.$bold if ( IsAdmin( $name ) );
+	}
+	else
+	{
+		$returnName=$underline.$name.$underline if ( IsTempMod( $name ) );
+		$returnName=$bold.$name.$bold if ( IsHalfMod( $name ) or IsFullMod( $name ) or IsAdmin( $name ) );
+	}
+
+	return $returnName;
+}
+
+
+
+###################################################
+####
+## Functions for communicating with users
+####
+###################################################
+
+# Picks best method of paging based on server's bhs.dll, and players bhs.dll
+sub pagePlayer
+{
+	my $playername	= shift;
+	my $sender		= shift;
+	my $message		= shift;
+
+	my ( $result, %player ) = playerData::getPlayerData ( $playername );
+	if ( $result == 1 )
+	{
+		# CMSG supported if player and server have bhs.dll >= 2.6
+		if ( $brconfig::enableCmsg && modules::get_module( "bhs" )
+			&& $player{'bhsVersion'} >= 2.6 && $brconfig::serverBhsVersion >= 2.6 )
+		{
+			RenRemCMD ( "cmsgp $player{id} 0,255,0 \(PM from $sender): $message" );
+		}
+		elsif ( modules::get_module( "bhs" ) )
+		{
+			RenRemCMD ( "ppage $player{id} \(PM from $sender): $message" );
+		}
+		else
+		{
+			RenRemCMD ( "page $player{name} \(PM from $sender): $message" );
+		}
+	}
+
+	return $result;
+}
+
+
+
+###################################################
+####
+## Map specific settings
+####
+###################################################
+
+sub loadMapSettings
+{
+	my $error;
+	eval
+	{
+		$mapSettings = XMLin( "mapsettings.xml", SuppressEmpty => 1, ForceArray => [ 'map' ] );
+	}
+	or $error = $@;
+
+	if ( $error )
+	{
+		modules::console_output ( "The following error occured reading mapsettings.xml: $error" );
+		return;
+	}
+
+	# Under Win32 replace all &amp; with & in map names
+	while ( my ($mapname, $data) = each %{$mapSettings->{'map'}} )
+	{
+		my $mapname_new = $mapname;
+		$mapname_new =~ s/&amp;/&/gi;
+		if ( $mapname_new ne $mapname )
+		{
+			$mapSettings->{'map'}->{$mapname_new} = $data;
+			delete $mapSettings->{'map'}->{$mapname};
+		}
+	}
+
+#	use Data::Dumper;
+#	open ( DATA_DUMP, '>xmlmapsettings.txt' );
+#	print DATA_DUMP Dumper($mapSettings);
+#	close DATA_DUMP;
+
+	# Ensure we have default settings for everything
+	if ( !exists($mapSettings->{'default'}->{'time'}) )			{ $mapSettings->{'default'}->{'time'} = 30; }
+	if ( !exists($mapSettings->{'default'}->{'mines'}) )		{ $mapSettings->{'default'}->{'mines'} = 30; }
+	if ( !exists($mapSettings->{'default'}->{'donatelimit'}) )	{ $mapSettings->{'default'}->{'donatelimit'} = 0; }
+	if ( !exists($mapSettings->{'default'}->{'vehicles'}) )		{ $mapSettings->{'default'}->{'vehicles'} = 8; }
+	if ( !exists($mapSettings->{'default'}->{'rules'}) )		{ $mapSettings->{'default'}->{'rules'} = ""; }
+}
+
+
+sub applyMapSettings
+{
+	my $map = shift;
+	my $applyTime = shift;
+
+	if ( get_module ( "map_settings" ) != 1 )
+		{ return; }
+
+	my $new_time		= $mapSettings->{'default'}->{'time'};
+	$minelimit			= $mapSettings->{'default'}->{'mines'};
+	$vehiclelimit		= $mapSettings->{'default'}->{'vehicles'};
+	$donatelimit		= $mapSettings->{'default'}->{'donatelimit'};
+	$maprules			= $mapSettings->{'default'}->{'rules'};
+
+	# Get any map specific settings
+	if ( exists $mapSettings->{'map'}->{$map} )
+	{
+		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'time'}) )			{ $new_time = $mapSettings->{'map'}->{$map}->{'time'}; }
+		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'mines'}) )			{ $minelimit = $mapSettings->{'map'}->{$map}->{'mines'}; }
+		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'vehicles'}) )		{ $vehiclelimit = $mapSettings->{'map'}->{$map}->{'vehicles'}; }
+		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'donatelimit'}) )	{ $donatelimit = $mapSettings->{'map'}->{$map}->{'donatelimit'}; }
+		if ( exists($mapSettings->{'map'}->{$map}->{'rules'}) )				{ $maprules = $mapSettings->{'map'}->{$map}->{'rules'}; }
+	}
+
+	# Apply all settings
+	if ( $applyTime != 0 )
+		{ RenRem::RenRemCMD ( "time ".$new_time*60 ); }
+	RenRem::RenRemCMD ( "mlimit $minelimit" );
+	RenRem::RenRemCMD ( "vlimit $vehiclelimit" );
+
+	RenRem::RenRemCMDtimed ( "msg [BR] Settings for $map: Time Limit: $new_time, Mine Limit: $minelimit, Vehicle Limit: $vehiclelimit. Donations are allowed after $donatelimit minutes.", 5 );
+	if ( $maprules ) { RenRem::RenRemCMDtimed ( "msg [BR] Special rules for $map: $maprules", 5 ); }
+}
+
+
+
+
+
+
+# Return true if a value is numeric
+sub IsNumeric
+{
+	my $number = shift;
+
+	return (defined($number) && $number =~ /^(\d+\.?\d*|\.\d+)$/);
+}
+
+
+
+
+
+
+
+
+# Process autobalance, called on mapload
+sub do_autobalance
+{
+	# Is autobalance enabled?
+	if ( !modules::get_module( "autobalance" ) || !modules::get_module( "bhs" ) ) { return; }
+
+	# Attempts to automatically balance the teams 5 seconds after the map has loaded
+	POE::Session->create
+	( inline_states =>
+		{
+			_start => sub
+			{
+				# Make sure we have up to date game info when it calls the alarm
+				modules::RenRemCMD ( "game_info" );
+				modules::RenRemCMD ( "player_info" );
+				$_[HEAP]->{next_alarm_time} = int( time() ) + 5;
+				$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
+			},
+			tick => sub
+			{
+				return if ( serverStatus::getCurrentPlayers() == 0 );
+				modules::console_output ( "Starting autobalance...", 1 );
+
+				# Get difference
+				my $difference = ( serverStatus::getPlayers_GDI() - serverStatus::getPlayers_Nod() );
+				#print "DEBUG: Difference is $difference, gdi has $gameinfo{'gdi_players'} and nod has $gameinfo{'nod_players'}\n";
+
+				if ( $difference <= 1 && $difference >= -1 )
+				{
+					modules::console_output ( "Teams are balanced, no action necessary.", 3 );
+					return;
+				}
+				else
+				{
+					if ( $difference > 1 )
+					{
+						modules::console_output ( "GDI has more players, balancing teams...", 3 );
+
+						my %playerlist = playerData::getPlayerList();
+						while ( my ( $id, $player ) = each ( %playerlist ) )
+						{
+							if ( $player->{'side'} eq "GDI" || $player->{'side'} eq "All" )
+							{
+								my $loaded = gamelog::get_player( $player->{'name'} );
+								if ( $loaded && $loaded->{'name'} eq $player->{'name'} )
+								{
+									modules::console_output ( "Swapping $player->{name} from GDI to Nod." );
+									modules::RenRemCMD( "team2 $player->{id} 0" );
+									modules::RenRemCMD( "msg $player->{name} has been automatically changed to Nod to balance the teams." );
+									modules::pagePlayer( $player->{'id'}, "BRenBot", "You have been automatically moved to Nod to balance the teams." );
+									$difference -= 2;
+								}
+							}
+							last unless ( $difference > 1 )
+						}
+					}
+					else
+					{
+						modules::console_output ( "Nod has more players, balancing teams...", 3 );
+
+						my %playerlist = playerData::getPlayerList();
+						while ( my ( $id, $player ) = each ( %playerlist ) )
+						{
+							if ( $player->{'side'} eq "NOD" || $player->{'side'} eq "Sov" )
+							{
+								my $loaded = gamelog::get_player( $player->{'name'} );
+								if ( $loaded && $loaded->{'name'} eq $player->{'name'} )
+								{
+									modules::console_output ( "Swapping $player->{name} from Nod to GDI." );
+									modules::RenRemCMD( "team2 $player->{id} 1" );
+									modules::RenRemCMD( "msg $player->{name} has been automatically changed to GDI to balance the teams." );
+									modules::pagePlayer( $player->{'id'}, "BRenBot", "You have been automatically moved to GDI to balance the teams." );
+									$difference += 2;
+								}
+							}
+							last unless ( $difference < -1 )
+						}
+					}
+
+					modules::console_output ( "Autobalancing finished." );
+				}
+			},
+		},
+	);
+}
+
+1;

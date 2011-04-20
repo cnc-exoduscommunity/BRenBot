@@ -1,0 +1,179 @@
+<?xml version="1.0" ?>
+
+<plugin name="brwarnings">
+  <command name="show_warnings">
+    <permission level="2"/>
+    <syntax value="!show_warnings"/>
+    <help value="Lists ingame players who currently have warnings"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_public</group>
+    <group>irc_admin</group>
+    <renguard required="1"/>
+  </command>
+  <command name="show_all_warnings">
+    <permission level="3"/>
+    <syntax value="!show_all_warnings"/>
+    <help value="Lists all currently issued warnings, for players in and out of the game."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+    <alias>saw</alias>
+  </command>
+  <command name="warnings">
+    <permission level="1"/>
+    <syntax value="!warnings [playername]"/>
+    <help value="Shows how many warnings you, OR the specified [playername] have."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+    <renguard required="0"/>
+  </command>
+  <command name="warn">
+    <permission level="3"/>
+    <syntax value="!warn &gt;playername&lt; &gt;reason&lt;"/>
+    <help value="Warns a player for the reason given."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+    <renguard required="0"/>
+  </command>
+  <command name="words">
+    <permission level="1"/>
+    <syntax value="!words"/>
+    <help value="Shows a list of words and/or phrases which the bot will automatically give warnings for."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+  </command>
+  <command name="reset_warnings">
+    <permission level="4"/>
+    <syntax value="!reset_warnings &gt;playername&lt;"/>
+    <help value="Resets warnings for the specified player to 0. Can also be used on IRC members, just add @IRC to the name."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+    <renguard required="0"/>
+    <alias>rw</alias>
+  </command>
+  <command name="warning_stats">
+    <permission level="2"/>
+    <syntax value="!warning_stats [month/total]"/>
+    <help value="Shows todays statistics for the warnings plugin. Add month on the end to get stats for the whole month, or total to get stats for all time."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+  </command>
+  <command name="autowarnings">
+    <permission level="4"/>
+    <syntax value="!autowarnings [on/off] [duration]"/>
+    <help value="Reports whether automatic warnings are enabled or disabled. Use on/off to turn them on or off, and optionally specify how long in seconds to wait before switching it back again."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+    <renguard required="0"/>
+  </command>
+  <command name="clearwarningstats">
+    <permission level="4"/>
+    <syntax value="!clearwarningstats"/>
+    <help value="Clears all statistics for the warnings plugin. Once run this cannot be undone!"/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+    <alias>cws</alias>
+  </command>
+  <command name="mostwarnedwords">
+    <permission level="2"/>
+    <syntax value="!mostWarnedWords"/>
+    <help value="Shows the 5 words or phrases which the autowarnings system has warned people for."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+    <alias>mww</alias>
+  </command>
+  <command name="reload_autowarn_words">
+    <permission level="4"/>
+    <syntax value="!reload_autowarn_words"/>
+    <help value="Attempts to reload the list of swearwords from autowarn_words.cfg."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+    <alias>raww</alias>
+  </command>
+  <command name="autokb">
+    <permission level="4"/>
+    <syntax value="!autoKB &gt;playername&lt; &gt;reason&lt;"/>
+    <help value="Adds the specified name to the list of players to ban on sight."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+    <group>ingame</group>
+    <renguard required="0"/>
+  </command>
+  <command name="del_autokb">
+    <permission level="4"/>
+    <syntax value="!del_autoKB &gt;playername&lt;"/>
+    <help value="Removes the specified name from the list of players to ban on sight."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+    <group>ingame</group>
+    <renguard required="0"/>
+  </command>
+  <command name="autokb_list">
+    <permission level="3"/>
+    <syntax value="!autoKB_list"/>
+    <help value="Lists all the players currently on the automatic KB list."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+  </command>
+  <events>
+    <event>command</event>
+    <event>text</event>
+    <event>playerjoin</event>
+  </events>
+  <config>
+    <!-- Send players a page when they join the server.
+    Set to 1 to enable, 0 to disable. -->
+    <cvar name="greetPlayers" value="1"/>
+    <!-- Message to send. Use %warnings to indicate where
+    their current warnings total should go. -->
+    <cvar name="greetPlayerMessage" value="Welcome to the server. Please be aware that this server operates a no swearing policy, and swearing will result in warnings and possible removal from the server! You currently have %WARNINGS warnings."/>
+    <!-- Delay before sending, in seconds. -->
+    <cvar name="greetPlayerDelay" value="10"/>
+
+
+    <!-- Enable automatic warnings for using disallowed words or
+    phrases in the server. Set to 1 to enable, 0 to disable -->
+    <cvar name="autoWarnings" value="1"/>
+    <!-- Enable checking of players names when they join the server. If
+    a disallowed word is used they will be qkicked after 5 seconds
+    Set to 1 to enable, 0 to disable -->
+    <cvar name="checkPlayerNames" value="1"/>
+    <!-- Gives qkicks for server moderators for recieving warnings,
+    !dtm for temp mods. Set to 1 to enable, 0 to disable. -->
+    <cvar name="punishModerators" value="1"/>
+    <!-- Qkick server users after this number of warnings. -->
+    <cvar name="qkick_warnings" value="2"/>
+    <!-- Kick server users after this number of warnings.
+    Must be the same or greater than qkick_warnings. -->
+    <cvar name="kick_warnings" value="3"/>
+    <!-- Ban server users after this number of warnings.
+    Must be the same or greater than kick_warnings.
+    Set to -1 to disable. -->
+    <cvar name="ban_warnings" value="10"/>
+    <!-- How long to wait before expiring a warning for a user
+    in seconds. 3600 means one warning expires ever hour.
+    Set to -1 to make warnings never expire. -->
+    <cvar name="expire_time" value="14400"/>
+
+
+    <!-- Enable automatic warnings for using disallowed words or
+    phrases in the IRC channel. Set to 1 to enable, 0 to disable. -->
+    <cvar name="IRCautoWarnings" value="1"/>
+    <!-- Kick IRC users after this number of warnings.
+    Only applies if IRCautoWarnings is enabled. -->
+    <cvar name="irc_kick_warnings" value="3"/>
+    <!-- Same as expire_time, but for IRC warnings.
+    Only applies if IRCautoWarnings is enabled.
+    Set to -1 to make IRC warnings never expire. -->
+    <cvar name="irc_expire_time" value="14400"/>
+
+
+    <!-- How often the bot will check for warnings which have expired, in
+    seconds. Setting this too low *could* cause excessive overhead. -->
+    <cvar name="warningsCheckFrequency" value="1800"/>
+  </config>
+</plugin>

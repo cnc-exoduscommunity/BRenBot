@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+
+<plugin name="biatch">
+  <command name="trust">
+    <permission level="4"/>
+    <syntax value="!trust &gt;playername&lt; or !trust &gt;id&lt;"/>
+    <help value="Trusts the specified player. BIATCH command."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+  </command>
+  <command name="untrust">
+    <permission level="4"/>
+    <syntax value="!untrust &gt;playername&lt; or !untrust &gt;id&lt;"/>
+    <help value="Untrusts the specified player. BIATCH command."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+  </command>
+  <command name="antiaimbot">
+    <permission level="4"/>
+    <syntax value="!antiaimbot &gt;playername&lt; or !antiaimbot &gt;id&lt;"/>
+    <help value="Enables the antiaimbot script for the specified player. BIATCH command."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+  </command>
+  <command name="rehashbiatch">
+    <permission level="5"/>
+    <syntax value="!rehashbiatch"/>
+    <help value="Rehashes BIATCH configuration. BIATCH command."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+  </command>
+  <events>
+    <event>command</event>
+  </events>
+  <renlog_regex_hooks>
+    <hook event="biatchMessage" regex="^\s*\[BIATCH\]"/>
+  </renlog_regex_hooks>
+  <config>
+    <!-- No config settings for seen plugin... -->
+  </config>
+</plugin>

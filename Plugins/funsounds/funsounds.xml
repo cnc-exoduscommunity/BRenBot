@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+
+<plugin name="snda">
+  <events>
+    <event>text</event>
+  </events>
+  <config>
+    <cvar name="trigger_f2chat" value="1"/>
+    <cvar name="trigger_f3chat" value="1"/>
+    <cvar name="trigger_irc" value="1"/>
+  </config>
+</plugin>

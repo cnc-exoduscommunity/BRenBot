@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+
+<plugin name="serialHashLogger">
+  <command name="findserials">
+    <permission level="4"/>
+    <syntax value="findSerials &gt;playername&lt;"/>
+    <help value="Find all serials used by the specified playername. Case insensitive."/>
+    <enabled value="1"/>
+    <group>irc</group>
+  </command>
+  <events>
+    <event>command</event>
+    <event>playerjoin</event>
+  </events>
+</plugin>

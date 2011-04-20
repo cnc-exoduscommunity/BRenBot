@@ -1,0 +1,26 @@
+##################################################################################
+#
+# Command lines for packaging release builds of BRenBot 1.x and brLoader
+#
+# Author: danpaul88
+# Revision: 1.00
+# Date: 26-03-09
+#
+##################################################################################
+
+Use the following command lines when compiling release builds of BRenBot 1.x, brLoader or other products,
+but remember to update the version numbers as appropriate.
+
+
+
+BRenBot 1.x
+
+pp -o brenbot.exe -N CompanyName="Tiberian Technologies";ProductVersion=1.53.8;ProductName="BRenBot 1.53";FileVersion=1.53.8;LegalCopyright="Tiberian Technologies, All Rights Reserved";FileDescription="Server regulator for the Renegade FDS" -M POE/Filter.pm -M POE/Filter/Stream.pm -M POE/Component/Server/TCP.pm brenbot.pl
+
+
+
+
+
+brLoader
+
+pp -o brloader.exe -N CompanyName="Tiberian Technologies";ProductVersion=1.42;ProductName="brLoader 1.42";FileVersion=1.42;LegalCopyright="Tiberian Technologies, All Rights Reserved";FileDescription="Loader and updater for BRenBot" brloader.pl

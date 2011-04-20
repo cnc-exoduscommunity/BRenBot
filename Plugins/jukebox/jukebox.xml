@@ -1,0 +1,55 @@
+<?xml version="1.0" ?>
+
+<plugin name="jukebox">
+  <command name="nexttrack">
+    <permission level="2"/>
+    <syntax value="nextTrack"/>
+    <help value="Skips the current track and plays a new one at random."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+  </command>
+  <command name="settrack">
+    <permission level="2"/>
+    <syntax value="setTrack &gt;id/track&lt;"/>
+    <help value="Skips the current track and plays the track specified."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+  </command>
+  <command name="music">
+    <permission level="1"/>
+    <syntax value="music &gt;on/off&lt;"/>
+    <help value="Enables or disables the jukebox for that player."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+  </command>
+  <events>
+    <event>mapload</event>
+    <event>command</event>
+    <event>playerjoin</event>
+  </events>
+  <config>
+    <cvar name="defaultState" value="0"/>
+    
+    <cvar name="ammoclip.mp3" value="1"/>
+	<cvar name="command&amp;conquer.mp3" value="1"/>
+	<cvar name="defunkt.mp3" value="1"/>
+	<cvar name="in the line of fire.mp3" value="1"/>
+	<cvar name="level0_pt1_music.mp3" value="1"/>
+	<cvar name="level 0 hero.mp3" value="1"/>
+	<cvar name="level 0 nod base.mp3" value="1"/>
+	<cvar name="level 0 tank.mp3" value="1"/>
+	<cvar name="level 0 tiberium.mp3" value="1"/>
+	<cvar name="mechmansrevenge.mp3" value="1"/>
+	<cvar name="moveit.mp3" value="1"/>
+	<cvar name="onyourfeet.mp3" value="1"/>
+	<cvar name="raveshaw_act on instinct.mp3" value="1"/>
+	<cvar name="renegadejungle.mp3" value="1"/>
+	<cvar name="sakura battle theme.mp3" value="1"/>
+	<cvar name="sakura_dogfight.mp3" value="1"/>
+	<cvar name="sneakattack.mp3" value="1"/>
+	<cvar name="sniper.mp3" value="1"/>
+	<cvar name="stopthemagain.mp3" value="1"/>
+  </config>
+</plugin>

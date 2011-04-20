@@ -1,0 +1,143 @@
+<?xml version="1.0" ?>
+
+<plugin name="rank">
+  <command name="rank">
+    <permission level="1"/>
+    <syntax value="!rank"/>
+    <help value="Player rankings"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc</group>
+    <renguard required="1"/>
+  </command>
+  <command name="top">
+    <permission level="2"/>
+    <syntax value="!top [&lt;number&gt;]"/>
+    <help value="Shows top x players. &lt;number&gt; can be between 1 and 10, defaults to 3."/>
+    <enabled value="1"/>
+    <group>irc</group>
+  </command>
+  <command name="rankstats">
+    <permission level="1"/>
+    <syntax value="!rankstats &lt;playername&gt;"/>
+    <help value="Shows detailed statistics for the specified player."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc</group>
+    <renguard required="1"/>
+  </command>
+  <command name="update">
+    <permission level="3"/>
+    <syntax value="!update"/>
+    <help value="Forces an update of the statistics website"/>
+    <enabled value="1"/>
+    <group>irc</group>
+  </command>
+  <command name="rankignore">
+    <permission level="3"/>
+    <syntax value="!rankIgnore &lt;playername&gt;"/>
+    <help value="Ignores the specified player when calculating ranks."/>
+    <enabled value="1"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <renguard required="0"/>
+  </command>
+  <command name="rankallow">
+    <permission level="3"/>
+    <syntax value="!rankAllow &lt;playername&gt;"/>
+    <help value="Stops the specified player being ignored calculating ranks."/>
+    <enabled value="1"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <renguard required="0"/>
+  </command>
+  <command name="rankmerge">
+    <permission level="1"/>
+    <syntax value="!rankMerge &lt;playername&gt;"/>
+    <help value="Merges your rank data with that of another account"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <renguard required="0"/>
+  </command>
+  <command name="delrank">
+    <permission level="4"/>
+    <syntax value="delRank &lt;playername&gt;"/>
+    <help value="Deletes all rank data for the specified player."/>
+    <enabled value="1"/>
+    <group>irc</group>
+  </command>
+  <events>
+    <event>mapload</event>
+    <event>command</event>
+    <event>playerjoin</event>
+    <event>gameresult</event>
+  </events>
+  <config>
+    <!-- Shows a players rank when they join the server.
+    Set to 1 to enable, 0 to disable -->
+    <cvar name="showRankOnJoin" value="1"/>
+    <!-- Delay before sending, in seconds. -->
+    <cvar name="showRankOnJoinDelay" value="10"/>
+    <!-- Play siren when players above this rank join
+    Set to 0 to disable -->
+    <cvar name="sirenMinRank" value="3"/>
+    <!--Minimum score players must have before they are
+    ranked. Players with less than this will be ignored. -->
+    <cvar name="rankingMinScore" value="50"/>
+
+
+     <!-- Path to where you want your ranks.txt file to be output.
+    This path will NOT be checked by the plugin, so make sure its correct. -->
+    <cvar name="sitePath" value="./"/>
+    <!-- Name of the file which will be output, defaults to ranks.txt -->
+    <cvar name="outputFile" value="ranks.txt"/>
+    <!-- Format of the file to be output. Set to 1 for the default output
+    (supported by Hex's PHP scripts) or 2 for the SQL Dump output. -->
+    <cvar name="outputFormat" value="1"/>
+
+
+    <!-- FTP SETTINGS -->
+    <cvar name="enableFTP" value="0"/>
+    <!-- FTP Server -->
+    <cvar name="ftpServer" value="ftp.yoursite.com"/>
+    <!-- Username -->
+    <cvar name="ftpUsername" value="username"/>
+    <!-- Password -->
+    <cvar name="ftpPassword" value="password"/>
+    <!-- Path to place uploaded files
+    Must start with /, but does not need a / on the end -->
+    <cvar name="ftpPath" value="/folder"/>
+
+
+
+    <!-- Ranking Mode
+      1 = AOW, ranked by Score
+      2 = Snipe, ranked by Kills
+      3 = Snipe, ranked by K/D
+      4 = Rank Points - See settings below
+    -->
+    <cvar name="rankMode" value="4"/>
+
+
+
+    <!-- Settings to setup rank scoring (rankMode 4 ONLY) -->
+    <cvar name="scorePerRankPoint" value="2500"/>
+    <cvar name="killsPerRankPoint" value="6"/>
+    <cvar name="deathsPerMinusRankPoint" value="12"/>
+    <cvar name="buildingKillsPerRankPoint" value="1"/>
+    <cvar name="buildingRepairPerRankPoint" value="1200"/>
+    <cvar name="vehicleKillsPerRankPoint" value="3"/>
+    <cvar name="vehicleRepairPerRankPoint" value="900"/>
+  </config>
+
+
+  <!-- DO NOT CHANGE THESE! -->
+  <gamelog_regex_hooks>
+    <hook event="GL_buildingKill" regex="KILLED;BUILDING;"/>
+    <hook event="GL_buildingRepair" regex="DAMAGED;BUILDING;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(-\d+\.\d+);\d+;\d+;\d+"/>
+    <!--     KILLED;VEHICLE;1500000930;CnC_GDI_Medium_Tank;-132;4;-2;142;1500000189;CnC_GDI_Engineer_0;-116;0;-3;-86;CnC_Weapon_MineRemote_Player_2Max;Medium Tank;Engineer/Remote C4    -->
+    <hook event="GL_vehicleKill" regex="KILLED;VEHICLE;"/>
+    <!--     DAMAGED;VEHICLE;1500000930;CnC_GDI_Medium_Tank;-132;4;-2;142;1500000189;CnC_GDI_Engineer_0;-127;4;-3;-92;-2.000000;400;390;0      -->
+    <hook event="GL_vehicleRepair" regex="DAMAGED;VEHICLE;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(-\d+\.\d+);\d+;\d+;\d+"/>
+  </gamelog_regex_hooks>
+</plugin>

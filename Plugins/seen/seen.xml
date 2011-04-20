@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+
+<plugin name="seen">
+  <command name="seen">
+    <permission level="2"/>
+    <syntax value="!seen &gt;playername&lt;"/>
+    <help value="Displays the last time the specified player was seen in the server."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc</group>
+    <renguard required="1"/>
+  </command>
+  <events>
+    <event>command</event>
+    <event>playerjoin</event>
+    <event>playerleave</event>
+  </events>
+  <config>
+    <!-- No config settings for seen plugin... -->
+  </config>
+</plugin>

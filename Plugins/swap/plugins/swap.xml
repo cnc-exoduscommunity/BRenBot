@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+
+<plugin name="swap">
+  <command name="swap">
+    <permission level="1"/>
+    <syntax value="!swap"/>
+    <help value="Request to swap teams with a player on the other team"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+  </command>
+  <command name="swapcancel">
+    <permission level="1"/>
+    <syntax value="!swapcancel"/>
+    <help value="Cancels your swap request."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+  </command>
+  <events>
+    <event>command</event>
+    <event>playerleave</event>
+  </events>
+  <config>
+    <!-- Can temporary moderators cancel other players swaps? -->
+    <cvar name="tempModCanCancelSwaps" value="0"/>
+    <!-- Can half moderators cancel other players swaps? -->
+    <cvar name="halfModCanCancelSwaps" value="1"/>
+    <!-- Can full moderators cancel other players swaps? -->
+    <cvar name="fullModCanCancelSwaps" value="1"/>
+    
+    
+    <!-- Can IRC half ops cancel swaps? -->
+    <cvar name="ircHalfOpCanCancelSwaps" value="1"/>
+    <!-- Can IRC ops cancel swaps? -->
+    <cvar name="ircOpCanCancelSwaps" value="1"/>
+  </config>
+</plugin>

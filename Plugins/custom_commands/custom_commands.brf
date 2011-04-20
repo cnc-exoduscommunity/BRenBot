@@ -1,0 +1,42 @@
+# Lines beginning with a # are ignored. When editing this file add a # to the start
+# of any lines where you want to make a comment.
+#
+# Setup your custom messages in this file. Each message should be in the format
+# <command> = <message>, for example
+# beer = %name gives everyone a beer
+#
+# You can also use commas to add aliases for a command, for example
+# alcohol, beer, wine = %name gets everyone drunk
+#
+# You can use %name anywhere in a message and it will be replaced with the name of
+# the person who typed the command. Similarly %team will be replaced with the persons
+# team, and %enemyteam with the opposite team. %team and %enemyteam only work on types
+# 2 and 3
+#
+# Remember to put each message under the correct category, and do NOT put it under
+# multiple categories or it will only work in the first one it comes to.
+#
+# UPDATE 1.10
+# You can also use the %args tag in any of the three message tags, and it will be
+# replaced any text that comes after the command (which could be blank!)
+
+
+[TYPE1]
+# Type 1 messages can be used from IRC or ingame, and are displayed in F2 chat
+hillcamp, hc = Hillcamping is not permitted on this server. This refers to the use of a vehicle to attack enemy buildings from the central hill on Hourglass
+english = Speak English Only <> Parlez seulement Anglais <> Spreek alleen engels <> Sprechen sie nur Englisch <> Fale O ingles somente <> Parlie inglese soltanto
+website, web = Visit us at www.renforums.com
+b2b = Base to base is not allowed. This refers to the use of a vehicle or infantry unit to attack enemy buildings from within its own base
+give = %name gives everyone %args
+
+
+[TYPE2]
+# Type 2 messages can only be used from ingame, and are displayed in F2 chat
+afk = %name is away from their keyboard, try not to kill them too much!
+
+
+
+[TYPE3]
+# Type 3 messages can only be used from ingame, and are paged to the person who use
+# the command.
+commands = The following custom commands are setup on this server: !hillcamp, !english, !website, !b2b, !afk

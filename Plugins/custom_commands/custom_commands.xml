@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+
+<plugin name="custom_commands">
+  <command name="show_commands">
+    <permission level="2"/>
+    <syntax value="show_commands"/>
+    <help value="Lists all the available custom commands which can be used."/>
+    <enabled value="1"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <renguard required="0"/>
+  </command>
+  <events>
+    <event>command</event>
+    <event>text</event>
+  </events>
+  <config>
+    <!-- No config settings for custom commands plugin...
+    To configure your custom commands please use the custom_commands.brf file -->
+  </config>
+</plugin>

@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+
+<plugin name="htmloutput">
+  <!-- No commands for htmloutput -->
+  <events>
+    <event>text</event>
+    <event>playerjoin</event>
+    <event>playerleave</event>
+    <event>changeteam</event>
+    <event>mapload</event>
+  </events>
+  <config>
+    <!-- Set to 1 to log vehicle entry / exit -->
+    <cvar name="recordVehicleEnterExit" value="1"/>
+    
+    <!-- Set to 1 to log vehicle purchases -->
+    <cvar name="recordVehiclePurcase" value="1"/>
+    
+    <!-- Set to 1 to log character purchases -->
+    <cvar name="recordCharacterPurchase" value="1"/>
+    
+    <!-- Set to 1 to log crate pickups -->
+    <cvar name="recordVehicleEnterExit" value="1"/>
+  </config>
+  <gamelog_regex_hooks>
+    <hook event="buildingKilled" regex="KILLED;BUILDING;\d+;[^;]+;"/>
+    <hook event="playerKilled" regex="KILLED;SOLDIER;\d+;[^;]+;"/>
+  </gamelog_regex_hooks>
+  <renlog_regex_hooks>
+    <hook event="hostMsg" regex="^Host:"/>
+    <hook event="vehiclePurchase" regex="purchased a vehicle"/>
+    <hook event="playerKicked" regex="was kicked"/>
+  </renlog_regex_hooks>
+</plugin>

@@ -1,0 +1,90 @@
+##################################################################################
+#
+# Setting up a BRenBot 1.x development and build environment
+#
+# Author: danpaul88
+# Revision: 1.00
+# Date: 26-03-09
+#
+##################################################################################
+
+
+1) Download and install ActiveState ActivePerl 5.10, build 1004.
+
+http://downloads.activestate.com/ActivePerl/Windows/5.10/ActivePerl-5.10.0.1004-MSWin32-x86-287188.msi
+
+
+
+
+2) After installing ActiveState ActivePerl, run the Perl Package Manager from the start menu and wait for
+it to finish loading. Once it is fully loaded select View from the toolbar and select the 'All Packages'
+option. This will list all available packages.
+
+Find the following packages, and on each one right click and click on 'install <name>'
+
+	GetOpt-ArgvFile
+	Module-ScanDeps
+	Parse-Binary
+	PAR
+	PAR-Dist
+	POE
+	Win32-Exe
+
+Now, select File from the toolbar and click Run Marked Actions, and wait for the installation to complete.
+
+
+
+
+3) Next, we need to install nmake, so we can build PAR-Packer (which, for some reason, cannot be installed
+through PPM) and DBD-SQLite2 (which is technially obsolete). Download it from the following location;
+
+http://download.microsoft.com/download/vc15/patch/1.52/w95/en-us/nmake15.exe
+
+Now, copy this file into your C:\Perl\Bin folder, and then run it. This will install nmake for you.
+
+
+
+
+4) Now we need to install PAR-Packer, which is used to pack BRenBot 1.x builds into exe files. Get the
+file from the following location;
+
+http://search.cpan.org/CPAN/authors/id/S/SM/SMUELLER/PAR-Packer-0.991.tar.gz
+
+Extract the folder (WinRAR can do this) inside the archive onto your desktop, it can be deleted once we
+have finished. Now, open a command prompt window and navigate to this extracted folder. Run the following
+sequence of commands to install PAR-Packer;
+
+makefile.pl
+nmake
+nmake test
+nmake install
+
+
+
+
+5) Finally, we need to install DBD-SQLite2, which is included with BRenBot builds to support older plugins
+still using SQLite2 databases, and by brLoader. Get the file from the following location;
+
+http://search.cpan.org/CPAN/authors/id/M/MS/MSERGEANT/DBD-SQLite2-0.33.tar.gz
+
+Extract the folder (WinRAR can do this) inside the archive onto your desktop, it can be deleted once we
+have finished. Now, open a command prompt window and navigate to this extracted folder. Run the following
+sequence of commands to install DBD-SQLite2;
+
+makefile.pl
+nmake
+nmake test
+nmake install
+
+Note: Installing this module requires Visual C++ to be installed first, as it must compile some C++ code
+during the installation.
+
+
+
+
+
+6) Installation of a complete development and build environment for BRenBot is complete. You can test
+BRenBot by simply running brenbot.pl (I recommend doing this from a command prompt, otherwise you will
+miss any errors that occur). Building an executable is as easy as calling pp -o brenbot.exe brenbot.pl
+from the command prompt after navigating to the folder with BRenBot in. For release builds, see the
+'Packaging Command Lines.txt' file for a more complete command line including version information etc.

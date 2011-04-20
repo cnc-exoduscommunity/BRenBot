@@ -1,0 +1,90 @@
+##################################################################################
+#
+# Setting up a brLoader development and build environment
+#
+# Author: danpaul88
+# Revision: 1.00
+# Date: 20-06-09
+#
+##################################################################################
+
+
+1) Download and install ActiveState ActivePerl 5.8.6, build 811.
+
+http://downloads.activestate.com/ActivePerl/Windows/5.8/ActivePerl-5.8.6.811-MSWin32-x86-122208.msi
+
+
+
+
+2) After installing ActiveState ActivePerl, run the Perl Package Manager from the start menu and type
+the following commands;
+
+install TermReadKey
+install DBI
+install dbd-sqlite2
+install dbd-sqlite
+install parse-binary
+install win32-exe
+install module-scandeps
+install par-dist
+
+
+
+
+3) Next, we need to install nmake, so we can build PAR-Packer (which, for some reason, cannot be installed
+through PPM) and DBD-SQLite2 (which is technially obsolete). Download it from the following location;
+
+http://download.microsoft.com/download/vc15/patch/1.52/w95/en-us/nmake15.exe
+
+Now, copy this file into your C:\Perl\Bin folder, and then run it. This will install nmake for you.
+
+
+
+
+4) Now we need to install PAR 0.89, which is used to pack brLoader 1.x builds into exe files. Get the
+file from the following location;
+
+http://search.cpan.org/~autrijus/PAR-0.89/lib/PAR.pm
+
+Extract the folder (WinRAR can do this) inside the archive onto your desktop, it can be deleted once we
+have finished. Now, open a command prompt window and navigate to this extracted folder. Run the following
+sequence of commands to install PAR-Packer;
+
+makefile.pl
+nmake
+nmake test
+nmake install
+
+NOTE: DO NOT attempt to install a newer version of PAR, for some reason it simply won't work properly
+with the lwp components required to download updates. Don't ask me why, I have no clue and spent months
+trying to get the damn thing to work.
+
+
+
+
+5) Finally, we need to install DBD-SQLite2, which is included to support updating from older builds
+still using SQLite2 databases. Get the file from the following location;
+
+http://search.cpan.org/CPAN/authors/id/M/MS/MSERGEANT/DBD-SQLite2-0.33.tar.gz
+
+Extract the folder (WinRAR can do this) inside the archive onto your desktop, it can be deleted once we
+have finished. Now, open a command prompt window and navigate to this extracted folder. Run the following
+sequence of commands to install DBD-SQLite2;
+
+makefile.pl
+nmake
+nmake test
+nmake install
+
+Note: Installing this module requires Visual C++ to be installed first, as it must compile some C++ code
+during the installation.
+
+
+
+
+
+6) Installation of a complete development and build environment for brLoader is complete. You can test
+brLoader by simply running brLoader.pl (I recommend doing this from a command prompt, otherwise you will
+miss any errors that occur). Building an executable is as easy as calling pp -o brLoader.exe brLoader.pl
+from the command prompt after navigating to the folder with brLoader in. For release builds, see the
+'Packaging Command Lines.txt' file for a more complete command line including version information etc.

@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+
+<plugin name="ipbot">
+  <command name="ipsearch">
+    <permission level="3"/>
+    <syntax value="ipSearch &gt;ip&lt;"/>
+    <help value="Searches the database for ips matching your search, and returns them along with the players using them."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+  </command>
+  <command name="nicksearch">
+    <permission level="3"/>
+    <syntax value="nickSearch &gt;nick&lt;"/>
+    <help value="Searches the database for players matching your search, and returns them along with their known ips."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+  </command>
+  <command name="commonnicksearch">
+    <permission level="3"/>
+    <syntax value="commonNickSearch &gt;nick&lt;"/>
+    <help value="Searches the database for other names used on the specified players IP address(es). Requires an EXACT nickname (case insensitive)"/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+  </command>
+  <command name="ipbot_stats">
+    <permission level="3"/>
+    <syntax value="ipbot_stats"/>
+    <help value="Shows stats from the ipbot server."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+  </command>
+  <events>
+    <event>command</event>
+    <event>playerjoin</event>
+  </events>
+  <config>
+     <cvar name="ipdbUser" value=""/>
+     <cvar name="ipdbPass" value=""/>
+     <cvar name="enableNickSpooferWarnings" value="1"/>
+  </config>
+</plugin>

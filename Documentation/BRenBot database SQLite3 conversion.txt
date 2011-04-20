@@ -1,0 +1,50 @@
+Old database
+
+jointext => "CREATE TABLE jointext ( id INTEGER PRIMARY KEY, name TEXT, text TEXT ) ",
+recommendation => "CREATE TABLE recommendation ( id INTEGER PRIMARY KEY, name TEXT, comment TEXT, poster TEXT, timestamp DATETIME ) ",
+n00bs => "CREATE TABLE n00bs ( id INTEGER PRIMARY KEY, name TEXT, comment TEXT, poster TEXT, timestamp DATETIME ) ",
+bans => "CREATE TABLE bans ( id INTEGER PRIMARY KEY, name TEXT, ip TEXT, serial TEXT, reason TEXT, banner TEXT, timestamp INTEGER ) ",
+users_aliases => "CREATE TABLE users_aliases ( id INTEGER PRIMARY KEY, name TEXT, userid INTEGER )",
+users => "CREATE TABLE users ( id INTEGER PRIMARY KEY, name TEXT, password TEXT )",
+modules => "CREATE TABLE modules ( id INTEGER PRIMARY KEY, name TEXT, description TEXT, status INTEGER, locked INTEGER );",
+rec_ignore => "CREATE TABLE rec_ignore ( id INTEGER PRIMARY KEY, name TEXT );",
+globals => "CREATE TABLE globals ( id INTEGER PRIMARY KEY, name TEXT, value TEXT );",
+forcerg => "CREATE TABLE forcerg ( id INTEGER PRIMARY KEY, name TEXT, ip TEXT );",
+rg_stats => "CREATE TABLE rg_stats ( day CHAR(6) PRIMARY KEY, rg_count INT, non_rg_count INT );",
+logs => "CREATE TABLE logs ( id INTEGER PRIMARY KEY, logType INTEGER, content TEXT, timestamp INTEGER );",
+kicks => "CREATE TABLE kicks ( id INTEGER PRIMARY KEY, name TEXT, ip TEXT, serial TEXT, time INTEGER, kicker TEXT, reason TEXT );"
+
+
+
+
+New database
+
+globals => "CREATE TABLE globals ( name TEXT PRIMARY KEY, value TEXT )",
+kicks => "CREATE TABLE kicks ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, serial TEXT, kicker TEXT, reason TEXT, timestamp INTEGER )",
+bans => "CREATE TABLE bans ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, serial TEXT, banner TEXT, reason TEXT, timestamp INTEGER )",
+logs => "CREATE TABLE logs ( id INTEGER PRIMARY KEY AUTOINCREMENT, logCode INTEGER, log TEXT, timestamp INTEGER )",
+modules => "CREATE TABLE modules ( name TEXT PRIMARY KEY, description TEXT, status INTEGER, locked INTEGER DEFAULT 0 )",
+auth_users => "CREATE TABLE auth_users ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, password TEXT )",
+recommendations => "CREATE TABLE recommendations ( name TEXT PRIMARY KEY, recommendations INTEGER DEFAULT 0, n00bs INTEGER DEFAULT 0  )",
+recommendations_ignored_users => "CREATE TABLE recommendations_ignored_users ( name TEXT PRIMARY KEY )",
+join_messages => "CREATE TABLE join_messages ( name TEXT PRIMARY KEY, message TEXT )"
+
+
+
+
+Conversions;
+
+jointext (id, name, text) => join_messages (name, message)
+recommendation (id, name, comment, poster, timestamp) ==\\
+							  ==> recommendations ( name, recs, n00bs )
+n00bs (id, name, comment, poster, timestamp) ===========//
+bans (id, name, ip, serial, reason, banner, timestamp) => bans (id, name, ip, serial, banner, reason, timestamp)
+user_aliases (id, name, userid) => X
+users (id, name, password) => auth_users (name, password)
+modules (id, name, description, status, locked) => modules (name, description, status, locked)
+rec_ignore (id, name) => recommendations_ignored_users (name)
+globals (id, name, value) => globals (name, value)
+forcerg (id, name, ip) => X
+rg_stats (day, rg_count, non_rg_count) => X
+logs (id, logType, content, timestamp) => logs (id, logCode, log, timestamp)
+kicks (id, name, ip, serial, time, kicker, reason) => kicks (id, name, ip, serial, kicker, reason, timestamp)

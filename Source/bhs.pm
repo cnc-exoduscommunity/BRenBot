@@ -1,0 +1,365 @@
+#!/usr/bin/perl
+
+package bhs;
+use strict;
+
+use POE;
+
+use modules;
+use brconfig;
+use renlog;
+use RenRem;
+
+
+sub check_bhs_library
+{
+	if ($brconfig::config_botmode eq "LFDS")		# Linux
+	{
+		if (-f "$brconfig::config_fdspath" . "bhs.so")
+		{
+			modules::console_output ( 'Found bhs.so on the FDS, enabling support' );
+			modules::set_module("bhs", 1);
+			tail_bhs_linux_logfile();
+		}
+		elsif (-f "$brconfig::config_fdspath" . "bhs8.so")
+		{
+			modules::console_output ( 'Found bhs8.so on the FDS, enabling support' );
+			modules::set_module("bhs", 1);
+			tail_bhs_linux_logfile();
+		}
+		else
+		{
+			modules::console_output ( 'Unable to locate bhs.so or bhs8.so on the FDS, some functionality will be disabled.' );
+			modules::set_module("bhs", 0);
+		}
+	}
+	else		# Win32
+	{
+		if (-f "$brconfig::config_fdspath" . "tt.dll")
+		{
+			modules::console_output ( 'Found tt.dll on the FDS, enabling support' );
+			modules::set_module("bhs", 1);
+		}
+		elsif (-f "$brconfig::config_fdspath" . "bhs.dll")
+		{
+			modules::console_output ( 'Found bhs.dll on the FDS, enabling support' );
+			modules::set_module("bhs", 1);
+		}
+		else
+		{
+			modules::console_output ( 'Unable to locate bhs.dll or tt.dll on the FDS, some functionality will be disabled.' );
+			modules::set_module("bhs", 0);
+		}
+	}
+}
+
+
+
+
+sub tail_bhs_linux_logfile
+{
+	my $name=$brconfig::config_fdspath . modules::get_linux_date_time("bhs_renlog_MM-DD-YYYY.txt");
+	modules::console_output ( "Tailing $name" );
+	POE::Session->create				# Initialize POE FollowTail shiznit
+  	( inline_states =>
+	  { _start => sub
+	  	{
+			if (-e $_[ARG0])
+			{
+				$_[HEAP]->{wheel} =
+					POE::Wheel::FollowTail->new(
+					Filename   => $name,
+					InputEvent => 'got_line', # Go to gotline subroutine (see below) when we read a line
+					ErrorEvent => 'got_error',
+					SeekBack   => 1,	# 1 means start at end of file
+				);
+				$_[HEAP]->{first} = 0;
+			}
+			else
+			{
+				$_[HEAP]->{next_alarm_time} = int( time() ) + 5;
+				$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
+
+			}
+			$_[KERNEL]->alias_set("tailbhs"); #set an alias to be able to call renew_wheel from the outside
+
+			#our $kernel  = $_[KERNEL];
+		},
+		got_line => \&gotline,
+		got_error => sub {goterror($_[ARG0])}, #sub { print "ERROR-ERROR-ERROR: FILE ERROR!\n" },
+	  	renew_wheel => \&renew_wheel, # function to reset wheel
+		tick => sub { $_[KERNEL]->yield("renew_wheel"); }, # renew wheel
+	},
+	args => [$name],
+  );
+
+} # end of tail function
+
+sub renew_wheel
+{
+	my ( $session, $heap, $input ) = @_[ SESSION, HEAP, ARG0 ];
+	my $name=$brconfig::config_fdspath . modules::get_linux_date_time("bhs_renlog_MM-DD-YYYY.txt");
+
+
+	if (-e $name)
+	{
+		$heap->{wheel} = POE::Wheel::FollowTail->new(
+						Filename   => "$name",
+						InputEvent => 'got_line',
+						ErrorEvent => 'got_error',
+						SeekBack   => 1,
+					);
+		$heap->{first} = 0;
+	}
+	else
+	{
+		$_[HEAP]->{next_alarm_time2} = int( time() ) + 60;
+		$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time2} );
+	}
+}
+
+# Not sure if this would still work if used...
+sub gotline
+{
+	my ( $session, $heap, $input ) = @_[ SESSION, HEAP, ARG0 ];
+
+	# Chat Messages Look like this: [23:58:36] flawliss9: BAD LAG
+	# Team Messages Look like this: [23:58:36] [Team]: flawliss9: BAD LAG
+
+	push (@_, "1"); # push linux flag into array
+	renlog::ChatMSG(@_);
+	renlog::ParseLogInput(@_); # call ParseLogInput with 1 = linux mode
+}
+
+sub goterror
+{
+	modules::console_output ( "Fatal Error: Got a file error in BHS renlog!\n" );
+	sleep ( 2 );
+	die;
+}
+
+# sub dev_irc
+# {
+# 	my $arg = shift;
+# 	my $nickname = shift;
+
+# 	if ($arg =~ /^dev on/)
+# 	{
+# 		POE::Session->create
+# 		( inline_states =>
+# 		{ _start => sub {
+# 				my $kernel = $_[KERNEL];
+# 				$kernel->post( IRC => privmsg => $nickname,  "Dev mode activated. Type dev help for command list.");
+# 			}
+# 		}
+# 		);
+#
+# 	}
+
+# 	if ($arg =~ /^dev help/)
+# 	{
+# 		POE::Session->create
+# 		( inline_states =>
+# 			{ _start => sub {
+# 					my $kernel = $_[KERNEL];
+# 					$kernel->post( IRC => privmsg => $nickname,  "score <playername> <amount of score>");
+# 					$kernel->post( IRC => privmsg => $nickname,  "cash <playername> <amount of cash>");
+# 					$kernel->post( IRC => privmsg => $nickname,  "health <playername> <amount>");
+# 					$kernel->post( IRC => privmsg => $nickname,  "shield <playername> <amount>");
+# 					$kernel->post( IRC => privmsg => $nickname,  "kill <playername>");
+# 					$kernel->post( IRC => privmsg => $nickname,  "move <playername> [X 0] [Y 0] [Z 0]");
+# 					$kernel->post( IRC => privmsg => $nickname,  "spawn <playername> <preset>");
+# 					$kernel->post( IRC => privmsg => $nickname,  "summon <player1> <player2> [X 0] [Y 0] [Z 0]");
+# 					$kernel->post( IRC => privmsg => $nickname,  "team <player1> <team id> (0=nod, 1=gdi, 2=neutral)");
+# 					$kernel->post( IRC => privmsg => $nickname,  "team2 <player1> <team id> (0=nod, 1=gdi, 2=neutral)");
+# 					$kernel->post( IRC => privmsg => $nickname,  "teleport <player> [X 0] [Y 0] [Z 0]");
+# 					$kernel->post( IRC => privmsg => $nickname,  "wep <player>");
+# 				}
+# 			}
+# 		);
+# 	}
+#
+# 	if ($arg =~ /^score\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("score $player{id} $2");
+# 		}
+# 	}
+#
+# 	if ($arg =~ /^cash\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("cash $player{id} $2");
+# 		}
+# 	}
+
+# 	if ($arg =~ /^health\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("health $player{id} $2");
+# 		}
+# 	}
+#
+# 	if ($arg =~ /^shield\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("shield $player{id} $2");
+# 		}
+# 	}
+
+# 	if ($arg =~ /^kill\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("kill $player{id}");
+# 		}
+# 	}
+#
+# 	if ($arg =~ /^move\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("move $player{id} $2");
+# 		}
+# 	}
+
+# 	if ($arg =~ /^spawn\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("spawn $player{id} $2");
+# 			modules::RenRemCMD("move $player{id} z +3");
+
+# 		}
+# 	}
+
+# 	if ($arg =~ /^summon\s(\S*)\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 				my ($result, %player1) = playerData::getPlayerData($2);
+# 				if ($result == 1)
+# 				{
+# 					modules::RenRemCMD("summon $player{id} $matched_hash1->{id} $3");
+# 				}
+# 		}
+# 	}
+#
+# 	if ($arg =~ /^team\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("team $player{id} $2");
+# 		}
+# 	}
+
+# 	if ($arg =~ /^team2\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("team2 $player{id} $2");
+# 		}
+# 	}
+
+# 	if ($arg =~ /^teleport\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("teleport $player{id} $2");
+# 		}
+# 	}
+
+# 	if ($arg =~ /^wep\s(\S*)\s*(.*)/i)
+# 	{
+# 		my ($result, %player) = playerData::getPlayerData($1);
+# 		if ($result == 1)
+# 		{
+# 			modules::RenRemCMD("wep $player{id}");
+# 		}
+# 	}
+# }
+
+
+sub playsnda
+{
+	my $filename = shift;
+
+	if (modules::get_module("bhs") )
+	{
+		modules::RenRemCMD("snda $filename");
+	}
+}
+
+sub playsndp
+{
+	my $filename = shift;
+	my $name = shift;
+
+	if (modules::get_module("bhs") )
+	{
+		my ($result, %player) = playerData::getPlayerData($name);
+		if ($result == 1)
+		{
+	   		if ( $player{'bhsVersion'} >= 1.9)
+	   		{
+	   			modules::RenRemCMD("sndp $player{id} $filename");
+	   		}
+		}
+	}
+}
+
+
+sub playsndp_team
+{
+	my $filename = shift;
+	my $team = shift;
+
+
+	if ($team eq "GDI" || $team eq "All")
+	{
+		my %playerData = playerData::getPlayerList();
+		while ( my ( $id, $player ) = each ( %playerData ) )
+		{
+			if ( $player->{'side'} eq "GDI" || $player->{'side'} eq "All" )
+			{
+	   			if ( $player->{'bhsVersion'} >= 1.9 )
+	   			{
+					modules::RenRemCMD( "sndp $player->{id} $filename" );
+				}
+			}
+		}
+	}
+
+	elsif ($team eq "NOD" || $team eq "Sov")
+	{
+		my %playerData = playerData::getPlayerList();
+		while ( my ( $id, $player ) = each ( %playerData ) )
+		{
+			if ( $player->{'side'} eq "NOD" || $player->{'side'} eq "Sov" )
+			{
+	   			if ( $player->{'bhsVersion'} >= 1.9 )
+	   			{
+					modules::RenRemCMD( "sndp $player->{id} $filename" );
+				}
+			}
+		}
+	}
+}
+
+
+1;

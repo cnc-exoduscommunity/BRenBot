@@ -1,0 +1,12 @@
+$fdsStatusTXT = file_get_contents ( "../serverData/fdsstatus.txt" );
+$fdsStatusArray = explode ( "\n", $fdsStatusTXT );
+
+echo "Mode: $fdsStatusArray[0]<br>
+Map: $fdsStatusArray[1]<br>
+GDI players: $fdsStatusArray[2]<br>
+GDI points: $fdsStatusArray[3]<br>
+Nod players: $fdsStatusArray[4]<br>
+Nod points: $fdsStatusArray[5]<br>
+Max players: $fdsStatusArray[6]<br>
+Timeleft: $fdsStatusArray[7]<br>
+SFPS: $fdsStatusArray[8]";

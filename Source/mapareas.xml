@@ -1,0 +1,429 @@
+<?xml version='1.0' standalone='yes'?>
+<mapareas>
+  <map name="C&amp;C_Volcano.mix">
+    <area side="0" area="Hand of Nod">
+      <bottomleft y="-58" x="78" />
+      <topright y="-42" x="112" />
+    </area>
+    <area side="1" area="GDI Barracks">
+      <bottomleft y="131" x="-71" />
+      <topright y="158" x="-53" />
+    </area>
+    <area side="0" area="near Hand of Nod">
+      <bottomleft y="-71" x="60" />
+      <topright y="-28" x="126" />
+    </area>
+    <area side="1" area="GDI Weapons Factory">
+      <bottomleft y="68" x="-74" />
+      <topright y="99" x="-49" />
+    </area>
+    <area side="0" area="Airstrip Control Tower">
+      <bottomleft y="-54" x="33" />
+      <topright y="-41" x="48" />
+    </area>
+    <area side="0" area="near Airstrip Control Tower">
+      <bottomleft y="-72" x="24" />
+      <topright y="-29" x="58" />
+    </area>
+    <area side="1" area="near GDI Weapons Factory">
+      <bottomleft y="54" x="-84" />
+      <topright y="110" x="-41" />
+    </area>
+    <area side="1" area="near GDI Barracks">
+      <bottomleft y="113" x="-86" />
+      <topright y="174" x="-39" />
+    </area>
+    <area side="1" area="GDI Refinery">
+      <bottomleft y="71" x="-25" />
+      <topright y="94" x="-9" />
+    </area>
+    <area side="1" area="near GDI Refinery">
+      <bottomleft y="55" x="-36" />
+      <topright y="114" x="12" />
+    </area>
+    <area side="0" area="Airstrip">
+      <bottomleft y="-28" x="20" />
+      <topright y="-2" x="123" />
+    </area>
+    <area side="1" area="GDI Powerplant">
+      <bottomleft y="131" x="-33" />
+      <topright y="150" x="-7" />
+    </area>
+    <area side="0" area="Nod Powerplant">
+      <bottomleft y="12" x="83" />
+      <topright y="28" x="115" />
+    </area>
+    <area side="1" area="near GDI Powerplant">
+      <bottomleft y="115" x="-43" />
+      <topright y="164" x="8" />
+    </area>
+    <area side="0" area="near Nod Powerplant">
+      <bottomleft y="-4" x="75" />
+      <topright y="51" x="118" />
+    </area>
+    <area side="1" area="GDI Base">
+      <bottomleft y="42" x="-100" />
+      <topright y="179" x="12" />
+    </area>
+    <area side="0" area="Nod Tiberium Refinery">
+      <bottomleft y="13" x="35" />
+      <topright y="31" x="68" />
+    </area>
+    <area side="0" area="near Nod Tiberium Refinery">
+      <bottomleft y="-2" x="19" />
+      <topright y="30" x="74" />
+    </area>
+    <area side="1" area="GDI Base Main Entrance">
+      <bottomleft y="13" x="-108" />
+      <topright y="66" x="-67" />
+    </area>
+    <area side="0" area="Nod Tiberium Tunnel Entrance">
+      <bottomleft y="14" x="5" />
+      <topright y="30" x="19" />
+    </area>
+    <area side="0" area="Nod Base Main Entrance">
+      <bottomleft y="-77" x="-8" />
+      <topright y="-36" x="17" />
+    </area>
+    <area side="1" area="GDI Powerplant Tunnel Entrance">
+      <bottomleft y="111" x="12" />
+      <topright y="127" x="29" />
+    </area>
+    <area side="1" area="GDI Base Tiberium Field Entrance">
+      <bottomleft y="115" x="4" />
+      <topright y="154" x="52" />
+    </area>
+    <area side="0" area="Nod Power Plant Tunnel Entrance">
+      <bottomleft y="55" x="74" />
+      <topright y="67" x="99" />
+    </area>
+    <area side="0" area="Nod Base">
+      <bottomleft y="-73" x="1" />
+      <topright y="71" x="144" />
+    </area>
+    <area side="1" area="GDI Tiberium Refinery Tunnel Entrance">
+      <bottomleft y="36" x="-23" />
+      <topright y="60" x="-6" />
+    </area>
+    <area side="1" area="Main Pathway GDI Side">
+      <bottomleft y="-30" x="-106" />
+      <topright y="20" x="-60" />
+    </area>
+    <area side="2" area="Main Pathway Center Area">
+      <bottomleft y="-59" x="-86" />
+      <topright y="-1" x="-34" />
+    </area>
+    <area side="0" area="Tiberium Field Nod Base Entrance">
+      <bottomleft y="62" x="96" />
+      <topright y="84" x="114" />
+    </area>
+    <area side="0" area="Main Pathway Nod Side">
+      <bottomleft y="-80" x="-54" />
+      <topright y="-27" x="-8" />
+    </area>
+    <area side="2" area="Tiberium Field">
+      <bottomleft y="84" x="54" />
+      <topright y="154" x="115" />
+    </area>
+    <area side="2" area="Main Pathway Bunker">
+      <bottomleft y="-70" x="-98" />
+      <topright y="-38" x="-65" />
+    </area>
+    <area side="0" area="Nod Powerplant Tunnel">
+      <bottomleft y="60" x="63" />
+      <topright y="98" x="82" />
+    </area>
+    <area side="1" area="GDI Powerplant Tunnel">
+      <bottomleft y="97" x="17" />
+      <topright y="118" x="65" />
+    </area>
+    <area side="0" area="Nod Tiberium Refinery Tunnel">
+      <bottomleft y="4" x="-17" />
+      <topright y="32" x="9" />
+    </area>
+    <area side="2" area="Middle Tunnel">
+      <bottomleft y="14" x="-22" />
+      <topright y="99" x="63" />
+    </area>
+    <area side="1" area="GDI Tiberium Refinery Tunnel">
+      <bottomleft y="14" x="-32" />
+      <topright y="53" x="-6" />
+    </area>
+    <area side="2" area="Middle Tunnel Tiberium Refinery End">
+      <bottomleft y="-24" x="-59" />
+      <topright y="23" x="-13" />
+    </area>
+  </map>
+  <map name="C&amp;C_Under.mix">
+    <area side="0" area="Nod Tiberium Refinery">
+      <bottomleft y="-66" x="138" />
+      <topright y="-33" x="155" />
+    </area>
+    <area side="0" area="near Nod Tiberium Refinery">
+      <bottomleft y="-87" x="127" />
+      <topright y="-19" x="165" />
+    </area>
+    <area side="0" area="Airstrip">
+      <bottomleft y="-99" x="92" />
+      <topright y="0" x="120" />
+    </area>
+    <area side="0" area="near Airstrip">
+      <bottomleft y="-107" x="92" />
+      <topright y="12" x="127" />
+    </area>
+    <area side="0" area="Nod Powerplant">
+      <bottomleft y="-95" x="47" />
+      <topright y="-77" x="78" />
+    </area>
+    <area side="0" area="Nod Powerplant Tunnel Entrance">
+      <bottomleft y="-90" x="26" />
+      <topright y="-69" x="46" />
+    </area>
+    <area side="0" area="near Nod Powerplant">
+      <bottomleft y="-106" x="38" />
+      <topright y="-61" x="94" />
+    </area>
+    <area side="0" area="Hand of Nod">
+      <bottomleft y="-54" x="48" />
+      <topright y="-37" x="82" />
+    </area>
+    <area side="0" area="Nod Obelisk">
+      <bottomleft y="-22" x="37" />
+      <topright y="-11" x="49" />
+    </area>
+    <area side="0" area="near Obelisk">
+      <bottomleft y="-28" x="26" />
+      <topright y="0" x="56" />
+    </area>
+    <area side="0" area="near left Nod Turret">
+      <bottomleft y="-38" x="21" />
+      <topright y="-25" x="34" />
+    </area>
+    <area side="0" area="near Hand of Nod">
+      <bottomleft y="-64" x="30" />
+      <topright y="-29" x="94" />
+    </area>
+    <area side="0" area="near right Nod Turret">
+      <bottomleft y="-18" x="57" />
+      <topright y="-4" x="70" />
+    </area>
+    <area side="0" area="Airstrip Control Tower">
+      <bottomleft y="-18" x="75" />
+      <topright y="0" x="87" />
+    </area>
+    <area side="0" area="near Nod Airstrip Control Tower">
+      <bottomleft y="-33" x="68" />
+      <topright y="11" x="90" />
+    </area>
+    <area side="0" area="Obelisk Tunnel Entrance">
+      <bottomleft y="-35" x="4" />
+      <topright y="-8" x="14" />
+    </area>
+    <area side="0" area="Nod Base Entrance">
+      <bottomleft y="-5" x="9" />
+      <topright y="73" x="68" />
+    </area>
+    <area side="0" area="Nod Base">
+      <bottomleft y="-107" x="7" />
+      <topright y="47" x="165" />
+    </area>
+    <area side="2" area="Hill near Nod Base">
+      <bottomleft y="-45" x="-35" />
+      <topright y="24" x="5" />
+    </area>
+    <area side="0" area="Camping Area near Nod Base">
+      <bottomleft y="-32" x="-83" />
+      <topright y="79" x="14" />
+    </area>
+    <area side="2" area="top of Hill">
+      <bottomleft y="-71" x="-87" />
+      <topright y="0" x="-10" />
+    </area>
+    <area side="0" area="Nod Bunker">
+      <bottomleft y="57" x="-94" />
+      <topright y="64" x="-85" />
+    </area>
+    <area side="2" area="Hill near Gdi Base">
+      <bottomleft y="-93" x="-117" />
+      <topright y="-50" x="-29" />
+    </area>
+    <area side="2" area="Tiberium Field">
+      <bottomleft y="-22" x="-152" />
+      <topright y="57" x="-68" />
+    </area>
+    <area side="2" area="Gdi Bunker">
+      <bottomleft y="-23" x="-142" />
+      <topright y="-15" x="-132" />
+    </area>
+    <area side="2" area="Camping Area near GDI Base">
+      <bottomleft y="-73" x="-152" />
+      <topright y="6" x="-49" />
+    </area>
+    <area side="2" area="Passage Way behind Tiberium Field">
+      <bottomleft y="-13" x="-165" />
+      <topright y="79" x="-68" />
+    </area>
+    <area side="2" area="Foot Passage Way near GDI Base">
+      <bottomleft y="-80" x="-76" />
+      <topright y="-18" x="-30" />
+    </area>
+    <area side="0" area="Central Tunnel">
+      <bottomleft y="-19" x="-89" />
+      <topright y="1" x="-67" />
+    </area>
+    <area side="2" area="Foot Passageway near Nod Base">
+      <bottomleft y="-48" x="-70" />
+      <topright y="-10" x="-10" />
+    </area>
+    <area side="2" area="Nod Tunnel Entrance">
+      <bottomleft y="-22" x="-11" />
+      <topright y="-18" x="-3" />
+    </area>
+    <area side="2" area="Nod Tunnel">
+      <bottomleft y="-45" x="-9" />
+      <topright y="-21" x="-2" />
+    </area>
+    <area side="2" area="Obelisk Tunnel">
+      <bottomleft y="-45" x="-2" />
+      <topright y="-19" x="2" />
+    </area>
+    <area side="2" area="Nod Powerplant Tunnel">
+      <bottomleft y="-87" x="-9" />
+      <topright y="-44" x="26" />
+    </area>
+    <area side="2" area="GDI Powerplant Tunnel">
+      <bottomleft y="-89" x="-31" />
+      <topright y="-80" x="-4" />
+    </area>
+    <area side="1" area="Advanced Guard Tower">
+      <bottomleft y="-145" x="-92" />
+      <topright y="-134" x="-82" />
+    </area>
+    <area side="1" area="near Advanced Guard Tower">
+      <bottomleft y="-152" x="-105" />
+      <topright y="-123" x="-76" />
+    </area>
+    <area side="1" area="Infantry Barracks">
+      <bottomleft y="-152" x="-59" />
+      <topright y="-133" x="-30" />
+    </area>
+    <area side="1" area="near Infantry Barracks">
+      <bottomleft y="-162" x="-73" />
+      <topright y="-123" x="-24" />
+    </area>
+    <area side="1" area="Gdi Powerplant">
+      <bottomleft y="-148" x="-18" />
+      <topright y="-114" x="5" />
+    </area>
+    <area side="1" area="near Gdi Powerplant">
+      <bottomleft y="-153" x="-24" />
+      <topright y="-108" x="19" />
+    </area>
+    <area side="1" area="Gdi Tiberium Refinery">
+      <bottomleft y="-196" x="-8" />
+      <topright y="-171" x="7" />
+    </area>
+    <area side="1" area="near Gdi Tiberium Renfinery">
+      <bottomleft y="-204" x="-22" />
+      <topright y="-156" x="23" />
+    </area>
+    <area side="1" area="Weapons Factory">
+      <bottomleft y="-207" x="-63" />
+      <topright y="-175" x="-33" />
+    </area>
+    <area side="1" area="near Weapons Factory">
+      <bottomleft y="-222" x="-84" />
+      <topright y="-165" x="-21" />
+    </area>
+    <area side="1" area="Infantry Barracks Tunnel Entrance">
+      <bottomleft y="-103" x="-66" />
+      <topright y="-92" x="-47" />
+    </area>
+    <area side="1" area="Gdi Powerplant Tunnel Entrance">
+      <bottomleft y="-105" x="-19" />
+      <topright y="-90" x="-1" />
+    </area>
+    <area side="1" area="Gdi Base Entrance">
+      <bottomleft y="-140" x="-152" />
+      <topright y="-48" x="-124" />
+    </area>
+    <area side="1" area="Gdi Base">
+      <bottomleft y="-222" x="-161" />
+      <topright y="-64" x="16" />
+    </area>
+  </map>
+  <map name="C&amp;C_Complex.mix">
+    <area side="0" area="Nod Tiberium Refinery">
+      <bottomleft y="-30" x="-146" />
+      <topright y="-6" x="-129" />
+    </area>
+    <area side="0" area="near Nod Tiberium Refinery">
+      <bottomleft y="-48" x="-156" />
+      <topright y="29" x="-121" />
+    </area>
+    <area side="0" area="Nod Tiberium Field">
+      <bottomleft y="-32" x="-182" />
+      <topright y="30" x="-155" />
+    </area>
+    <area side="0" area="Hand of Nod">
+      <bottomleft y="-47" x="-114" />
+      <topright y="-16" x="-97" />
+    </area>
+    <area side="0" area="near Hand of Nod">
+      <bottomleft y="-75" x="-121" />
+      <topright y="-5" x="-91" />
+    </area>
+    <area side="0" area="Airstrip Control Tower">
+      <bottomleft y="2" x="-109" />
+      <topright y="21" x="-97" />
+    </area>
+    <area side="0" area="near Airstrip Control Tower">
+      <bottomleft y="-3" x="-115" />
+      <topright y="27" x="-94" />
+    </area>
+    <area side="0" area="Airstrip">
+      <bottomleft y="-58" x="-88" />
+      <topright y="37" x="-62" />
+    </area>
+    <area side="0" area="near Airstrip">
+      <bottomleft y="-71" x="-90" />
+      <topright y="58" x="-56" />
+    </area>
+    <area side="0" area="Nod Tunnel Entrance">
+      <bottomleft y="-71" x="-56" />
+      <topright y="-48" x="-49" />
+    </area>
+    <area side="1" area="Gdi Tunnel Entrance">
+      <bottomleft y="-10" x="45" />
+      <topright y="17" x="54" />
+    </area>
+    <area side="1" area="Weapons Factory">
+      <bottomleft y="-36" x="95" />
+      <topright y="-3" x="123" />
+    </area>
+    <area side="1" area="near Weapons Factory">
+      <bottomleft y="-49" x="84" />
+      <topright y="12" x="130" />
+    </area>
+    <area side="1" area="Gdi Tiberium Refinery">
+      <bottomleft y="-28" x="143" />
+      <topright y="-3" x="160" />
+    </area>
+    <area side="1" area="near Gdi Tiberium Refinery">
+      <bottomleft y="-51" x="130" />
+      <topright y="10" x="169" />
+    </area>
+    <area side="1" area="Gdi Tiberium Field">
+      <bottomleft y="-44" x="175" />
+      <topright y="-6" x="199" />
+    </area>
+    <area side="1" area="Infantry Barracks">
+      <bottomleft y="-86" x="125" />
+      <topright y="-65" x="153" />
+    </area>
+    <area side="1" area="near Infantry Barracks">
+      <bottomleft y="-101" x="106" />
+      <topright y="-55" x="178" />
+    </area>
+  </map>
+</mapareas>
