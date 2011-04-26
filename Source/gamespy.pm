@@ -248,27 +248,26 @@ sub udp_server_receive
 		my $human_addr = inet_ntoa($remote_addr);
 		my $reply;
 
+		# Clean up old entries in the flood protection array
+		while ( (scalar(@flood) > 0) && (@flood[0]{'timestamp'} < time() - 30) )
+			{ shift(@flood); }
+
 		# Check if sender is banned / should ban them
 		my %hash;
-		$hash{ip}        = "$human_addr:$remote_port";
-		$hash{timestamp} = time();
+		$hash{'ip'}        = "$human_addr:$remote_port";
+		$hash{'timestamp'} = time();
 		push (@flood, \%hash);
 		my $count=0;
 
 		foreach (@bans)
 		{
-			if ($_ eq $human_addr)
-			{
-				return;
-			}
+			return if ($_ eq $human_addr);
 		}
 
 		foreach (@flood)
 		{
 			if ( ($_->{ip} eq "$human_addr:$remote_port") && ($_->{timestamp} >= time()-30 ) )
-			{
-				$count++;
-			}
+				{ $count++; }
 		}
 
 		if ($count >= 50)
