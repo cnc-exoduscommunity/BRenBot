@@ -314,25 +314,28 @@ Changelog
  - Improved handling of the midnight alarm trigger
  - Added a new function to handle console output and add timestamps to each message
  - Improved wording & formatting of some console messages
+ - Fix GSA flood protection so that it cleans up old records instead of simply
+     gobbling up more and more memory over time
+ - Added support for SSGM 4.0 resource manager
 
 1.53.7 ( 13 Aug 10 )
  - Added getBrVersion() and getBrBuild() to plugin interface
  - Fixed crash bug when autorec settings in brenbot.cfg were set to 0
  - Replaced Seperate_Donate_From_Gamelog option with a Enable_Gamelog_Loaded_Checks option
- 	which applies to a wider range of functions
+     which applies to a wider range of functions
  - Added isPlayerLoaded() to the plugin interface
  - Added ability to parse paths.ini file to locate logfiles
  - Improved 'Primary IP not found' error message to indicate it is related to Gamespy and
-    to suggest adding the Gamespy_IP line to the config file to resolve the problem
+     to suggest adding the Gamespy_IP line to the config file to resolve the problem
  - Fixed bug where !killme command would not correctly use the kill console command when
-    brenbot.dll is installed on the server
+     brenbot.dll is installed on the server
  - AutoAnnounce can now be disabled by setting the interval to 0 in brenbot.cfg and it's
-    session is created later in the startup procedure
+     session is created later in the startup procedure
  - Plugins events are now executed using eval to prevent them from crashing the bot
  - Added support for SSGM 4.0 TCP logging of SSGMLog, Gamelog and Renlog
  - Added support for SSGM 4.0 banning and kicking system
  - Overhauled the banning and kicking system and merged the kickban and ban commands into
-    a single command with the functionality of the kickban command
+     a single command with the functionality of the kickban command
 
 1.53.6 ( 05 Jul 09 )
  - Fixed crash bug relating to how plugin configuration is loaded
