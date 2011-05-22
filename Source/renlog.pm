@@ -812,7 +812,6 @@ sub ParseLogInput
 
 		# Handle any lines which just get thrown out to the IRC
 		if ( $line =~ m/^\w+ not found/
-			|| $line =~ /^Initializing .+ Mode/
 			|| $line =~ /^Logging on..../
 			|| $line =~ /^Logging onto .+ Server/
 			|| $line =~ /^Failed to log in/
@@ -827,6 +826,7 @@ sub ParseLogInput
 		# might be mistaken for nick stealers!
 		if ( $line =~ /^Initializing .+ Mode/ )
 		{
+			brIRC::ircmsg( "9$line" );	# Show in both channels
 			playerData::clearAllData();
 			RenRem::RenRemCMD ( "sversion" );
 			brconfig::GetAvailableMaps();
