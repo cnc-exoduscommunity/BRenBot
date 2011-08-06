@@ -2559,9 +2559,7 @@ sub killme
 #
 sub setnextmap
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+	my %args = %{$_[ ARG0 ]};
 
 	eval
 	{
@@ -2579,34 +2577,15 @@ sub setnextmap
 			return;
 		}
 
-		my $mapname = $args{arg1};
-		my ($result, $result_mapname) = modules::FindInstalledMap( $mapname );
+		my ($result,$mapname) = modules::SetNextMap ( $args{'arg1'} );
 		if ($result == 1)
-		{
-			my $result = modules::write_configfile( $result_mapname );
-			if ( $result == -1 )
-			{
-				modules::RenRemCMD ( "msg [BR] There are less than 3 seconds left on this map, it is too late to change the next map." );
-			}
-			elsif ($result == 0)
-			{
-				modules::RenRemCMD ( "msg [BR] Error setting next map to $result_mapname." );
-			}
-			else
-			{
-				modules::RenRemCMD( "msg [BR] Setting next map to $result_mapname ..." );
-			}
-
-		}
-		if ($result == 2)
-		{
-			modules::RenRemCMD( "msg [BR] ERROR: $mapname is not unique." );
-		}
-		if ($result == 0)
-		{
-			modules::RenRemCMD( "msg [BR] ERROR: $mapname not found." );
-		}
-		return;
+			{ modules::RenRemCMD( "msg [BR] Setting next map to $mapname ..." ); }
+		elsif ($result == 0)
+			{ modules::RenRemCMD( "msg [BR] ERROR: $args{arg1} not found." ); }
+		elsif ($result == 2)
+			{ modules::RenRemCMD( "msg [BR] ERROR: $args{arg1} is not unique." ); }
+		else
+			{ modules::RenRemCMD ( "msg [BR] Error setting next map to $mapname." ); }
 	}	# End of eval
 	or modules::display_error($@);
 }
@@ -4456,14 +4435,14 @@ sub endVote
 		# Vote nextmap
 		if ( $heap->{voteType} == 1 )
 		{
-			my $return = modules::write_configfile( $voteHeap{'map'} );
-			if ( $return != 1 )
+			my ($result,$mapname) = modules::SetNextMap($voteHeap{'map'});
+			if ( $result != 1 )
 			{
 				modules::RenRemCMD ( "msg [BR] Error setting next map to $voteHeap{map}." );
 			}
 			else
 			{
-				modules::RenRemCMD( "msg [BR] Setting next map to $voteHeap{map}." );
+				modules::RenRemCMD( "msg [BR] Setting next map to $mapname." );
 			}
 		}
 

@@ -897,21 +897,44 @@ sub ParseLogInput
 			modules::RenRemCMD ( "mapnum" );
 
 			# Restore original map rotation if someone used !setnextmap during the last game
-			if ( brdatabase::get_global('nextmap_changed') )
+			my $nextmapChanged = brdatabase::get_global('nextmap_changed');
+			if ( $nextmapChanged )
 			{
-				modules::console_output ( "Switching back to original map rotation.." );
+				modules::console_output ( "Restoring original map rotation..." );
+				
+				if ( $nextmapChanged == 1 )
+				{
+					my $backup;
 
-				my $backup;
+					open (FDSfile, "svrcfg_cnc.ini.old") or modules::console_output ( "Error reading backup map rotation file!" );
+					while (<FDSfile>) { $backup .= $_; }
+					close (FDSfile);
 
-				open (FDSfile, "svrcfg_cnc.ini.old") or modules::console_output ( "Error reading backup map rotation file!" );
-				while (<FDSfile>) { $backup .= $_; }
-				close (FDSfile);
+					open (FDSfile, ">$brconfig::config_fdsconfigfile") or modules::console_output ( "Error writing map configuration file!" );
+					print FDSfile $backup;
+					close (FDSfile);
 
-				open (FDSfile, ">$brconfig::config_fdsconfigfile") or modules::console_output ( "Error writing map configuration file!" );
-				print FDSfile $backup;
-				close (FDSfile);
+					undef $backup;
+				}
+				elsif ( $nextmapChanged == 4 )
+				{
+					# Read the ID and mapname that were changed
+					my $mapid = brdatabase::get_global('nextmap_changed_id');
+					my $mapname = brdatabase::get_global('nextmap_changed_mapname');
+					
+					modules::console_output ( "Setting map at index $mapid to $mapname." );
+					RenRem::RenRemCMD ( "mlistc $mapid $mapname" );
 
-				undef $backup;
+					# Update the rotation
+					foreach (@brconfig::maplist)
+					{
+						if ( $_->{'id'} == $mapid )
+						{
+							$_->{'mapname'} = $mapname;
+							last;
+						}
+					}
+				}
 				brdatabase::set_global('nextmap_changed', '0')
 			}
 		}

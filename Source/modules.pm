@@ -1127,19 +1127,79 @@ sub FindInstalledMap
 
 
 # Sets the next map in the rotation to the specified map
-sub write_configfile
+#
+# \param[in] $mapname
+#   Full or unique partial name of the map to set
+#
+# \return
+#   Array of ($result,$mapname) where $result which will be one of 0 (map not found), 1 (success),
+#   2 (multiple possible non-exact map matches) or 3 (failed to set map) and $mapname will be the
+#   full name of the map that was set if successful or undef otherwise
+sub SetNextMap
 {
-	my $mapname  = shift;
-	my $config;
+	# Find the mapname
+	my($findresult,$mapname) = FindInstalledMap(shift);
+	if ( $findresult != 1 ) { return ($findresult,undef); }
 
-	open ( FDSfile, $brconfig::config_fdsconfigfile );
-	while ( <FDSfile> )
+	# For SSGM <= 4.0 we need to re-write the FDS config file with the new rotation
+	elsif ( $brconfig::ssgm_version < 4 )
 	{
-		$config .= $_;
+		my $result = SetNextMap_WriteNewConfig($mapname);
+		if ( $result == 0 ) { return (3,$mapname); }
 	}
+
+	else
+	{
+		# Get the index of the next map in the rotation
+		my $nextmap = GetNextMap();
+		return (3,$mapname) if (!$nextmap);
+
+		# Send a RenRemCMD to instruct the Resource Manager to change the next map
+		modules::console_output ( "Setting map at index $nextmap->{id} to $mapname." );
+		RenRemCMD ( "mlistc $nextmap->{id} $mapname" );
+
+		# Unless we have already recorded the fact the nextmap has been changed during this map set
+		# the relevant flag in the database (with the value 4 instead of 1 to indicate a Resource
+		# Manager update) and store the details of the map that was replaced so we can restore it
+		if ( !brdatabase::get_global( 'nextmap_changed' ) )
+		{
+			print "DEBUG: Recording map change details\n";
+			brdatabase::set_global( 'nextmap_changed', '4' );
+
+			# Record the details of the map we replaced
+			brdatabase::set_global( 'nextmap_changed_id', $nextmap->{'id'} );
+			brdatabase::set_global( 'nextmap_changed_mapname', $nextmap->{'mapname'} );
+		}
+
+		# Update the rotation
+		foreach (@brconfig::maplist)
+		{
+			if ( $_->{'id'} == $nextmap->{'id'} )
+			{
+				$_->{'mapname'} = $mapname;
+				last;
+			}
+		}
+	}
+	
+	# Report success
+	return (1,$mapname);
+}
+
+
+# Sets the next map in the rotation to the specified map
+sub SetNextMap_WriteNewConfig
+{
+	my $mapname = shift;
+
+	# Read in the existing contents of the config file
+	my $config;
+	open ( FDSfile, $brconfig::config_fdsconfigfile );
+	while ( <FDSfile> ) { $config .= $_; }
 	close ( FDSfile );
 
-	my $nextmap = GetNextMap( serverStatus::getMap() );
+	# Get the name and ID of the current next map
+	my $nextmap = GetNextMap();
 	return 0 if (!$nextmap);
 
 	# If we have already changed the next map once we must NOT backup the FDS config again
@@ -1167,6 +1227,8 @@ sub write_configfile
 
 	# Read the new map list into the brconfig maplist
 	brconfig::readServerSettings();
+
+	return 1;
 }
 
 
@@ -1245,7 +1307,7 @@ sub GetInstalledMaps
 		my $map2 = ($i+1 < scalar(@brconfig::installed_maps)) ? $brconfig::installed_maps[$i+1] : "";
 		my $map3 = ($i+2 < scalar(@brconfig::installed_maps)) ? $brconfig::installed_maps[$i+2] : "";
 		my $map4 = ($i+3 < scalar(@brconfig::installed_maps)) ? $brconfig::installed_maps[$i+3] : "";
-	
+
 		push (@array, "$map1 $map2 $map3 $map4");
 	}
 	return @array;
