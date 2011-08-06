@@ -372,8 +372,8 @@ sub ReadConfig
 sub readServerSettings
 {
 	my $ServerConfigFile;
-	my $ttConfigFile
 
+	# Clear out the maplist (rotation) prior to repopulating it
 	@maplist = ();
 
 
@@ -454,6 +454,7 @@ sub readServerSettings
 	# If using SSGM 4.0 then read the map rotation from the tt.cfg file
 	if ( $ssgm_version >= 4 )
 	{
+		my $ttConfigFile;
 		my $mapRotationIdx = -1;
 
 		open ( ttConfigFile, $config_fdsconfigfile );

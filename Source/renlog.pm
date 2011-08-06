@@ -993,7 +993,7 @@ sub parse_line
 sub handleInvite
 {
 	my $pager	= shift;
-	my $pagems	= shift;
+	my $pagemsg	= shift;
 
 	if ( lc($pagemsg) eq "letmein" )
 	{

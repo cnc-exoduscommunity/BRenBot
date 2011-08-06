@@ -249,7 +249,7 @@ sub udp_server_receive
 		my $reply;
 
 		# Clean up old entries in the flood protection array
-		while ( (scalar(@flood) > 0) && (@flood[0]{'timestamp'} < time() - 30) )
+		while ( (scalar(@flood) > 0) && ($flood[0]{'timestamp'} < (time() - 30)) )
 			{ shift(@flood); }
 
 		# Check if sender is banned / should ban them

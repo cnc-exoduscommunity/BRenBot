@@ -4243,7 +4243,7 @@ sub startVote
 	my %voteHeap;
 
 	# Pre-process map votes
-	if ( $args{arg1} eq "map" || $args{arg1} eq "nextmap" )
+	if ( $args{'arg1'} eq "map" || $args{'arg1'} eq "nextmap" )
 	{
 		$voteType = 1;
 
@@ -4255,14 +4255,14 @@ sub startVote
 		}
 
 		# Check the next map has been specified
-		if ( !$args{arg2} )
+		if ( !$args{'arg2'} )
 		{
 			modules::RenRemCMD( "msg [BR] Vote Map Error: You must specify the map to vote for. Vote Map Syntax: !vote map mapname" );
 			return;
 		}
 
 		# Now check the map exists in the data folder
-		my ($result, $vote_mapname) = modules::FindInstalledMap( $mapname );
+		my ($result, $vote_mapname) = modules::FindInstalledMap( $args{'arg2'} );
 
 		if ( $result == 2 )
 		{

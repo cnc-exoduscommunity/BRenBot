@@ -620,12 +620,12 @@ sub auth
 
 	if ( $message =~ m/^\!auth\s(.+)\s(\S+)$/ )
 	{
-		my $return = brAuth::AuthenticateByPassword( $1, $2 );
-		if ( $return == 1 )
-			ircpm ( $sender, "Authentification granted." );
-		elsif ( $result == 4 )
+		my $authResult = brAuth::AuthenticateByPassword( $1, $2 );
+		if ( $authResult == 1 )
+			{ ircpm ( $sender, "Authentification granted." ); }
+		elsif ( $authResult == 4 )
 			{ ircpm ( $sender, "You are not on the server. You can\'t authenticate yourself." ); }
-		elsif ( $result != 2 )	# Ignore re-authentication attempts
+		elsif ( $authResult != 2 )	# Ignore re-authentication attempts
 			{ ircpm ( $sender, "Access denied, nickname does not exist or password is invalid." ); }
 	}
 	else

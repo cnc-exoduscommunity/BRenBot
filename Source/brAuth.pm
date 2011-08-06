@@ -122,7 +122,7 @@ sub Authenticate
 	if ( $result != 1 ) { return 0; }
 
 	# Already authenticated or not registered? Not much point in continuing then
-	$auth_state = GetAuthState($player{'id'});
+	my $auth_state = GetAuthState($player{'id'});
 	if ( $auth_state != 0 )
 		{ return $auth_state+1; }
 		
