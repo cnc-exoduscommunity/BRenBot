@@ -38,7 +38,7 @@ sub start
 				# Attempt to connect to the SSGM log server
 				attempt_connect => sub
 				{
-					modules::console_output ( 'Attempting to connect to SSGM Log Server on '.$_[HEAP]->{'ip'}.':'.$_[HEAP]->{'port'}.'... ', 1 );
+					modules::console_output ( 'Connecting to SSGM Log Server on '.$_[HEAP]->{'ip'}.':'.$_[HEAP]->{'port'}.'... ', 1 );
 	 				$_[HEAP]->{'socket'} = IO::Socket::INET->new(
 	 					PeerAddr => $_[HEAP]->{'ip'},
 	 					PeerPort => $_[HEAP]->{'port'},
