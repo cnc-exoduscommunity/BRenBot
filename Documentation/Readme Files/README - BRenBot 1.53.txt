@@ -317,6 +317,8 @@ Changelog
  - Fix GSA flood protection so that it cleans up old records instead of simply
      gobbling up more and more memory over time
  - Added support for SSGM 4.0 resource manager
+ - Reworked parts of the authentication system to be more centralised, rather than having duplicate
+     code spread out across several modules
 
 1.53.7 ( 13 Aug 10 )
  - Added getBrVersion() and getBrBuild() to plugin interface

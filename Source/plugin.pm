@@ -446,45 +446,47 @@ sub display_plugin_error
 ##
 #
 
-# Should be compatible with plugins using old 1.50 interface
+# \deprecated Use getPlayerData instead
 sub PlayerInGame
 {
 	my ( $result, %player ) = playerData::getPlayerData($_[0]);
 	return ( $result, "", \%player );
 }
 
+# Check if a player is ingame and get their data hash
+#
+# \param[in] $player
+#   Name or ID of player to lookup
+#
+# \return
+#   Array of ($result,$playerData) where $result is either 0 (not found), 1 (found) or 2 (multiple
+#   non-exact matches found) and $playerData is either a hash of player data (if $result is 1) or an
+#   empty list (any other value of $result)
 sub getPlayerData
 {
 	my ( $result, %player ) = playerData::getPlayerData($_[0]);
 	return ( $result, %player );
 }
 
-sub RenRemCMD
-{
-	modules::RenRemCMD($_[0]);
-}
+# Send a RenRem command to the FDS
+#
+# \param[in] $command
+#   Command line to send to the FDS
+sub RenRemCMD { modules::RenRemCMD($_[0]); }
 
+# Send a RenRem command to the FDS after a delay
+#
+# \param[in] $command
+#   Command line to send to the FDS
+# \param[in] $delay
+#   Delay, in seconds, before the command should be sent
 sub RenRemCMDtimed { modules::RenRemCMDtimed(@_); }
 
-# For backwards compatibility simulate the player being on RG
-sub is_on_renguard
-{
-	return 1;
-}
+# \deprecated RenGuard is no longer supported
+sub is_on_renguard { return 1; }
 
-# Retain backwards compatibility with plugins
-sub get_bhs_version
-{
-	my $name = shift;
-
-	my ($result, %player) = playerData::getPlayerData($name);
-	if ($result == 1 )
-	{
-		return $player{"bhsVersion"};
-	}
-	return undef;
-
-}
+# \deprecated Use getPlayerData and use the value of the bhsVersion key within their data hash
+sub get_bhs_version { return playerData::getKeyValue ( shift, "bhsVersion"); }
 
 sub get_playerlist
 {
@@ -646,7 +648,10 @@ sub getBrBuild { return main::BR_BUILD; }
 sub isPlayerLoaded { return gamelog::isPlayerLoaded(@_); }
 
 
-# Prints a message to the console with the timestamp of the message
+# Print a timestamped message to the BRenBot console window
+#
+# \param[in] $message
+#   Message to be written to the console window
 sub console_output { return modules::console_output(@_); }
 
 
