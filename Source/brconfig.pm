@@ -374,8 +374,7 @@ sub readServerSettings
 	my $ServerConfigFile;
 	my $ttConfigFile
 
-	# svrcfg_cnc.ini map definitions are only used prior to SSGM 4.0
-	if ( $ssgm_version < 4 ) { @maplist = (); }
+	@maplist = ();
 
 
 	# Set defaults
@@ -622,7 +621,7 @@ sub read_ssgm_settings
 		modules::console_output ( "[Config] Unable to find any of ssgm.ini, ssaow.ini or ssapb.ini! Some functions may not work." );
 		return;
 	}
-	
+
 	modules::console_output ( "[Config] Detected SSGM version $ssgm_version\n" );
 
 

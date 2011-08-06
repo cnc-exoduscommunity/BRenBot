@@ -458,7 +458,7 @@ sub ParseLogInput
 		else
 		{
 			print "[Renlog] DEBUG: Got map $line\n";
-			push (@maplist, $line);
+			push (@brconfig::installedMaps, $line);
 		}
 	}
 
@@ -543,48 +543,36 @@ sub ParseLogInput
 		{
 			my $pager = $1;
 			my $pass  = $2;
-
-			my ( $result, %player ) = playerData::getPlayerData($pager);
-			if ( $result == 1 )
-			{
-				if ($pass)
-				{
-					my $authed = brAuth::is_user_authed($pager);
-
-					if ($authed == 0)
-					{
-						my $return = modules::is_valid_user($player{'name'},$pass);
-						if ($return == 1)
-						{
-							modules::RenRemCMD("page $pager [BR] Authentication was successful!");
-							brIRC::ircmsg( "[BR] Authentication for $pager was successful.", "A" );
-							brAuth::change_protected_status( $player{'name'} );
-							main::show_mod_status( $player{'name'} );
-						}
-						else
-						{
-							modules::RenRemCMD( "page $pager [BR] Wrong password!" );
-							brIRC::ircmsg( "[BR] $pager gave an invalid password.", "A" );
-						}
-					}
-					elsif ($authed == 1)
-					{
-						modules::RenRemCMD( "page $pager [BR] You are already authenticated." );
-					}
-					elsif ($authed == 2)
-					{
-						modules::RenRemCMD( "page $pager [BR] Your nickname is not registered. Register it first." );
-					}
-				}
-				else
-				{
-					modules::RenRemCMD( "page $pager [BR] Usage: !auth <pass>" );
-				}
-			}
+			
+			if ( !$pass )
+				{ modules::RenRemCMD( "page $pager [BR] Usage: !auth <pass>" ); }
+			
 			else
 			{
-				brIRC::ircmsg( "9[Page] $pager tried to !auth from outside the game!", "A" );
-				modules::RenRemCMD( "page $pager [BR] $pager your auth-exploit has been logged and will be reviewed." );
+				my $authResult = brAuth::AuthenticateByPassword($pager,$pass);
+				if ( $authResult == 1 )
+				{
+					modules::RenRemCMD("page $pager [BR] Authentication was successful!");
+					brIRC::ircmsg( "[BR] Authentication for $pager was successful.", "A" );
+				}
+				elsif ( $authResult == 0 )
+				{
+					modules::RenRemCMD( "page $pager [BR] Wrong password!" );
+					brIRC::ircmsg( "[BR] $pager gave an invalid password.", "A" );
+				}
+				elsif ( $authResult == 2 )
+				{
+					modules::RenRemCMD( "page $pager [BR] You are already authenticated." );
+				}
+				elsif ( $authResult == 3 )
+				{
+					modules::RenRemCMD( "page $pager [BR] Your nickname is not registered. Register it first." );
+				}
+				elsif ( $authResult == 4 )
+				{
+					brIRC::ircmsg( "9[Page] $pager tried to !auth from outside the game!", "A" );
+					modules::RenRemCMD( "page $pager [BR] $pager your auth-exploit has been logged and will be reviewed." );
+				}
 			}
 
 			$line = "";

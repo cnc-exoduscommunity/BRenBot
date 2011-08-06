@@ -16,32 +16,29 @@ use brIRC;
 
 
 
-# Sets the authentication state of the given user to true
+# Sets the authentication state of the given player
 #
-# PARAM		String		Player Name
-#
-# RETURN NULL
-sub change_protected_status
+# \param[in] $player
+#   Name or ID of the player to set the authentication state of
+# \param[in] $state
+#   New authentication state
+sub SetAuthState
 {
-	playerData::setKeyValue ( shift, "isAuthed", 1 );
+	playerData::setKeyValue ( shift, "isAuthed", shift );
 }
 
 
-# Checks if a user has been authorised
+# Get the authentication state of the given player
 #
-# PARAM		String		Player Name
+# \param[in] $player
+#   Name or ID of the player to set the authentication state of
 #
-# RETURN $return_value
-# 0 = Not Authed
-# 1 = Authed
-# 2 = Not a protected user
-sub is_user_authed
+# \return
+#   Authentication state of the player, which is either 0 (not authenticated), 1 (authenticated) or
+#   2 (not registered for authentication)
+sub GetAuthState
 {
-	my $nickname = shift;
-
-	#print "auth check on $nickname...\n";
-
-	my ( $result, %player ) = playerData::getPlayerData ( $nickname );
+	my ( $result, %player ) = playerData::getPlayerData ( shift );
 	if ( $result != 1 ) { return 0; }
 
 	if ( defined ( $player{"isAuthed"} ) )
@@ -50,17 +47,91 @@ sub is_user_authed
 		return 0;
 	}
 
-	elsif ( modules::user_exists( $nickname ) )
+	# If the isAuthed attribute does not exist then we need to create it
+	elsif ( modules::user_exists( $player{'name'} ) )
 	{
 		# If the user exists but is not setup in protected nicks
 		# add them and return 0 -> not authed.
-		playerData::setKeyValue ( $nickname, "isAuthed", 0 );
-		warn_protected_nickname ( $nickname );		# Start warning them to auth
+		playerData::setKeyValue ( $player{'name'}, "isAuthed", 0 );
+		warn_protected_nickname ( $player{'name'} );		# Start warning them to auth
 		return 0;
 	}
 
 	return 2;
 }
+
+
+# Attempts to authenticate a player using the given password
+#
+# \param[in] $player
+#   Name or ID of the player attempting to authenticate
+# \param[in] $password
+#   The password to try and authenticate against
+#
+# \return
+#   Result of the authentication attempt, which is either 0 (failure, wrong password), 1 (success),
+#   2 (already authenticated), 3 (not registered for authentication) or 4 (not found in playerlist)
+sub AuthenticateByPassword
+{
+	my ( $result, %player ) = playerData::getPlayerData ( shift );
+	if ( $result != 1 ) { return 4; }
+		
+	# Check password is correct
+	if ( !CheckAuthPassword($player{'name'}, shift) )
+		{ return 0; }
+		
+	return Authenticate($player{'id'});
+}
+
+
+# Checks the given nickname and password combination is valid - this can be used on players who are
+# not currently ingame to allow aliases to be created etc
+#
+# \param[in] $player
+#   Name of the player
+# \param[in] $password
+#   The password to try and authenticate against
+#
+# \return
+#   1 if successful, 0 otherwise
+sub CheckAuthPassword
+{
+	my $name = shift;
+	my $password = md5_hex(shift);
+	
+	# Make name safe for the database
+	$name =~ s/'/''/g;
+	
+	# Attempt to authenticate
+	my @array = brdatabase::execute_query( "SELECT * FROM auth_users WHERE LOWER(name) = '$name'" );
+	return ( $array[0]->{'password'} eq $password ) ? 1 : 0;
+}
+
+
+# Authenticates the specified player
+#
+# \param[in]
+#   Name or ID of the player to authenticate
+#
+# \return
+#   Result of the authentication attempt, which is either 0 (not found in playerlist), 1 (success),
+#   2 (already authenticated) or 3 (not registered for authentication)
+sub Authenticate
+{
+	my ( $result, %player ) = playerData::getPlayerData ( shift );
+	if ( $result != 1 ) { return 0; }
+
+	# Already authenticated or not registered? Not much point in continuing then
+	$auth_state = GetAuthState($player{'id'});
+	if ( $auth_state != 0 )
+		{ return $auth_state+1; }
+		
+	# Process Authentication
+	SetAuthState( $player{'id'}, 1 );
+	main::ShowModJoinMessage( $player{'name'} );
+	return 1;
+}
+
 
 
 # Starts the 60 second countdown in which a user must auth, or they will be kicked.

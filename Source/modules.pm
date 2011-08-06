@@ -88,17 +88,6 @@ sub RenRemCMDtimed
 	RenRem::RenRemCMDtimed(@_);
 }
 
-sub is_valid_user
-{
-	my $name = lc(shift);		$name =~ s/'/''/g;
-	my $password = md5_hex(shift);
-
-	my @array = brdatabase::execute_query( "SELECT * FROM auth_users WHERE LOWER(name) = '$name'" );
-	my $db_password = $array[0]->{'password'};
-	return 1 if ( $db_password eq $password );
-	return 0;
-}
-
 
 # Checks if the name specified is in the users table
 sub user_exists
@@ -874,13 +863,12 @@ sub get_bandwidth
 # Returns true if the user is a half mod, false otherwise
 sub IsHalfMod
 {
-	my ($name)=@_;
-	$name=lc($name);
+	my ($name)=lc(@_);
 
 	if ( $brconfig::halfMods{$name} )
 	{
 		# Check they are authed
-		my $authStatus = brAuth::is_user_authed( $name );
+		my $authStatus = brAuth::GetAuthState( $name );
 
 		if ( $authStatus == 1 || ( $brconfig::config_moderators_force_auth == 0 && $authStatus == 2 ) )
 		{ return 1; }
@@ -892,13 +880,12 @@ sub IsHalfMod
 # Returns true if the user is a full mod, false otherwise
 sub IsFullMod
 {
-	my ($name)=@_;
-	$name=lc($name);
+	my ($name)=lc(@_);
 
 	if ( $brconfig::fullMods{$name} )
 	{
 		# Check they are authed
-		my $authStatus = brAuth::is_user_authed( $name );
+		my $authStatus = brAuth::GetAuthState( $name );
 
 		if ( $authStatus == 1 || ( $brconfig::config_moderators_force_auth == 0 && $authStatus == 2 ) )
 		{ return 1; }
@@ -910,13 +897,12 @@ sub IsFullMod
 # Returns true if the user is an admin, false otherwise
 sub IsAdmin
 {
-	my ($name)=@_;
-	$name=lc($name);
+	my ($name)=lc(@_);
 
 	if ( $brconfig::admins{$name} )
 	{
 		# Check they are authed
-		my $authStatus = brAuth::is_user_authed( $name );
+		my $authStatus = brAuth::GetAuthState( $name );
 
 		if ( $authStatus == 1 || ( $brconfig::config_moderators_force_auth == 0 && $authStatus == 2 ) )
 		{ return 1; }
@@ -933,7 +919,7 @@ sub IsTempMod
 	if ( $main::tempMods{$name} )
 	{
 		# Check they are authed
-		if ( brAuth::is_user_authed($name) != 0 )
+		if ( brAuth::GetAuthState($name) != 0 )
 		{ return 1; }
 	}
 
@@ -1088,54 +1074,55 @@ sub display_error
 	my $error = shift;
 	return if (!$error);
 
-	brIRC::ircmsg ( "Runtime Error: $error" );
+	brIRC::ircmsg ( "Runtime Error: $error", "A" );
 	modules::console_output ( "Runtime Error: $error" );
-
-# 	POE::Session->create
-# 	( inline_states =>
-# 		{ _start => sub {
-# 			$_[KERNEL]->post( IRC => privmsg => CHANNEL,  "Runtime Error: $error");
-
-# 			}
-# 		}
-# 	);
-
 }
 
-sub match_map
+# Searches the list of installed maps to determine if a specified map is installed. Under SSGM >=
+# 4.0 the 'installed' maps are those returned by the listgamedefs console command.
+#
+# \param[in] $mapname
+#   Name or partial name of the map to search for
+#
+# \return
+#   List of ($result,$mapname) where $result indicates the success or failure of the search and, if
+#   successful, $mapname contains the full name of the map. Possible values of $result are 0 (not
+#   found), 1 (success) or 2 (multiple possible matches, none exact).
+sub FindInstalledMap
 {
-	my $mapname = $_[0];
-
-	my $matched=0;
+	my $search = lc($_[0]);
+	my $result = 0;
+	my $mapname;
 
 	foreach (@brconfig::installed_maps)
 	{
-		if ($_ =~ m/(.*?)$mapname(.+)/gi)
+		if ($_ =~ m/(.*?)$search(.+)/gi)
 		{
-			$matched++;
-#				print "DEBUG: matched map: $_\n";
-		}
-	}
-	if ($matched > 1)
-	{
-#		print "DEBUG: too many matches. not unique\n";
-		return (undef, 2);
-	}
-	else
-	{
-		foreach (@brconfig::installed_maps)
-		{
+			# If this is an exact match then this is our result
+			if ( $search eq lc($_) )
+				{ return (1,$_); }
 
-			if ($_ =~ m/(.*)$mapname(.*)/i)
+			# Not an exact match, if we have not found any previous match then this is a candiate
+			# for our result
+			if ( $result == 0 )
 			{
+				$result = 1;
+				$mapname = $_;
+			}
 
-				my $result_map = $_;
-				return ("$result_map",1);
+			# Otherwise we already have a candidate result so there must be multiple possible
+			# matches, set result to 2. NB: Don't simple return here as we could yet find an exact
+			# match futher on in the installed maps list
+			else
+			{
+				$result = 2;
+				undef $mapname;
 			}
 		}
-	} # end of else
-	return (undef, 3) if ($matched == 0);
+	}
 
+	# Return result
+	return ($result,$mapname);
 }
 
 

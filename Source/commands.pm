@@ -2580,7 +2580,7 @@ sub setnextmap
 		}
 
 		my $mapname = $args{arg1};
-		my ($result_mapname, $result) = modules::match_map( $mapname );
+		my ($result, $result_mapname) = modules::FindInstalledMap( $mapname );
 		if ($result == 1)
 		{
 			my $result = modules::write_configfile( $result_mapname );
@@ -2602,7 +2602,7 @@ sub setnextmap
 		{
 			modules::RenRemCMD( "msg [BR] ERROR: $mapname is not unique." );
 		}
-		if ($result == 3)
+		if ($result == 0)
 		{
 			modules::RenRemCMD( "msg [BR] ERROR: $mapname not found." );
 		}
@@ -2891,17 +2891,7 @@ sub auth
 			return;
 		}
 
-		my ($result, %player) = playerData::getPlayerData($args{arg1});
-		if ($result == 1)
-		{
-			# Only allow auth once
-			if ( !brAuth::is_user_authed( $player{'name'}) )
-			{
-				brAuth::change_protected_status( $player{'name'} );
-				main::show_mod_status( $player{'name'} );
-			}
-		}
-		return;
+		Authenticate ( $args{'arg1'} );
 	}
 	or modules::display_error($@);
 }
@@ -4272,14 +4262,14 @@ sub startVote
 		}
 
 		# Now check the map exists in the data folder
-		my ( $vote_mapname, $result ) = modules::match_map( $args{arg2} );
+		my ($result, $vote_mapname) = modules::FindInstalledMap( $mapname );
 
 		if ( $result == 2 )
 		{
 			modules::RenRemCMD( "msg [BR] Vote Map Error: $args{arg2} is not unique, please be more specific." );
 			return;
 		}
-		elsif ( $result == 3 )
+		elsif ( $result == 0 )
 		{
 			modules::RenRemCMD( "msg [BR] Vote Map Error: $args{arg2} was not found in the servers data folder." );
 			return;

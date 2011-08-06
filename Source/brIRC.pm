@@ -620,29 +620,13 @@ sub auth
 
 	if ( $message =~ m/^\!auth\s(.+)\s(\S+)$/ )
 	{
-		my $nick = $1;
-		my $pass = $2;
-
-		my ( $result, %player ) = playerData::getPlayerData( $nick );
-		if ( $result == 1 )
-		{
-			my $return = modules::is_valid_user( $player{'name'}, $pass );
-			if ( $return == 1 )
-			{
-				# Only allow auth once
-				if ( !brAuth::is_user_authed( $player{'name'} ) )
-				{
-					ircpm ( $sender, "Authentification granted." );
-					brAuth::change_protected_status( $player{'name'} );
-					main::show_mod_status( $player{'name'} );
-				}
-			}
-			else
-				{ ircpm ( $sender, "Access denied, nickname does not exist or password is invalid." ); }
-
-		}
-		else
+		my $return = brAuth::AuthenticateByPassword( $1, $2 );
+		if ( $return == 1 )
+			ircpm ( $sender, "Authentification granted." );
+		elsif ( $result == 4 )
 			{ ircpm ( $sender, "You are not on the server. You can\'t authenticate yourself." ); }
+		elsif ( $result != 2 )	# Ignore re-authentication attempts
+			{ ircpm ( $sender, "Access denied, nickname does not exist or password is invalid." ); }
 	}
 	else
 		{ ircpm ( $sender, "Usage: !auth <playername> <password>" ); }
@@ -659,8 +643,7 @@ sub alias
 		my $pass = $2;
 		my $newnick = $3;
 
-		my $return = modules::is_valid_user( $nick, $pass );
-		if ($return == 1)
+		if ( brAuth::CheckAuthPassword( $nick, $pass ) )
 		{
 			ircpm ( $sender, "Added Alias $newnick." );
 			modules::add_user( $newnick, $pass );
@@ -683,8 +666,7 @@ sub delregister
 		my $nick = $1;
 		my $pass = $2;
 
-		my $return = modules::is_valid_user( $nick, $pass );
-		if ( $return == 1 )
+		if ( brAuth::CheckAuthPassword( $nick, $pass ) )
 		{
 			modules::del_user( $nick );
 			ircpm ( $sender, "Registration of the name $nick has been deleted." );

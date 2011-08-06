@@ -24,7 +24,7 @@ use strict;
 # Define these before loading BRenBot modules as they may be used inside those modules
 use constant BR_VERSION => 1.53;
 use constant BR_BUILD => 8;
-use constant BR_COPYRIGHT_YEAR => "2003-2010";
+use constant BR_COPYRIGHT_YEAR => "2003-2011";
 
 # Load BRenBot modules
 use modules;
@@ -87,9 +87,9 @@ sub joinstuff
 				{ modules::show_recommendations( $name ); }
 
 			# If they are authed, or not protected, show their mod status
-			my $authed = brAuth::is_user_authed ( $player{name} );
+			my $authed = brAuth::GetAuthState ( $player{name} );
 			if ( $authed == 1 || $authed == 2 && !($brconfig::config_moderators_force_auth) )
-				{ show_mod_status( $player{'name'} ); }
+				{ ShowModJoinMessage( $player{'name'} ); }
 
 			# BHS.dll version checking stuff
 			if ( modules::get_module( "bhs" ) )
@@ -172,8 +172,10 @@ sub joinstuff
 } # end of joinstuff
 
 
-# Shows the mod status of a player, only called once they have authed.
-sub show_mod_status
+# Shows an ingame message stating the moderator level of a given player. This is called once a
+# player has authenticated themselves with the server. If the show_mod_join_message configuration
+# setting is disabled no message will be shown.
+sub ShowModJoinMessage
 {
 	return if ( $brconfig::show_mod_join_message == 0 );
 	my $name = shift;

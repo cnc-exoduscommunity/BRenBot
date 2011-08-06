@@ -13,7 +13,6 @@ our $mostkd;
 
 sub DisplayGameResults
 {
-	my ( $session, $heap ) = @_[ SESSION, HEAP ];
   	my $kernel = $_[KERNEL];
 
 	my $map = serverStatus::getLastMap();
