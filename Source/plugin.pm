@@ -440,18 +440,27 @@ sub display_plugin_error
 
 
 
-#
-##
-### Functions for use inside plugins
-##
-#
 
-# \deprecated Use getPlayerData instead
-sub PlayerInGame
-{
-	my ( $result, %player ) = playerData::getPlayerData($_[0]);
-	return ( $result, "", \%player );
-}
+
+
+
+
+##################################################
+####
+## API functions for plugins
+####
+##################################################
+
+#########################
+## Player functions
+#########################
+
+# Get the data hash of each player currently in the server
+#
+# \return
+#   Hash of player data hashes indexed by their player ID
+sub get_playerlist { return playerData::getPlayerList(); }
+
 
 # Check if a player is ingame and get their data hash
 #
@@ -462,17 +471,38 @@ sub PlayerInGame
 #   Array of ($result,$playerData) where $result is either 0 (not found), 1 (found) or 2 (multiple
 #   non-exact matches found) and $playerData is either a hash of player data (if $result is 1) or an
 #   empty list (any other value of $result)
-sub getPlayerData
-{
-	my ( $result, %player ) = playerData::getPlayerData($_[0]);
-	return ( $result, %player );
-}
+sub getPlayerData { return playerData::getPlayerData($_[0]); }
+
+
+# pagePlayer function for plugins
+sub pagePlayer { return modules::pagePlayer ( @_ ); }
+
+
+# Check moderator status of players, returns 1 for true, 0 for false.
+# Parameters: playername
+sub isTempMod { return modules::isTempMod(@_); }
+sub isHalfMod { return modules::isHalfMod(@_); }
+sub isFullMod { return modules::isFullMod(@_); }
+sub isAdmin { return modules::isAdmin(@_); }
+
+
+# Check if a given player has finished loading the map, returns 1 for 1, 0 for false.
+# Parameters: playername
+sub isPlayerLoaded { return gamelog::isPlayerLoaded(@_); }
+
+
+
+
+#########################
+## Server functions
+#########################
 
 # Send a RenRem command to the FDS
 #
 # \param[in] $command
 #   Command line to send to the FDS
 sub RenRemCMD { modules::RenRemCMD($_[0]); }
+
 
 # Send a RenRem command to the FDS after a delay
 #
@@ -482,22 +512,93 @@ sub RenRemCMD { modules::RenRemCMD($_[0]); }
 #   Delay, in seconds, before the command should be sent
 sub RenRemCMDtimed { modules::RenRemCMDtimed(@_); }
 
-# \deprecated RenGuard is no longer supported
-sub is_on_renguard { return 1; }
 
-# \deprecated Use getPlayerData and use the value of the bhsVersion key within their data hash
-sub get_bhs_version { return playerData::getKeyValue ( shift, "bhsVersion"); }
+# Allows plugins to get the game status
+sub getGameStatus { return serverStatus::getGameStatus(); }
 
-sub get_playerlist
+
+# Server message function for plugins - shows a public chat message
+# for all players in the server
+sub serverMsg
 {
-	return playerData::getPlayerList();
+	my $msg = shift;
+	RenRemCMD ( "msg $msg" );
 }
 
-sub execute_query
-{
-	return brdatabase::execute_query( $_[0], $_[1] );
-}
 
+
+
+#########################
+## Database functions
+#########################
+
+# Execute a query on the brenbot.dat SQLite3 database
+#
+# \param[in] $query
+#   SQL statement to be executed on the database
+# \param[in] $skipResults
+#   Flag to indicate the results of the query should not be returned. Set this to 0 or leave it
+#   undefined to get the query resutls
+#
+# \return
+#   Hash of database result rows, each containing a hash of values for that row
+sub execute_query { return brdatabase::execute_query( $_[0], $_[1] ); }
+
+
+# Allows plugins to set globals in BRenBot's globals table
+sub set_global { brdatabase::set_global(@_); }
+
+
+# Allows plugins to retrieve globals in BRenBot's globals table
+sub get_global { return brdatabase::get_global(@_); }
+
+
+
+
+#########################
+## Gamelog functions
+#########################
+
+# Allows plugins to translate presets
+sub translatePreset { return gamelog::translatePreset(@_); }
+
+
+# Allows plugins to translate weapon presets
+sub translateWeaponPreset { return gamelog::translateWeaponPreset(@_); }
+
+
+# Allows plugins to get playernames from object ID's
+sub getPlayerFromObjectID { return gamelog::getPlayerFromObjectID(@_); }
+
+
+
+
+#########################
+## IRC functions
+#########################
+
+# Get permission level of an IRC user.
+# Parameters: username, channelCode
+sub getIrcPermissions { return brIRC::getUserPermissions(@_); }
+
+
+# IRC Commands for plugins
+sub ircmsg { brIRC::ircmsg(@_); }
+
+
+# Send a message to a user
+sub ircpm { brIRC::ircpm(@_); }
+
+
+# Send a notice to a user
+sub ircnotice { brIRC::ircnotice(@_); }
+
+
+
+
+#########################
+## Misc. / Unsorted functions
+#########################
 
 # Run a BRenBot command from a plugin
 sub call_command
@@ -512,119 +613,8 @@ sub call_command
 }
 
 
-# Allows plugins to set globals in BRenBot's globals table
-sub set_global
-{
-	my $global = shift;
-	my $value = shift;
-
-	brdatabase::set_global ( $global, $value );
-}
-
-
-# Allows plugins to retrieve globals in BRenBot's globals table
-sub get_global
-{
-	my $global = shift;
-
-	return brdatabase::get_global ( $global );
-}
-
-
 # Allows plugins to use the get_date_time function in modules
-sub get_date_time
-{
-	my $string = shift;
-	return modules::get_date_time ( $string )
-}
-
-
-# Allows plugins to translate presets
-sub translatePreset
-{
-	my $string = shift;
-	return gamelog::translatePreset ( $string )
-}
-
-
-# Allows plugins to translate weapon presets
-sub translateWeaponPreset
-{
-	my $string = shift;
-	return gamelog::translateWeaponPreset ( $string )
-}
-
-
-# Allows plugins to get playernames from object ID's
-sub getPlayerFromObjectID
-{
-	my $string = shift;
-	return gamelog::getPlayerFromObjectID ( $string )
-}
-
-
-# Allows plugins to get the game status
-sub getGameStatus
-{
-	return serverStatus::getGameStatus();
-}
-
-
-
-# IRC Commands for plugins
-sub ircmsg
-{
-	my $message		= shift;
-	my $channelCode	= shift;
-
-	brIRC::ircmsg ( $message, $channelCode );
-}
-
-
-# Send a message to a user
-sub ircpm
-{
-	my $recipient	= shift;
-	my $message		= shift;
-
-	brIRC::ircpm ( $recipient, $message );
-}
-
-
-# Send a notice to a user
-sub ircnotice
-{
-	my $recipient	= shift;
-	my $message		= shift;
-
-	brIRC::ircnotice ( $recipient, $message );
-}
-
-
-# pagePlayer function for plugins
-sub pagePlayer { return modules::pagePlayer ( @_ ); }
-
-
-# Server message function for plugins - shows a public chat message
-# for all players in the server
-sub serverMsg
-{
-	my $msg = shift;
-	RenRemCMD ( "msg $msg" );
-}
-
-
-# Check moderator status of players, returns 1 for true, 0 for false.
-# Parameters: playername
-sub isTempMod { return modules::isTempMod(@_); }
-sub isHalfMod { return modules::isHalfMod(@_); }
-sub isFullMod { return modules::isFullMod(@_); }
-sub isAdmin { return modules::isAdmin(@_); }
-
-
-# Get permission level of an IRC user.
-# Parameters: username, channelCode
-sub getIrcPermissions { return brIRC::getUserPermissions(@_); }
+sub get_date_time { return modules::get_date_time (@_); }
 
 
 # Internal IsNumeric function
@@ -643,16 +633,36 @@ sub getBrVersion { return main::BR_VERSION; }
 sub getBrBuild { return main::BR_BUILD; }
 
 
-# Check if a given player has finished loading the map, returns 1 for 1, 0 for false.
-# Parameters: playername
-sub isPlayerLoaded { return gamelog::isPlayerLoaded(@_); }
-
-
 # Print a timestamped message to the BRenBot console window
 #
 # \param[in] $message
 #   Message to be written to the console window
 sub console_output { return modules::console_output(@_); }
 
+
+
+
+
+
+
+
+###################################################
+####
+## Deprecated API functions for plugins
+####
+###################################################
+
+# \deprecated Use getPlayerData instead
+sub PlayerInGame
+{
+	my ( $result, %player ) = playerData::getPlayerData($_[0]);
+	return ( $result, "", \%player );
+}
+
+# \deprecated RenGuard is no longer supported
+sub is_on_renguard { return 1; }
+
+# \deprecated Use getPlayerData and use the value of the bhsVersion key within their data hash
+sub get_bhs_version { return playerData::getKeyValue ( shift, "bhsVersion"); }
 
 1;
