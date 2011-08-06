@@ -439,26 +439,37 @@ sub mass_invite
 
 sub ParseLogInput
 {
-	my $line  = shift;
+	my $rawline = shift;	# Keep this in a seperate variable for plugins etc
+	my $line = $rawline;
+	my $time = "";
+	
+	# Strip timestamp from input
+	if ( $line =~ m/^\[(\d\d:\d\d:\d\d)\]\s?(.+)\r?\n?/i )
+	{
+		$time = $1;
+		$line = $2;
+	}
+	
+	#modules::console_output ( "[Renlog] DEBUG: Parsing input ==>$line<==\n" );
 
 	# Start of game defs?
 	if ( $line =~ m/Available game definitions:/ )
 	{
-		print "[Renlog] DEBUG: Start of map defs.\n";
+		#modules::console_output ( "[Renlog] DEBUG: Start of map defs.\n )";
 		$readGameDefs = 1;
 		@brconfig::installedMaps = ();
 	}
 	elsif ( $readGameDefs == 1 )
 	{
-		if ($line eq "")
+		if ($line eq " ")
 		{
-			print "[Renlog] DEBUG: End of map defs.\n";
+			#modules::console_output ( "[Renlog] DEBUG: End of map defs.\n )";
 			$readGameDefs = 0;
 		}
 		else
 		{
-			print "[Renlog] DEBUG: Got map $line\n";
-			push (@brconfig::installedMaps, $line);
+			#modules::console_output ( "[Renlog] DEBUG: Got map $line\n )";
+			push (@brconfig::installed_maps, $line);
 		}
 	}
 
@@ -954,7 +965,9 @@ sub ParseLogInput
 	my @plugins = plugin::get_plugin_renlog_regexes();
 
 	my %args;
-	$args{line}			= $line;
+	$args{'rawline'}		= $rawline;
+	$args{'line'}			= $line;
+	$args{'time'}			= $time;
 
 	foreach (@plugins)
 	{
@@ -964,7 +977,7 @@ sub ParseLogInput
 
 		while (my ($regex, $event) = each %regexes)
 		{
-			if ( $line =~ m/$regex/i )
+			if ( $rawline =~ m/$regex/i )
 			{ $main::poe_kernel->post($alias => $event => \%args); }
  		}
 	}

@@ -1206,7 +1206,7 @@ sub GetRotation
 	my $currentMap = serverStatus::getMapNum();
 	push ( @array, "The map rotation includes:" );
 
-	for (my $i =0; $i <= scalar( @brconfig::maplist ) -1; $i +=4 )
+	for (my $i =0; $i < scalar(@brconfig::maplist); $i +=4 )
 	{
 		my $mapName1 = ( $i == $currentMap )
 			? '[' . $brconfig::maplist[$i]->{'mapname'} . ']'
@@ -1214,15 +1214,15 @@ sub GetRotation
 
 		my $mapName2 = ( ( $i+1 ) == $currentMap )
 			? '[' . $brconfig::maplist[$i+1]->{'mapname'} . ']'
-			: $brconfig::maplist[$i+1]->{'mapname'};
+			: ($i+1 < scalar(@brconfig::maplist) ) ? $brconfig::maplist[$i+1]->{'mapname'} : "";
 
 		my $mapName3 = ( ( $i+2 ) == $currentMap )
 			? '[' . $brconfig::maplist[$i+2]->{'mapname'} . ']'
-			: $brconfig::maplist[$i+2]->{'mapname'};
+			: ($i+2 < scalar(@brconfig::maplist) ) ? $brconfig::maplist[$i+2]->{'mapname'} : "";
 
 		my $mapName4 = ( ( $i+3 ) == $currentMap )
 			? '[' . $brconfig::maplist[$i+3]->{'mapname'} . ']'
-			: $brconfig::maplist[$i+3]->{'mapname'};
+			: ($i+3 < scalar(@brconfig::maplist) ) ? $brconfig::maplist[$i+3]->{'mapname'} : "";
 
 		$mapName1 =~ s/\.mix//i;			$mapName1 =~ s/c\&c_//i;
 		$mapName2 =~ s/\.mix//i;			$mapName2 =~ s/c\&c_//i;
@@ -1239,9 +1239,14 @@ sub GetInstalledMaps
 {
 	my @array;
 	push (@array, "The following maps are installed:");
-	for (my $i=0;$i<=scalar(@brconfig::installed_maps);$i=$i+4)
+	for (my $i =0; $i < scalar(@brconfig::installed_maps); $i +=4)
 	{
-		push (@array, "$brconfig::installed_maps[$i] $brconfig::installed_maps[$i+1] $brconfig::installed_maps[$i+2] $brconfig::installed_maps[$i+3]");
+		my $map1 = $brconfig::installed_maps[$i];
+		my $map2 = ($i+1 < scalar(@brconfig::installed_maps)) ? $brconfig::installed_maps[$i+1] : "";
+		my $map3 = ($i+2 < scalar(@brconfig::installed_maps)) ? $brconfig::installed_maps[$i+2] : "";
+		my $map4 = ($i+3 < scalar(@brconfig::installed_maps)) ? $brconfig::installed_maps[$i+3] : "";
+	
+		push (@array, "$map1 $map2 $map3 $map4");
 	}
 	return @array;
 }

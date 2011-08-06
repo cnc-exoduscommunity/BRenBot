@@ -457,7 +457,7 @@ sub readServerSettings
 		my $ttConfigFile;
 		my $mapRotationIdx = -1;
 
-		open ( ttConfigFile, $config_fdsconfigfile );
+		open ( ttConfigFile, $config_fdspath."/tt.cfg" );
 		while ( <ttConfigFile> )
 		{
 			# Start of map rotation section?
@@ -467,12 +467,12 @@ sub readServerSettings
 			}
 
 			# End of map rotation section?
-			elsif ( $mapRotationIdx >= 0 && /^\]$/ )
+			elsif ( $mapRotationIdx >= 0 && /^\];$/ )
 			{
 				$mapRotationIdx = -1;
 			}
 
-			elsif ( $mapRotationIdx >= 0 && /^\"(.+)\"\,?$/ )
+			elsif ( $mapRotationIdx >= 0 && /^\s*\"(.+)\"\,?$/ )
 			{
 				chomp(my $mapname=$1);
 				my %hash;
@@ -498,8 +498,9 @@ sub GetAvailableMaps
 	if ( $ssgm_version >= 4 )
 	{
 		# NB: We don't just read this from tt.cfg because the gamedefs can also include
-		# things which are not listed in that config file
-		modules::RenRemCMD("listgamedefs");
+		# things which are not listed in that config file. Use a short delay otherwise
+		# the response comes back before we are listening for it
+		modules::RenRemCMDtimed("listgamedefs",2);
 	}
 	else
 	{
@@ -658,7 +659,7 @@ sub read_ssgm_settings
 			|| $_ =~ m/(EnableGamelog)\s?=\s?0/i
 			|| $_ =~ m/(EnableLog)\s?=\s?0/i )
 		{
-			modules::console_output ( "WARNING: $1 option in $ssgmini is disabled, the gamelog and ssgmlog modules may not work correctly." );
+			modules::console_output ( "[Config] WARNING: $1 option in $ssgmini is disabled, the gamelog and ssgmlog modules may not work correctly." );
 		}
 
 
@@ -687,7 +688,7 @@ sub read_ssgm_settings
 	# will determine where to look for log and results files...
 	if ( $ssgm_version >= 4 && open ( FILE, $config_fdspath . "/data/paths.ini" )  )
 	{
-		modules::console_output ( "Found data/paths.ini, reading logfile path... ", 1 );
+		modules::console_output ( "[Config] Found data/paths.ini, reading logfile path... ", 1 );
 		my $pathsSection = "";
 		my $filebase = "";
 		my $filefds = "";
@@ -700,7 +701,7 @@ sub read_ssgm_settings
 			{
 				$pathsSection = $1;
 			}
-			elsif ( $pathsSection == "paths" )
+			elsif ( $pathsSection eq "paths" )
 			{
 				if ($_ =~ m/FileBase\s*=\s*(.+)/)
 				{
@@ -712,7 +713,7 @@ sub read_ssgm_settings
 				}
 				elsif ($_ =~ m/UseRenFolder\s*=\s*(true|false)/i)
 				{
-					$useRenFolder = (lc($1) == 'true') ? 1 : 0;
+					$useRenFolder = (lc($1) eq 'true') ? 1 : 0;
 				}
 			}
 		}
@@ -728,7 +729,7 @@ sub read_ssgm_settings
 	{
 		# No paths.ini, assume default location for Renegade FDS
 		# ( <FDS ROOT>/Renegade/FDS/ )
-		modules::console_output ( "Unable to find data/paths.ini, assuming default logfile path... ", 1 );
+		modules::console_output ( "[Config] Unable to find data/paths.ini, assuming default logfile path... ", 1 );
 		$config_fdslogpath = $config_fdspath.'Renegade/FDS/';
 		modules::console_output ( $config_fdslogpath, 3 );
 	}
@@ -752,7 +753,7 @@ sub checkBrenbotDll
 
 	if ( -f $config_fdspath . "BRenBot.dll")
 	{
-		modules::console_output ( "BRenBot.dll library found. Enabling support." );
+		modules::console_output ( "[Config] BRenBot.dll library found. Enabling support." );
 		modules::set_module( "BRenBot_dll", 1 );
 	}
 }

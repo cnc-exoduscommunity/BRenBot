@@ -50,6 +50,10 @@ use Net::FTP;
 # Disable buffering on STDIN / STDOUT
 $| = 1;
 
+# Print version info
+modules::console_output ( "BRenBot ".BR_VERSION." build ".BR_BUILD );
+modules::console_output ( "BRenBot is copyright ".BR_COPYRIGHT_YEAR." by Tiberian Technologies. All rights reserved." );
+
 # Main variables
 our $start_time = time();
 brdatabase::db_connect();
@@ -57,10 +61,6 @@ brconfig::init();
 
 our %tempMods;						# List of temporary moderators
 our $currentMod = "Renegade";		# Stores current mod, EG: APB, AR
-
-# Print version info
-modules::console_output ( "BRenBot ".BR_VERSION." build ".BR_BUILD );
-modules::console_output ( "BRenBot is copyright ".BR_COPYRIGHT_YEAR." by Tiberian Technologies. All rights reserved." );
 
 
 
@@ -279,7 +279,7 @@ if ( modules::get_module( "ssgmlog" ) )
 # Load plugins
 plugin::get_plugins();
 
-# Load GSA if nessicary
+# Load GSA if necessary
 if ( modules::get_module( "gamespy_players" ) != 0 )
 {
 	gamespy::init();

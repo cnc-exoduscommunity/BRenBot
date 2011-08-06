@@ -11,7 +11,7 @@ use POE;
 # Variables for holding the server status
 my $serverMode			= "WOL";
 my $currentMap			= "last round";
-my $currentMapNum		= 0;
+my $currentMapNum		= -1;
 my $mapStartTime		= 0;
 my $lastMap				= "last round";
 my $maxPlayers			= 0;
@@ -66,10 +66,17 @@ sub init
 				elsif ( $lastResponseTime > $lastRequestTime && $fdsResponding == 0 )
 				{
 					$fdsResponding = 1;
+					
+					# Check for changes in configuration of the server
+					RenRem::RenRemCMD ( "mapnum" );
+					RenRem::RenRemCMD ( "sversion" );
 				}
 
 				# Get updated player info and game info
 				$lastRequestTime = time();
+				
+				# Request map number if we don't already know it
+				if ( $currentMapNum == -1 ) { RenRem::RenRemCMD ( "mapnum" ); }
 
 				# Request server scripts version if we dont have it already
 				if ( $brconfig::serverBhsVersion eq '0.0' ) { RenRem::RenRemCMD ( "sversion" ); }
