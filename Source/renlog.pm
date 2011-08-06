@@ -922,7 +922,7 @@ sub ParseLogInput
 					my $mapid = brdatabase::get_global('nextmap_changed_id');
 					my $mapname = brdatabase::get_global('nextmap_changed_mapname');
 					
-					modules::console_output ( "Setting map at index $mapid to $mapname." );
+					modules::console_output ( "Restoring map at index $mapid to $mapname." );
 					RenRem::RenRemCMD ( "mlistc $mapid $mapname" );
 
 					# Update the rotation
