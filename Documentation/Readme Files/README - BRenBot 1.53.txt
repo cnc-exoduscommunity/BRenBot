@@ -310,7 +310,7 @@ Several plugins are available from the BRenBot website, http://new.brenbot.com/
 Changelog
 ####################################
 
-1.53.8 ( ?? ??? ?? )
+1.53.8 ( 07 Aug 11 )
  - Improved handling of the midnight alarm trigger
  - Added a new function to handle console output and add timestamps to each message
  - Improved wording & formatting of some console messages
