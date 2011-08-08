@@ -166,7 +166,7 @@
   <command name="allow">
     <permission level="2"/>
     <syntax value="!allow &lt;playername&gt;"/>
-    <help value="Allows a user back to the server (WOL only)"/>
+    <help value="Allows a user back to the server after they have been kicked"/>
     <enabled value="1"/>
     <group>ingame</group>
     <group>irc_admin</group>

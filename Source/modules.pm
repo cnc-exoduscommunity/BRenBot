@@ -198,9 +198,10 @@ sub kick_player
 	$message .= ' and given a 24hr ban' if $temporary_ban;
 	$message .= ' from the server by '.$kicker.' for '.$reason;
 
-	# Send the server announcement and the message to the kicked player
+	# Send the server announcement and the message to the kicked player (in SSGM >= 4 the page to
+	# the player is handled by the kick command)
 	RenRemCMD ( 'msg [BR] '.$player{'name'}.' has '.$message );
-	RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message );
+	RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message ) if ($brconfig::ssgm_version < 4);
 
 	# Kick the player from the server (1 second delay to allow the pamsg to reach them)
 	my $command = 'kick '.$player{'id'};
@@ -306,9 +307,8 @@ sub ban_player
 	# Prepare the message for the server announcement and message to the banned player
 	my $message = 'been banned from the server by '.$banner.' for '.$reason;
 
-	# Send the server announcement and the message to the banned player
+	# Send the server announcement message
 	RenRemCMD ( 'msg [BR] '.$player{'name'}.' has '.$message );
-	RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message );
 
 	# If using SSGM >= 4.0 then use the ban console command (1 second delay to allow the pamsg to reach them)
 	if ( $brconfig::ssgm_version >= 4 )
@@ -316,7 +316,12 @@ sub ban_player
 
 	# Otherwise use the kick command to evict them (1 second delay to allow the pamsg to reach them)
 	else
-		{ RenRemCMDtimed ( 'kick '.$player{'id'}, 1 ); }
+	{
+		# Send the page to the banned player (under SSGM >= 4 the ban console command handles)
+		RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message );
+
+		RenRemCMDtimed ( 'kick '.$player{'id'}, 1 );
+	}
 
 
 	# Create a record of the ban
@@ -1181,7 +1186,7 @@ sub SetNextMap
 			}
 		}
 	}
-	
+
 	# Report success
 	return (1,$mapname);
 }
