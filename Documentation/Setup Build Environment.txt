@@ -64,6 +64,9 @@ during the installation.
 
 Note2: If nmake fails running it 3 or more times in a row might work. Wierd.
 
+Note3: Apply SVN rev. 1257 from http://svn.openfoundry.org/par/PAR-Packer/trunk to 1.009 before installing
+		or it fails to run on machines without perl installed...
+
 
 
 

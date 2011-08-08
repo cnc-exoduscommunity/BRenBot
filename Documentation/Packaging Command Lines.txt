@@ -17,6 +17,10 @@ BRenBot 1.x
 
 pp -o brenbot.exe -N CompanyName="Tiberian Technologies";ProductVersion=1.53.8;ProductName="BRenBot 1.53";FileVersion=1.53.8;LegalCopyright="Tiberian Technologies, All Rights Reserved";FileDescription="Server regulator for the Renegade FDS" -M POE/Filter.pm -M POE/Filter/Stream.pm -M POE/Component/Server/TCP.pm brenbot.pl
 
+OR
+
+pp -vvv -x -o brenbot.exe brenbot.pl
+
 
 
 

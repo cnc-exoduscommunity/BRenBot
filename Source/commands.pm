@@ -2870,7 +2870,7 @@ sub auth
 			return;
 		}
 
-		Authenticate ( $args{'arg1'} );
+		brAuth::Authenticate ( $args{'arg1'} );
 	}
 	or modules::display_error($@);
 }
