@@ -333,7 +333,7 @@ POE::Session->create
 
 			# Output midnight message to console and IRC
 			my (undef,undef,undef,$day,$month,$year,undef,undef,undef) = localtime(time);
-			my $midnight_message = "It's midnight, the date is now $day/$month/$year+1900." . (($brconfig::ssgm_version < 4) ? " Switching to new log files." : "");
+			my $midnight_message = "It's midnight, the date is now $day/".($month+1)."/".($year+1900). (($brconfig::ssgm_version < 4) ? " Switching to new log files." : "");
 			modules::console_output ( $midnight_message );
 			brIRC::ircmsg( $midnight_message, "A" );
 
