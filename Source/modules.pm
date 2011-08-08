@@ -1096,7 +1096,7 @@ sub FindInstalledMap
 
 	foreach (@brconfig::installed_maps)
 	{
-		if ($_ =~ m/(.*?)$search(.+)/gi)
+		if ($_ =~ m/(.*?)$search(.*?)/gi)
 		{
 			# If this is an exact match then this is our result
 			if ( $search eq lc($_) )
