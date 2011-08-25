@@ -310,6 +310,15 @@ Several plugins are available from the BRenBot website, http://new.brenbot.com/
 Changelog
 ####################################
 
+1.53.9 ( 25 Aug 11 )
+ - Fixed !auth command not working correctly
+ - Fixed FindInstalledMap expecting the search string to not include the last character in the name
+ - Fixed output of date on midnight rollover
+ - Tweaked default help value for !allow command
+ - Tweaked kick / ban mechanisms to not send a pamsg when using SSGM 4.0s ban system, which sends an
+     additional message of its own, resulting in a double message
+ - Replace a reference to NOD in the default presets.cfg with Nod
+
 1.53.8 ( 07 Aug 11 )
  - Improved handling of the midnight alarm trigger
  - Added a new function to handle console output and add timestamps to each message
