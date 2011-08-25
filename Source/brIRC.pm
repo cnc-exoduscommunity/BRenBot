@@ -618,18 +618,22 @@ sub auth
 	my $message = shift;
 	my $sender = shift;
 
-	if ( $message =~ m/^\!auth\s(.+)\s(\S+)$/ )
+	eval
 	{
-		my $authResult = brAuth::AuthenticateByPassword( $1, $2 );
-		if ( $authResult == 1 )
-			{ ircpm ( $sender, "Authentification granted." ); }
-		elsif ( $authResult == 4 )
-			{ ircpm ( $sender, "You are not on the server. You can\'t authenticate yourself." ); }
-		elsif ( $authResult != 2 )	# Ignore re-authentication attempts
-			{ ircpm ( $sender, "Access denied, nickname does not exist or password is invalid." ); }
+		if ( $message =~ m/^\!auth\s(.+)\s(\S+)$/ )
+		{
+			my $authResult = brAuth::AuthenticateByPassword( $1, $2 );
+			if ( $authResult == 1 )
+				{ ircpm ( $sender, "Authentification granted." ); }
+			elsif ( $authResult == 4 )
+				{ ircpm ( $sender, "You are not on the server. You can\'t authenticate yourself." ); }
+			elsif ( $authResult != 2 )	# Ignore re-authentication attempts
+				{ ircpm ( $sender, "Access denied, nickname does not exist or password is invalid." ); }
+		}
+		else
+			{ ircpm ( $sender, "Usage: !auth <playername> <password>" ); }
 	}
-	else
-		{ ircpm ( $sender, "Usage: !auth <playername> <password>" ); }
+	or modules::display_error($@);
 }
 
 sub alias
@@ -637,23 +641,27 @@ sub alias
 	my $message = shift;
 	my $sender = shift;
 
-	if ( $message =~ m/^\!alias\s(.+)\s(\S+)\s(.+)$/ )
+	eval
 	{
-		my $nick = $1;
-		my $pass = $2;
-		my $newnick = $3;
-
-		if ( brAuth::CheckAuthPassword( $nick, $pass ) )
+		if ( $message =~ m/^\!alias\s(.+)\s(\S+)\s(.+)$/ )
 		{
-			ircpm ( $sender, "Added Alias $newnick." );
-			modules::add_user( $newnick, $pass );
+			my $nick = $1;
+			my $pass = $2;
+			my $newnick = $3;
+
+			if ( brAuth::CheckAuthPassword( $nick, $pass ) )
+			{
+				ircpm ( $sender, "Added Alias $newnick." );
+				modules::add_user( $newnick, $pass );
+			}
+			else
+				{ ircpm ( $sender, "Access denied." ); }
+
 		}
 		else
-			{ ircpm ( $sender, "Access denied." ); }
-
+			{ ircpm ( $sender, "Usage: !alias <existing playername> <password> <new playername>" ); }
 	}
-	else
-		{ ircpm ( $sender, "Usage: !alias <existing playername> <password> <new playername>" ); }
+	or modules::display_error($@);
 }
 
 sub delregister
@@ -661,21 +669,25 @@ sub delregister
 	my $message = shift;
 	my $sender = shift;
 
-	if ( $message =~ m/^\!delregister\s(.+)\s(\S+)$/ )
+	eval
 	{
-		my $nick = $1;
-		my $pass = $2;
-
-		if ( brAuth::CheckAuthPassword( $nick, $pass ) )
+		if ( $message =~ m/^\!delregister\s(.+)\s(\S+)$/ )
 		{
-			modules::del_user( $nick );
-			ircpm ( $sender, "Registration of the name $nick has been deleted." );
+			my $nick = $1;
+			my $pass = $2;
+
+			if ( brAuth::CheckAuthPassword( $nick, $pass ) )
+			{
+				modules::del_user( $nick );
+				ircpm ( $sender, "Registration of the name $nick has been deleted." );
+			}
+			else
+				{ ircpm ( $sender, "No such nickname, or invalid password." ); }
 		}
 		else
-			{ ircpm ( $sender, "No such nickname, or invalid password." ); }
+			{ ircpm ( $sender, "Usage: !delregister <playername> <password>" ); }
 	}
-	else
-		{ ircpm ( $sender, "Usage: !delregister <playername> <password>" ); }
+	or modules::display_error($@);
 }
 
 
