@@ -29,6 +29,7 @@ use constant BR_COPYRIGHT_YEAR => "2003-2011";
 # Load BRenBot modules
 use modules;
 use brconfig;
+use RenRem;
 use serverStatus;
 use brdatabase;
 use playerData;
@@ -37,7 +38,6 @@ use bhs;
 use commands;
 use brIRC;
 use renlog;
-use RenRem;
 use results;
 use plugin;
 use ssgm;
@@ -95,7 +95,7 @@ sub joinstuff
 			if ( modules::get_module( "bhs" ) )
 			{
 				# Request player version
-				modules::RenRemCMD( "version $player{id}" );
+				RenRem::RenRemCMD( "version $player{id}" );
 
 				# If minimum scripts version is specified, or this map requires bhs.dll, trigger check in
 				# 5 seconds
@@ -134,7 +134,7 @@ sub joinstuff
 									elsif ( $_[HEAP]->{'chances'} > 0 )
 									{
 										$_[HEAP]->{'chances'}--;
-										modules::RenRemCMD( "version $player{id}" );
+										RenRem::RenRemCMD( "version $player{id}" );
 										$_[KERNEL]->alarm( tick => int(time()) + 2 );
 									}
 
@@ -184,13 +184,13 @@ sub ShowModJoinMessage
 	if ( $result == 1 )
 	{
 		if ( modules::IsAdmin( $name ) )
-		{ modules::RenRemCMD( "msg $name is a server administrator." ); }
+			{ RenRem::RenRemCMD( "msg $name is a server administrator." ); }
 
 		elsif ( modules::IsFullMod( $name ) )
-		{ modules::RenRemCMD( "msg $name is a full moderator." ); }
+			{ RenRem::RenRemCMD( "msg $name is a full moderator." ); }
 
 		elsif ( modules::IsHalfMod( $name ) )
-		{ modules::RenRemCMD( "msg $name is a half moderator." ); }
+			{ RenRem::RenRemCMD( "msg $name is a half moderator." ); }
 	}
 }
 
@@ -339,7 +339,7 @@ POE::Session->create
 
 			# Force creation of new renlog file by sending player_info command and
 			# then schedule a call to reset_logfiles in 3 seconds time
-			modules::RenRemCMD( "player_info" );
+			RenRem::RenRemCMD( "player_info" );
 			$_[KERNEL]->delay ( "reset_logfiles", 3 );
 		},
 		reset_logfiles => sub

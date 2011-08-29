@@ -555,7 +555,7 @@ sub enter
 					# crate usually) announce it was stolen
 					if ( $startup != 1 && $gameobjects{ $object{vehicle_object} }->{last_team} != 2
 						&& $brconfig::gamelog_show_vehicle_stolen == 1 )
-					{ modules::RenRemCMD ( "msg [BR] $gameobjects{ $object{player_object} }->{name} has stolen a $translatedPreset!" ); }
+					{ RenRem::RenRemCMD ( "msg [BR] $gameobjects{ $object{player_object} }->{name} has stolen a $translatedPreset!" ); }
 
 					$gameobjects{ $object{vehicle_object} }->{last_team} = $gameobjects{ $object{player_object} }->{team};
 				}
@@ -1408,7 +1408,7 @@ sub auto_rec
 		# Check they are not rec ignored
 		if ( modules::is_rec_ignored( $name ) )
 		{
-			modules::RenRemCMD( "msg [BR] $name was unable to recieve their recommendation for $comment because they have been added to the recignore list by an administrator or moderator." );
+			RenRem::RenRemCMD( "msg [BR] $name was unable to recieve their recommendation for $comment because they have been added to the recignore list by an administrator or moderator." );
 			return;
 		}
 

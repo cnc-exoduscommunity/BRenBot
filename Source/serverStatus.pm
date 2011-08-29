@@ -7,6 +7,7 @@ package serverStatus;
 use strict;
 
 use POE;
+use RenRem;
 
 # Variables for holding the server status
 my $serverMode			= "WOL";
@@ -81,8 +82,8 @@ sub init
 				# Request server scripts version if we dont have it already
 				if ( $brconfig::serverBhsVersion eq '0.0' ) { RenRem::RenRemCMD ( "sversion" ); }
 
-				modules::RenRemCMD( "player_info" );
-				modules::RenRemCMD( "game_info" );
+				RenRem::RenRemCMD( "player_info" );
+				RenRem::RenRemCMD( "game_info" );
 				$_[HEAP]->{next_alarm_time}= int( time() ) + 30;
 				$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
 			}

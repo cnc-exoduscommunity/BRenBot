@@ -9,6 +9,7 @@ use XML::Simple;
 use Cwd;
 
 use modules;
+use RenRem;
 
 
 our %xml;
@@ -501,7 +502,7 @@ sub isPlayerLoaded { return gamelog::isPlayerLoaded(@_); }
 #
 # \param[in] $command
 #   Command line to send to the FDS
-sub RenRemCMD { modules::RenRemCMD($_[0]); }
+sub RenRemCMD { RenRem::RenRemCMD($_[0]); }
 
 
 # Send a RenRem command to the FDS after a delay
@@ -510,7 +511,7 @@ sub RenRemCMD { modules::RenRemCMD($_[0]); }
 #   Command line to send to the FDS
 # \param[in] $delay
 #   Delay, in seconds, before the command should be sent
-sub RenRemCMDtimed { modules::RenRemCMDtimed(@_); }
+sub RenRemCMDtimed { RenRem::RenRemCMDtimed(@_); }
 
 
 # Allows plugins to get the game status

@@ -13,6 +13,7 @@ use modules;
 use brIRC;
 use gamespy;		# Used by !set command
 use brAuth;
+use RenRem;
 
 
 # Datastore for commands.xml data
@@ -447,7 +448,7 @@ sub parsearg
 							}
 							else
 							{
-								modules::RenRemCMD( "msg [BR] $command is not available for $permission_name" )
+								RenRem::RenRemCMD( "msg [BR] $command is not available for $permission_name" )
 							}
 							return;
 						}
@@ -479,7 +480,7 @@ sub parsearg
 						}
 						else
 						{
-							modules::RenRemCMD("msg [BR] $command requires these modules to be enabled: $missing_modules")
+							RenRem::RenRemCMD("msg [BR] $command requires these modules to be enabled: $missing_modules")
 						}
 						return;
 					}
@@ -623,7 +624,7 @@ sub LogSearch
 			}
 			else
 			{
-				modules::RenRemCMD( "[BR] Usage: $syntaxvalue" );
+				RenRem::RenRemCMD( "[BR] Usage: $syntaxvalue" );
 			}
 
 			return;
@@ -788,7 +789,7 @@ sub help
 					}
 					else
 					{
-						modules::RenRemCMD("msg [BR] $command is unknown.");
+						RenRem::RenRemCMD("msg [BR] $command is unknown.");
 					}
 					return;
 				}
@@ -803,8 +804,8 @@ sub help
 				}
 				else
 				{
-					modules::RenRemCMD("msg [BR] $command: $xml_command->{help}->{value}");
-					modules::RenRemCMD("msg [BR] Usage: $xml_command->{syntax}->{value}");
+					RenRem::RenRemCMD("msg [BR] $command: $xml_command->{help}->{value}");
+					RenRem::RenRemCMD("msg [BR] Usage: $xml_command->{syntax}->{value}");
 				}
 				return;
 
@@ -817,7 +818,7 @@ sub help
 				}
 				else
 				{
-					modules::RenRemCMD("msg [BR] No help for $command!");
+					RenRem::RenRemCMD("msg [BR] No help for $command!");
 				}
 			}
 
@@ -1000,7 +1001,7 @@ sub die
 		{
 			if ( $args{nicktype} != 1 )
 			{
-				modules::RenRemCMD( "msg [BR] Usage: !die NOW -CASE SENSITIVE! TO AVOID ACCIDENTAL TRIGGERING" );
+				RenRem::RenRemCMD( "msg [BR] Usage: !die NOW -CASE SENSITIVE! TO AVOID ACCIDENTAL TRIGGERING" );
 			}
 			else
 			{
@@ -1024,7 +1025,7 @@ sub rehash
 		# Reload XML settings
 		readXMLData();
 
-		modules::RenRemCMD( "msg [BR] BRenBot Configuration Files Rehashed By Admin" );
+		RenRem::RenRemCMD( "msg [BR] BRenBot Configuration Files Rehashed By Admin" );
 	}
 	or modules::display_error($@);
 }
@@ -1068,11 +1069,11 @@ sub showmods
 		}
 		if (!($mods))
 		{
-			modules::RenRemCMD( "msg [BR] No known moderators are currently in the server." );
+			RenRem::RenRemCMD( "msg [BR] No known moderators are currently in the server." );
 		}
 		else
 		{
-			modules::RenRemCMD( "msg [BR] InGame Moderators: $modslist" );
+			RenRem::RenRemCMD( "msg [BR] InGame Moderators: $modslist" );
 		}
 	}
 	or modules::display_error($@);
@@ -1101,7 +1102,7 @@ sub set
 			}
 			else
 			{
-				modules::RenRemCMD("[BR] Usage: $syntaxvalue");
+				RenRem::RenRemCMD("[BR] Usage: $syntaxvalue");
 			}
 
 			return;
@@ -1211,7 +1212,7 @@ sub modules
 
 		if ($args{nicktype} != 1)
 		{
-			modules::RenRemCMD("msg [BR] This command can only be executed from IRC.");
+			RenRem::RenRemCMD("msg [BR] This command can only be executed from IRC.");
 			return;
 		}
 
@@ -1314,18 +1315,18 @@ sub nextmap
 {
 	eval
 	{
-		modules::RenRemCMD( "game_info" );
+		RenRem::RenRemCMD( "game_info" );
 
 		my $nextmap = modules::GetNextMap( serverStatus::getMap() );
 
 		if ( $nextmap->{'mapname'} )
 		{
-			modules::RenRemCMD( "msg The next map will be: $nextmap->{'mapname'}" );
+			RenRem::RenRemCMD( "msg The next map will be: $nextmap->{'mapname'}" );
 		}
 		else
 		{
 			modules::console_output ( "Unable to work out next map!" );
-			modules::RenRemCMD( "msg The next map will be: Unknown!" );
+			RenRem::RenRemCMD( "msg The next map will be: Unknown!" );
 		}
 	}
 	or modules::display_error($@);
@@ -1340,7 +1341,7 @@ sub uptime
 		my $uptime = modules::get_uptime( $main::start_time );
 
 		if ( $args{nicktype} == 1 ) { brIRC::ircmsg ( "I\'ve been running for $uptime.", $args{'ircChannelCode'} ); }
-		else { modules::RenRemCMD ( "msg [BR] I\'ve been running for $uptime." ); }
+		else { RenRem::RenRemCMD ( "msg [BR] I\'ve been running for $uptime." ); }
 	}
 	or modules::display_error($@);
 }
@@ -1359,8 +1360,8 @@ sub version
 	}
 	else
 	{
-		modules::RenRemCMD ( "msg [BR] I\'m running BRenBot ".main::BR_VERSION." (build ".main::BR_BUILD.")." );
-		modules::RenRemCMD ( "msg [BR] BRenBot is Copyright ".main::BR_COPYRIGHT_YEAR." by Tiberian Technologies. All rights reserved." );
+		RenRem::RenRemCMD ( "msg [BR] I\'m running BRenBot ".main::BR_VERSION." (build ".main::BR_BUILD.")." );
+		RenRem::RenRemCMD ( "msg [BR] BRenBot is Copyright ".main::BR_COPYRIGHT_YEAR." by Tiberian Technologies. All rights reserved." );
 	}
 }
 
@@ -1388,7 +1389,7 @@ sub rotation
 
 		foreach (@array)
 		{
-			modules::RenRemCMD ( "msg $_" );
+			RenRem::RenRemCMD ( "msg $_" );
 		}
 	}
 	or modules::display_error($@);
@@ -1475,7 +1476,7 @@ sub teams
 
 	if ( $teamsinprogress == 1 )
 	{
-		modules::RenRemCMD( "msg Team Regulator is already in progress. Please wait until it finishes." );
+		RenRem::RenRemCMD( "msg Team Regulator is already in progress. Please wait until it finishes." );
 		return;
 	}
 
@@ -1512,7 +1513,7 @@ sub teams
 		}
 		else
 		{
-			modules::RenRemCMD("msg [BR] Teams are even!");
+			RenRem::RenRemCMD("msg [BR] Teams are even!");
 		}
 
 	}
@@ -1525,7 +1526,7 @@ sub teams
 		}
 		else
 		{
-			modules::RenRemCMD("msg [BR] $superior_team has one more player. There is nothing I can do about it.");
+			RenRem::RenRemCMD("msg [BR] $superior_team has one more player. There is nothing I can do about it.");
 		}
 	}
 
@@ -1570,16 +1571,16 @@ sub teams
 						my $team=0;
 						$team = 0 if ($player{side} eq "GDI" || $player{side} eq "All");
 						$team = 1 if ($player{side} eq "NOD" || $player{side} eq "Sov");
-						modules::RenRemCMD( "msg $player{name} has been changed by [BR]." );
-						modules::RenRemCMD( "team2 $player{id} $team" );
-						modules::RenRemCMD( "ppage $player{id} [BR] TeamRegulator has changed your team, because you did not even teams." );
+						RenRem::RenRemCMD( "msg $player{name} has been changed by [BR]." );
+						RenRem::RenRemCMD( "team2 $player{id} $team" );
+						modules::pagePlayer( $player{'id'}, "BRenBot", "TeamRegulator has changed your team, because you did not even teams." );
 
 					}
 				}
 			} # end of bhs
 			else
 			{
-				modules::RenRemCMD("msg [BR] Teams are uneven! These players will be kicked in 1 minute: $nicknames");
+				RenRem::RenRemCMD("msg [BR] Teams are uneven! These players will be kicked in 1 minute: $nicknames");
 				$teamsinprogress = 1;
 
 				POE::Session->create
@@ -1612,7 +1613,7 @@ sub teams
 		} # end of nicknames
 		else
 		{
-			modules::RenRemCMD("msg [BR] Teams are uneven! Please even the teams!");
+			RenRem::RenRemCMD("msg [BR] Teams are uneven! Please even the teams!");
 			$teamsinprogress=0;
 		}
 
@@ -1685,7 +1686,7 @@ sub warn_teamchangers
 				}
 			}
 		}
-		modules::RenRemCMD("msg [BR] Even Teams! The following players will be kicked in 30 seconds: $nicknames");
+		RenRem::RenRemCMD("msg [BR] Even Teams! The following players will be kicked in 30 seconds: $nicknames");
 	} # end of difference
 
 } #end of function
@@ -1740,7 +1741,7 @@ sub check_team_status
 				# If they have changed back to their original team let them off the hook
 				if ($old_name->{'side'} eq $otherside)
 				{
-					modules::RenRemCMD("msg $old_name->{'name'} will be no longer kicked.");
+					RenRem::RenRemCMD("msg $old_name->{'name'} will be no longer kicked.");
 				}
 				else	# Otherwise kick them
 				{
@@ -1771,7 +1772,7 @@ sub postmsg
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $syntaxvalue");
+				RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue");
 			}
 
 			return;
@@ -1805,7 +1806,7 @@ sub postrule
 					$message=substr($message,0,228); #limit length to <249 chars to prevent fds crash
 				}
 
-				modules::RenRemCMD("msg $message");
+				RenRem::RenRemCMD("msg $message");
 				return;
 			}
 
@@ -1852,7 +1853,7 @@ sub donate
 		else
 		{
 			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			modules::RenRemCMD( "msg [BR] Usage: $syntaxvalue" );
+			RenRem::RenRemCMD( "msg [BR] Usage: $syntaxvalue" );
 			return;
 		}
 
@@ -1912,7 +1913,7 @@ sub donate
 
 							modules::pagePlayer( $player{'id'}, "BRenBot", "You have donated $money credits to $player2{name}!" );
 							modules::pagePlayer( $player2{'id'}, "BRenBot", "$player{name} has donated $money to you!" );
-							modules::RenRemCMD( "donate $player{id} $player2{id} $money" );
+							RenRem::RenRemCMD( "donate $player{id} $player2{id} $money" );
 						}
 						else
 						{
@@ -1954,7 +1955,7 @@ sub ppage
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $syntaxvalue");
+				RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue");
 			}
 
 			return;
@@ -1975,7 +1976,7 @@ sub ppage
 					my ( $result, %player ) = playerData::getPlayerData( $user );
 					if ( $result == 1 )
 					{
-						modules::RenRemCMD("ppage $player{id} ($pager) $text");
+						RenRem::RenRemCMD("ppage $player{id} ($pager) $text");
 						brIRC::ircmsg ( "9ppage Sent to $player{name} --> \($pager): $text", $args{'ircChannelCode'} );
 					}
 					else
@@ -2009,7 +2010,7 @@ sub sndp
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $syntaxvalue");
+				RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue");
 			}
 
 			return;
@@ -2025,7 +2026,7 @@ sub sndp
 			my ( $result, %player ) = playerData::getPlayerData( $args{'arg1'} );
 			if ( $result == 1 )
 			{
-				modules::RenRemCMD("sndp $player{id} $args{arg2}");
+				RenRem::RenRemCMD("sndp $player{id} $args{arg2}");
 				brIRC::ircmsg ( "9PrivateSound sent to $player{name} --> \($pager): $args{arg2}", $args{'ircChannelCode'} );
 			}
 			else
@@ -2060,7 +2061,7 @@ sub tpage
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $syntaxvalue");
+				RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue");
 			}
 
 			return;
@@ -2077,9 +2078,9 @@ sub tpage
 				if (! ($text)) { brIRC::ircmsg ( "Usage: !tpage <team> <text>", $args{'ircChannelCode'} ); }
 				else
 				{
-					modules::RenRemCMD( "cmsgt $team 0,255,0 \($args{nick} to team $team): $text" );
-					modules::RenRemCMD( "sndt $team yo1.wav" );
-					#modules::RenRemCMD("tpage $team ($args{nick}) $text");
+					RenRem::RenRemCMD( "cmsgt $team 0,255,0 \($args{nick} to team $team): $text" );
+					RenRem::RenRemCMD( "sndt $team yo1.wav" );
+					#RenRem::RenRemCMD("tpage $team ($args{nick}) $text");
 					brIRC::ircmsg ( "9TeamPage Sent to Team $team --> \($args{nick}): $text", $args{'ircChannelCode'} );
 				}
 	 		}
@@ -2110,7 +2111,7 @@ sub snda
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
+				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
 			}
 			return;
 		}
@@ -2120,7 +2121,7 @@ sub snda
 			my $pager = $args{nick};
 			my $snd   = $args{arg1};
 
-			modules::RenRemCMD("snda $args{arg1}");
+			RenRem::RenRemCMD("snda $args{arg1}");
 			brIRC::ircmsg ( "9Global Sound --> \($pager): $args{arg1}", $args{'ircChannelCode'} );
 		}
 		else
@@ -2148,7 +2149,7 @@ sub sndt
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
+				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
 			}
 			return;
 		}
@@ -2161,7 +2162,7 @@ sub sndt
 			my $snd  = $args{arg2};
 			if ($team =~ /nod/i) {$team = "0"} #support user specifying NOD instead of 0
 			if ($team =~ /gdi/i) {$team = "1"} #support user specifying GDI instead of 1
-			modules::RenRemCMD("sndt $team $args{arg2}");
+			RenRem::RenRemCMD("sndt $team $args{arg2}");
 			brIRC::ircmsg ( "9TeamSound Sent to Team $team --> \($pager): $args{arg2}", $args{'ircChannelCode'} );
 		}
 		else
@@ -2190,7 +2191,7 @@ sub pamsg
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
+				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
 			}
 			return;
 		}
@@ -2211,7 +2212,7 @@ sub pamsg
 					my ($result, %player) = playerData::getPlayerData($user);
 					if ($result == 1)
 					{
-						modules::RenRemCMD("pamsg $player{id} ($pager) $text");
+						RenRem::RenRemCMD("pamsg $player{id} ($pager) $text");
 						brIRC::ircmsg ( "9Pamsg Sent to $player{name} --> \($pager): $text", $args{'ircChannelCode'} );
 					}
 					else
@@ -2293,7 +2294,7 @@ sub wpage
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
+				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
 			}
 			return;
 		}
@@ -2305,7 +2306,7 @@ sub wpage
 			$args{arg} =~ m/\!(\w+)\s*(\S*)\s*(.*)/i;
 			my $text = $3;
 
-			modules::RenRemCMD("page $user \($args{nick}): $text");
+			RenRem::RenRemCMD("page $user \($args{nick}): $text");
 			brIRC::ircmsg ( "9Page Sent to $user --> \($args{nick}): $text", $args{'ircChannelCode'} );
 		}
 	}
@@ -2329,7 +2330,7 @@ sub forcetc
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
+				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
 			}
 			return;
 		}
@@ -2346,7 +2347,7 @@ sub forcetc
 
 				if (!modules::get_module("gamelog") )
 				{
-					modules::RenRemCMD("msg [BR] Gamelog must be enabled to be able to use forcetc");
+					RenRem::RenRemCMD("msg [BR] Gamelog must be enabled to be able to use forcetc");
 					return;
 				}
 
@@ -2355,8 +2356,8 @@ sub forcetc
 					my $team = 0;
 					$team = 0 if ($player{'side'} eq "GDI" || $player{'side'} eq "All");
 					$team = 1 if ($player{'side'} eq "NOD" || $player{'side'} eq "Sov");
-					modules::RenRemCMD( "msg $player{name} has changed teams." );
-					modules::RenRemCMD( "team2 $player{id} $team" );
+					RenRem::RenRemCMD( "msg $player{name} has changed teams." );
+					RenRem::RenRemCMD( "team2 $player{id} $team" );
 					modules::pagePlayer ( $player{'id'}, "BRenBot", "$admin has changed your team by force." );
 				}
 				else
@@ -2391,7 +2392,7 @@ sub kill
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
+				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
 			}
 			return;
 		}
@@ -2413,7 +2414,7 @@ sub kill
 					}
 					else
 					{
-						modules::RenRemCMD("msg [BR] Gamelog must be enabled to be able to use kill" );
+						RenRem::RenRemCMD("msg [BR] Gamelog must be enabled to be able to use kill" );
 					}
 					return;
 				}
@@ -2430,7 +2431,7 @@ sub kill
 					}
 					else
 					{
-						modules::RenRemCMD("msg [BR] Killing $player{name} at this time would end the game." );
+						RenRem::RenRemCMD("msg [BR] Killing $player{name} at this time would end the game." );
 					}
 					return;
 				}
@@ -2439,21 +2440,21 @@ sub kill
 				# Check they are actually loaded into the game before trying to kill them
 				if ( gamelog::isPlayerLoaded( $player{'name'} ) )
 				{
-					modules::RenRemCMD( "msg $player{name} has been killed by $admin." );
+					RenRem::RenRemCMD( "msg $player{name} has been killed by $admin." );
 
 					# Use kill console command if BRenBot.dll is installed, otherwise use team2 twice
 					if ( modules::get_module("BRenBot_dll") )
 					{
-						modules::RenRemCMD ( "eject $player{id}" );
-						modules::RenRemCMD ( "kill $player{id}" );
+						RenRem::RenRemCMD ( "eject $player{id}" );
+						RenRem::RenRemCMD ( "kill $player{id}" );
 					}
 					else
 					{
 						my $team = ( $player{side} eq "GDI" || $player{side} eq "All" ) ? 0 : 1;
-						modules::RenRemCMD( "team2 $player{id} $team" );
+						RenRem::RenRemCMD( "team2 $player{id} $team" );
 
 						$team = ( $team == 0 ) ? 1 : 0;
-						modules::RenRemCMD( "team2 $player{id} $team" );
+						RenRem::RenRemCMD( "team2 $player{id} $team" );
 					}
 
 					modules::pagePlayer ( $player{'id'}, "BRenBot", "$admin has killed you." );
@@ -2466,7 +2467,7 @@ sub kill
 					}
 					else
 					{
-						modules::RenRemCMD ("msg [BR] Player is not finished with loading yet.");
+						RenRem::RenRemCMD ("msg [BR] Player is not finished with loading yet.");
 					}
 				}
 			}
@@ -2506,7 +2507,7 @@ sub killme
 			{
 				if ( !modules::get_module("gamelog") )
 				{
-					modules::RenRemCMD("msg [BR] Gamelog must be enabled to be able to use killme" );
+					RenRem::RenRemCMD("msg [BR] Gamelog must be enabled to be able to use killme" );
 					return;
 				}
 
@@ -2526,21 +2527,21 @@ sub killme
 					# Use kill console command if BRenBot.dll is installed, otherwise use team2 twice
 					if ( modules::get_module("BRenBot_dll") )
 					{
-						modules::RenRemCMD ( "eject $player{id}" );
-						modules::RenRemCMD ( "kill $player{id}" );
+						RenRem::RenRemCMD ( "eject $player{id}" );
+						RenRem::RenRemCMD ( "kill $player{id}" );
 					}
 					else
 					{
 						my $team = ( $player{side} eq "GDI" || $player{side} eq "All" ) ? 0 : 1;
-						modules::RenRemCMD( "team2 $player{id} $team" );
+						RenRem::RenRemCMD( "team2 $player{id} $team" );
 
 						$team = ( $team == 0 ) ? 1 : 0;
-						modules::RenRemCMD( "team2 $player{id} $team" );
+						RenRem::RenRemCMD( "team2 $player{id} $team" );
 					}
 				}
 				else
 				{
-					modules::RenRemCMD ("msg [BR] Player has not finished loading yet.");
+					RenRem::RenRemCMD ("msg [BR] Player has not finished loading yet.");
 				}
 			}
 		}
@@ -2572,20 +2573,20 @@ sub setnextmap
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
+				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
 			}
 			return;
 		}
 
 		my ($result,$mapname) = modules::SetNextMap ( $args{'arg1'} );
 		if ($result == 1)
-			{ modules::RenRemCMD( "msg [BR] Setting next map to $mapname ..." ); }
+			{ RenRem::RenRemCMD( "msg [BR] Setting next map to $mapname ..." ); }
 		elsif ($result == 0)
-			{ modules::RenRemCMD( "msg [BR] ERROR: $args{arg1} not found." ); }
+			{ RenRem::RenRemCMD( "msg [BR] ERROR: $args{arg1} not found." ); }
 		elsif ($result == 2)
-			{ modules::RenRemCMD( "msg [BR] ERROR: $args{arg1} is not unique." ); }
+			{ RenRem::RenRemCMD( "msg [BR] ERROR: $args{arg1} is not unique." ); }
 		else
-			{ modules::RenRemCMD ( "msg [BR] Error setting next map to $mapname." ); }
+			{ RenRem::RenRemCMD ( "msg [BR] Error setting next map to $mapname." ); }
 	}	# End of eval
 	or modules::display_error($@);
 }
@@ -2605,18 +2606,18 @@ sub allow
 			}
 			else
 			{
-				modules::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
+				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
 			}
 			return;
 		}
 
 		my $allow = $args{arg1};
-		modules::RenRemCMD( "allow $allow" ) if ( $brconfig::ssgm_version < 4 );
+		RenRem::RenRemCMD( "allow $allow" ) if ( $brconfig::ssgm_version < 4 );
 
 		if ( modules::remove_kick ( $allow ) )
 		{
 			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "$allow is now allowed to return to the server.", $args{'ircChannelCode'} ); }
-			else { modules::RenRemCMD( "msg [BR] $allow is now allowed to return to the server." ); }
+			else { RenRem::RenRemCMD( "msg [BR] $allow is now allowed to return to the server." ); }
 		}
 		else
 		{
@@ -2646,7 +2647,7 @@ sub ban
 			if ( $args{'nicktype'} == 1 )
 				{ brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
 			else
-				{ modules::RenRemCMD("msg [BR] Usage: $syntaxvalue"); }
+				{ RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue"); }
 			return;
 		}
 
@@ -2753,7 +2754,7 @@ sub rules
 	{
 		postrule( 1, $args{'ircChannelCode'} );
 		if ( $modules::maprules && modules::get_module ( "map_settings" ) )
-			{ modules::RenRemCMD ( "msg [BR] Special rules for ".serverStatus::getMap().": ".$modules::maprules ); }
+			{ RenRem::RenRemCMD ( "msg [BR] Special rules for ".serverStatus::getMap().": ".$modules::maprules ); }
 	}
 	or modules::display_error($@);
 }
@@ -2906,7 +2907,7 @@ sub hostmsg
 				# Limit message length to <249 chars to prevent fds crash
 				$msg = substr ( $msg, 0, 228 );
 
-				modules::RenRemCMD("msg \($args{nick}): $msg");
+				RenRem::RenRemCMD("msg \($args{nick}): $msg");
 			}
 		}
 	}
@@ -2936,7 +2937,7 @@ sub admin_message
 			{
 				my $msg = $1;
 				$msg = substr($msg,0,228); #limit length to <249 chars to prevent fds crash
-				modules::RenRemCMD("admin_message \($args{nick}): $msg");
+				RenRem::RenRemCMD("admin_message \($args{nick}): $msg");
 			}
 		}
 	}
@@ -3080,7 +3081,7 @@ sub setbw
 				{
 					my $bandwidth = $args{arg2};
 
-					modules::RenRemCMD( "SETBW $player{id} $bandwidth" );
+					RenRem::RenRemCMD( "SETBW $player{id} $bandwidth" );
 					modules::pagePlayer ( $player{'id'}, "BRenBot", "Your bandwidth has been set to $bandwidth by $args{nick}." );
 					brIRC::ircmsg ( "Setting the bandwidth of $player{name} to $bandwidth..", $args{'ircChannelCode'} );
 				}
@@ -3139,7 +3140,7 @@ sub getbw
 					}
 					else
 					{
-						modules::RenRemCMD ( "msg [BR] Error - $args{arg1} was not found ingame, or is not unique." );
+						RenRem::RenRemCMD ( "msg [BR] Error - $args{arg1} was not found ingame, or is not unique." );
 					}
 					return;
 				}
@@ -3147,7 +3148,7 @@ sub getbw
 
 			elsif ( $args{nicktype} != 1 )
 			{
-				modules::RenRemCMD ( "msg [BR] You cannot use !getbw ingame. Please use !getbw <player>" );
+				RenRem::RenRemCMD ( "msg [BR] You cannot use !getbw ingame. Please use !getbw <player>" );
 				return;
 			}
 
@@ -3211,7 +3212,7 @@ sub showbw
 			}
 			else
 			{
-				modules::RenRemCMD ( "msg [BR] $pname has their bandwidth set to $player{'bandwidth'}" );
+				RenRem::RenRemCMD ( "msg [BR] $pname has their bandwidth set to $player{'bandwidth'}" );
 			}
 		}
 	}
@@ -3270,7 +3271,7 @@ sub deltempmod
 		if ( modules::IsTempMod( $args{nick} ) )
 		{
 			# Dont let temp admins remove other temp admins
-			modules::RenRemCMD( "msg [BR] TEMP moderators cannot delete other TEMP moderators." );
+			RenRem::RenRemCMD( "msg [BR] TEMP moderators cannot delete other TEMP moderators." );
 		}
 		else
 		{
@@ -3303,7 +3304,7 @@ sub addtempmod
 		# Dont let temp admins give temp admin to others
 		if ( modules::IsTempMod ( $args{nick} ) )
 		{
-			modules::RenRemCMD( "msg [BR] TEMP moderators cannot add other TEMP moderators." );
+			RenRem::RenRemCMD( "msg [BR] TEMP moderators cannot add other TEMP moderators." );
 		}
 		else
 		{
@@ -3322,7 +3323,7 @@ sub gameinfo
 
 	eval
 	{
-		#modules::RenRemCMD("game_info");
+		#RenRem::RenRemCMD("game_info");
 		my ( $serverMode, $currentMap, $gdiPlayers, $gdiPoints, $nodPlayers, $nodPoints, $currentPlayers, $maxPlayers, $timeRemaining, $sfps ) = serverStatus::getGameStatus();
 
 		if (modules::get_module("new_gi") )		# Use new style GI
@@ -3390,7 +3391,7 @@ sub playerinfo
 		}
 
 		# Send player_info command to trigger update of playerlist array
-		modules::RenRemCMD( "player_info" );
+		RenRem::RenRemCMD( "player_info" );
 
 		if ( serverStatus::getCurrentPlayers() == 0 )
 		{
@@ -3610,8 +3611,8 @@ sub restart
 	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
 	eval
 	{
-		modules::RenRemCMD("msg [BR] Server RESTART initiated by admin.");
-		modules::RenRemCMD("restart");
+		RenRem::RenRemCMD("msg [BR] Server RESTART initiated by admin.");
+		RenRem::RenRemCMD("restart");
 		return;
 	}
 	or modules::display_error($@);
@@ -3621,8 +3622,8 @@ sub shutdown
 {
 	eval
 	{
-		modules::RenRemCMD( "msg [BR] Server SHUTDOWN initiated by admin." );
-		modules::RenRemCMD( "quit" );
+		RenRem::RenRemCMD( "msg [BR] Server SHUTDOWN initiated by admin." );
+		RenRem::RenRemCMD( "quit" );
 		return;
 	}
 }
@@ -3644,7 +3645,7 @@ sub reboot
 		{
 			if ( $args{nicktype} != 1 )
 			{
-				modules::RenRemCMD( "msg Usage: !reboot NOW -CASE SENSITIVE! TO AVOID ACCIDENTAL TRIGGERING" );
+				RenRem::RenRemCMD( "msg Usage: !reboot NOW -CASE SENSITIVE! TO AVOID ACCIDENTAL TRIGGERING" );
 			}
 			else
 			{
@@ -3655,7 +3656,7 @@ sub reboot
 		{
 			if ( $args{nicktype} != 1 )
 			{
-				modules::RenRemCMD( "msg Sorry, The reboot command is only available on Win32 servers." );
+				RenRem::RenRemCMD( "msg Sorry, The reboot command is only available on Win32 servers." );
 			}
 			else
 			{
@@ -3689,16 +3690,16 @@ sub minelimit
 			{
 				$modules::minelimit = $args{arg1};
 				RenRem::RenRemCMD ( "mlimit $args{arg1}" );
-				modules::RenRemCMD( "msg [BR] The mine limit has been set to ".$modules::minelimit." mines." );
+				RenRem::RenRemCMD( "msg [BR] The mine limit has been set to ".$modules::minelimit." mines." );
 			}
 			else
 			{
-				modules::RenRemCMD( "msg [BR] The mine limit for ".serverStatus::getMap()." is ".$modules::minelimit." mines." );
+				RenRem::RenRemCMD( "msg [BR] The mine limit for ".serverStatus::getMap()." is ".$modules::minelimit." mines." );
 			}
 		}
 		else
 		{
-			modules::RenRemCMD( "msg [BR] Configurable mine limits are not available on this server." );
+			RenRem::RenRemCMD( "msg [BR] Configurable mine limits are not available on this server." );
 		}
 		return;
 	}
@@ -3720,16 +3721,16 @@ sub vehiclelimit
 			{
 				$modules::vehiclelimit = $args{arg1};
 				RenRem::RenRemCMD ( "vlimit $$args{arg1}" );
-				modules::RenRemCMD( "msg [BR] The vehicle limit has been set to ".$modules::vehiclelimit." vehicles." );
+				RenRem::RenRemCMD( "msg [BR] The vehicle limit has been set to ".$modules::vehiclelimit." vehicles." );
 			}
 			else
 			{
-				modules::RenRemCMD( "msg [BR] The vehicle limit for ".serverStatus::getMap()." is ".$modules::vehiclelimit." vehicles." );
+				RenRem::RenRemCMD( "msg [BR] The vehicle limit for ".serverStatus::getMap()." is ".$modules::vehiclelimit." vehicles." );
 			}
 		}
 		else
 		{
-			modules::RenRemCMD( "msg [BR] Configurable vehicle limits are not available on this server." );
+			RenRem::RenRemCMD( "msg [BR] Configurable vehicle limits are not available on this server." );
 		}
 		return;
 	}
@@ -3747,13 +3748,13 @@ sub gameover
 	{
 		if ( $args{'arg'} eq "!gameover NOW" )
 		{
-			modules::RenRemCMD( "gameover" );
+			RenRem::RenRemCMD( "gameover" );
 			brIRC::ircmsg ( "GameOver CMD Sent.", "A" );
 		}
 		else
 		{
 			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: !gameover NOW     - CASE SENSITIVE to avoid accidental triggering.", $args{'ircChannelCode'} ); }
-			else { modules::RenRemCMD( "msg Usage: !gameover NOW     - CASE SENSITIVE to avoid accidental triggering." ); }
+			else { RenRem::RenRemCMD( "msg Usage: !gameover NOW     - CASE SENSITIVE to avoid accidental triggering." ); }
 		}
 	}
 }
@@ -3789,7 +3790,7 @@ sub kick
 			if ( $result != 1 )
 			{
 				if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "KICK ERROR: $target was not found ingame, or is not unique.", $args{'ircChannelCode'} ); }
-				else { modules::RenRemCMD ( "msg [BR] KICK ERROR: $target was not found ingame, or is not unique." ); }
+				else { RenRem::RenRemCMD ( "msg [BR] KICK ERROR: $target was not found ingame, or is not unique." ); }
 				return;
 			}
 
@@ -3815,7 +3816,7 @@ sub fds
 	{
 		$args{arg} =~ m/\!fds\s(.+)/i;
 		my $message = substr ( $1, 0, 228 );		# Limit length to prevent crashing the FDS
-		modules::RenRemCMD ( $message );
+		RenRem::RenRemCMD ( $message );
 	}
 }
 
@@ -3854,7 +3855,7 @@ sub shun
 					{
 						#$main::shunnedPlayers{$name} = 1;
 						playerData::setKeyValue ( $name, "isShunned", 1 );
-						modules::RenRemCMD( "msg [BR] $player{name} has been shunned by $args{nick}, and will not be allowed to use any of BRenBots commands." );
+						RenRem::RenRemCMD( "msg [BR] $player{name} has been shunned by $args{nick}, and will not be allowed to use any of BRenBots commands." );
 
 						# Write the shunning to the logs table
 						brdatabase::writeLog ( 3, "[MISC] $player{name} was shunned by $args{nick}." );
@@ -3911,7 +3912,7 @@ sub unshun
 				{
 					#delete $main::shunnedPlayers{$name};
 					playerData::setKeyValue ( $name, "isShunned", 0 );
-					modules::RenRemCMD( "msg [BR] $player{name} has been unshunned by $args{nick}, and can now use BRenBots commands normally again." );
+					RenRem::RenRemCMD( "msg [BR] $player{name} has been unshunned by $args{nick}, and can now use BRenBots commands normally again." );
 					return;
 				}
 				else
@@ -3997,7 +3998,7 @@ sub ping
 	}
 	else
 	{
-		modules::RenRemCMD ( "msg [BR] $message" );
+		RenRem::RenRemCMD ( "msg [BR] $message" );
 	}
 }
 
@@ -4042,13 +4043,13 @@ sub voting
 			if ($vcmd =~ /off/i)			# Disabling voting
 			{
 				$brconfig::config_votingenabled=0;
-				modules::RenRemCMD( "msg [BR] Voting has been temporarily DISABLED by the administration.");
+				RenRem::RenRemCMD( "msg [BR] Voting has been temporarily DISABLED by the administration.");
 				return;
 			}
 			elsif ($vcmd =~ /on/i)			# Enable voting
 			{
 				$brconfig::config_votingenabled=1;
-				modules::RenRemCMD( "msg [BR] Voting has been re-ENABLED by the administration.");
+				RenRem::RenRemCMD( "msg [BR] Voting has been re-ENABLED by the administration.");
 				return;
 			}
 			elsif ($vcmd =~ /stop/i)		# Stop votes in progress
@@ -4056,13 +4057,13 @@ sub voting
 
 				if ( $voteinprogress == 1 )
 				{
-					modules::RenRemCMD( "msg [BR] Stopping vote in progress." );
+					RenRem::RenRemCMD( "msg [BR] Stopping vote in progress." );
 					$kernel->post( "voteThread" => "cancel" );
 					$voteinprogress = 0;
 				}
 				elsif ( $teamsinprogress == 1 )
 				{
-					modules::RenRemCMD("msg [BR] Stopping team regulator..");
+					RenRem::RenRemCMD("msg [BR] Stopping team regulator..");
 					$kernel->post( "teams" => "cancel" );
 					$teamsinprogress = 0;
 				}
@@ -4101,14 +4102,14 @@ sub stop
 
 	if ($voteinprogress == 1)
 	{
-		modules::RenRemCMD ("msg [BR] Stopping vote in progress..");
+		RenRem::RenRemCMD ("msg [BR] Stopping vote in progress..");
 
 		$kernel->post("voteThread" => "cancel");
 		$voteinprogress = 0;
 	}
 	elsif ($teamsinprogress == 1)
 	{
-		modules::RenRemCMD ("msg [BR] Stopping team regulator..");
+		RenRem::RenRemCMD ("msg [BR] Stopping team regulator..");
 
 		$kernel->post("teams" => "cancel");
 		$teamsinprogress = 0;
@@ -4121,7 +4122,7 @@ sub stop
 		}
 		else
 		{
-			modules::RenRemCMD ("msg [BR] Nothing to stop.");
+			RenRem::RenRemCMD ("msg [BR] Nothing to stop.");
 		}
 	}
 } # End of stop
@@ -4153,7 +4154,7 @@ sub vote
 		# Now check that voting is enabled
 		if ( $brconfig::config_votingenabled eq "0" )
 		{
-			modules::RenRemCMD( "msg [BR] Sorry, Voting has been temporarily disabled by the administration.");
+			RenRem::RenRemCMD( "msg [BR] Sorry, Voting has been temporarily disabled by the administration.");
 			return;
 		}
 
@@ -4173,7 +4174,7 @@ sub vote
 			# Is there already a vote running?
 			if ( $voteinprogress == 1 )
 			{
-				modules::RenRemCMD( "msg [BR] Only 1 vote is allowed at a time.  Please wait for the current voting period to end." );
+				RenRem::RenRemCMD( "msg [BR] Only 1 vote is allowed at a time.  Please wait for the current voting period to end." );
 				return;
 			}
 
@@ -4187,7 +4188,7 @@ sub vote
 			# Vote yes or no
 			if ( !$voteinprogress )
 			{
-				modules::RenRemCMD("msg [BR] Error: A vote is not in progress!");
+				RenRem::RenRemCMD("msg [BR] Error: A vote is not in progress!");
 				return;
 			}
 
@@ -4199,7 +4200,7 @@ sub vote
 				return;
 			}
 			#$kernel->post( IRC => privmsg => CHANNEL, "Duplicate Vote Cast by $args{nick}...discarding.");
-			modules::RenRemCMD( "msg [BR] Vote Error: $args{nick}, you are not allowed to vote multiple times!" );
+			RenRem::RenRemCMD( "msg [BR] Vote Error: $args{nick}, you are not allowed to vote multiple times!" );
 		}
 	} # End of eval
 	or modules::display_error($@);
@@ -4229,14 +4230,14 @@ sub startVote
 		# Check this type of vote is allowed
 		if ( $brconfig::config_voting_allow_nextmap != 1 )
 		{
-			modules::RenRemCMD( "msg [BR] Voting to change the nextmap has been disabled." );
+			RenRem::RenRemCMD( "msg [BR] Voting to change the nextmap has been disabled." );
 			return;
 		}
 
 		# Check the next map has been specified
 		if ( !$args{'arg2'} )
 		{
-			modules::RenRemCMD( "msg [BR] Vote Map Error: You must specify the map to vote for. Vote Map Syntax: !vote map mapname" );
+			RenRem::RenRemCMD( "msg [BR] Vote Map Error: You must specify the map to vote for. Vote Map Syntax: !vote map mapname" );
 			return;
 		}
 
@@ -4245,18 +4246,18 @@ sub startVote
 
 		if ( $result == 2 )
 		{
-			modules::RenRemCMD( "msg [BR] Vote Map Error: $args{arg2} is not unique, please be more specific." );
+			RenRem::RenRemCMD( "msg [BR] Vote Map Error: $args{arg2} is not unique, please be more specific." );
 			return;
 		}
 		elsif ( $result == 0 )
 		{
-			modules::RenRemCMD( "msg [BR] Vote Map Error: $args{arg2} was not found in the servers data folder." );
+			RenRem::RenRemCMD( "msg [BR] Vote Map Error: $args{arg2} was not found in the servers data folder." );
 			return;
 		}
 
 		# If neither of the two checks stopped the sub, the map must be ok to use
 		$voteHeap{'map'} = $vote_mapname;
-		modules::RenRemCMD ( "msg [BR] $args{nick} has initiated a vote to change the next map to $vote_mapname. You have " . $brconfig::config_votingperiod . " seconds to vote using !vote yes or !vote no." );
+		RenRem::RenRemCMD ( "msg [BR] $args{nick} has initiated a vote to change the next map to $vote_mapname. You have " . $brconfig::config_votingperiod . " seconds to vote using !vote yes or !vote no." );
 	}
 
 
@@ -4268,14 +4269,14 @@ sub startVote
 		# Check this type of vote is allowed
 		if ( $brconfig::config_voting_allow_kick != 1 )
 		{
-			modules::RenRemCMD( "msg [BR] Voting to kick another player has been disabled." );
+			RenRem::RenRemCMD( "msg [BR] Voting to kick another player has been disabled." );
 			return;
 		}
 
 		# Check they have specified who to kick and why
 		if ( !$args{arg2} )
 		{
-			modules::RenRemCMD( "msg [BR] You must specify the player to vote-kick, and give a reason. Vote Kick Syntax: !vote kick playername reason" );
+			RenRem::RenRemCMD( "msg [BR] You must specify the player to vote-kick, and give a reason. Vote Kick Syntax: !vote kick playername reason" );
 			return;
 		}
 
@@ -4283,12 +4284,12 @@ sub startVote
 		my ( $result, %player ) = playerData::getPlayerData( $args{arg2} );
 		if ( $result == 2 )
 		{
-			modules::RenRemCMD( "msg [BR] Error: $args{arg2} is not unique, please be more specific!" );
+			RenRem::RenRemCMD( "msg [BR] Error: $args{arg2} is not unique, please be more specific!" );
 			return;
 		}
 		elsif ( $result != 1 )
 		{
-			modules::RenRemCMD( "msg [BR] Error: $args{arg2} was not found in the game!" );
+			RenRem::RenRemCMD( "msg [BR] Error: $args{arg2} was not found in the game!" );
 			return;
 		}
 
@@ -4300,7 +4301,7 @@ sub startVote
 		# Check they are not trying to kick a moderator or administator
 		if ( ( modules::IsHalfMod($player{'name'} ) ) || ( modules::IsFullMod($player{'name'} ) ) || ( modules::IsAdmin($player{'name'} ) ) )
 		{
-			modules::RenRemCMD( "msg [BR] $args{nick} tried to vote-kick a server moderator or administator. They are now the target of the vote." );
+			RenRem::RenRemCMD( "msg [BR] $args{nick} tried to vote-kick a server moderator or administator. They are now the target of the vote." );
 			$voteHeap{'kick_target'} = $args{'nick'};
 			$voteHeap{'kick_reason'} = "trying To VOTE-KICK a server moderator or server administator.";
 			$args{'nick'} = "BRenBot";
@@ -4308,13 +4309,13 @@ sub startVote
 		# Check a temp mod is not trying to vote-kick another temp mod
 		elsif ( ( modules::IsTempMod( $args{'nick'} ) ) && ( modules::IsTempMod( $player{'name'} ) ) )
 		{
-			modules::RenRemCMD( "msg [BR] $args{nick} tried to vote-kick another Temporary Moderator. They are now the target of the vote." );
+			RenRem::RenRemCMD( "msg [BR] $args{nick} tried to vote-kick another Temporary Moderator. They are now the target of the vote." );
 			$voteHeap{'kick_target'} = $args{'nick'};
 			$voteHeap{'kick_reason'} = "trying to VOTE-KICK another Temporary Moderator";
 			$args{'nick'} = "BRenBot";
 		}
 
-		modules::RenRemCMD ( "msg [BR] $args{nick} has initiated a vote to kick $voteHeap{kick_target} for $voteHeap{kick_reason}. You have " . $brconfig::config_votingperiod . " seconds to vote using !vote yes or !vote no." );
+		RenRem::RenRemCMD ( "msg [BR] $args{nick} has initiated a vote to kick $voteHeap{kick_target} for $voteHeap{kick_reason}. You have " . $brconfig::config_votingperiod . " seconds to vote using !vote yes or !vote no." );
 	}
 
 
@@ -4326,11 +4327,11 @@ sub startVote
 		# Check this type of vote is allowed
 		if ( $brconfig::config_voting_allow_gameover != 1 )
 		{
-			modules::RenRemCMD( "msg [BR] Voting to end the current map has been disabled." );
+			RenRem::RenRemCMD( "msg [BR] Voting to end the current map has been disabled." );
 			return;
 		}
 
-		modules::RenRemCMD ( "msg [BR] $args{nick} has initiated a vote to change to the next map. You have " . $brconfig::config_votingperiod . " seconds to vote using !vote yes or !vote no." );
+		RenRem::RenRemCMD ( "msg [BR] $args{nick} has initiated a vote to change to the next map. You have " . $brconfig::config_votingperiod . " seconds to vote using !vote yes or !vote no." );
 	}
 
 
@@ -4371,7 +4372,7 @@ sub startVote
 				elsif ( $_[HEAP]->{voteType} == 3 )
 				{ $message = " change to the next map in the rotation"; }
 
-				modules::RenRemCMD ( "msg [BR] A vote is in progress to $message. You have " . ($brconfig::config_votingperiod /2) . " seconds left to vote using !vote yes and !vote no." );
+				RenRem::RenRemCMD ( "msg [BR] A vote is in progress to $message. You have " . ($brconfig::config_votingperiod /2) . " seconds left to vote using !vote yes and !vote no." );
 			},
 			tick2 => \&endVote,
 			cancel => sub
@@ -4412,24 +4413,24 @@ sub endVote
 	my $nod_yes_votes = ( $voters{'NOD_yes'} ) ? $voters{'NOD_yes'} : 0;
 	my $nod_no_votes = ( $voters{'NOD_no'} ) ? $voters{'NOD_no'} : 0;
 
-	modules::RenRemCMD ( "msg [BR] Voting period over, tallying votes...   GDI; $gdi_yes_votes Yes, $gdi_no_votes No   Nod; $nod_yes_votes Yes, $nod_no_votes No" );
+	RenRem::RenRemCMD ( "msg [BR] Voting period over, tallying votes...   GDI; $gdi_yes_votes Yes, $gdi_no_votes No   Nod; $nod_yes_votes Yes, $nod_no_votes No" );
 
 	my $totalVoters = $gdi_yes_votes + $gdi_no_votes + $nod_yes_votes + $nod_no_votes;
 	my $totalPlayers = serverStatus::getCurrentPlayers();
 
 	if ( $totalVoters < ( $totalPlayers / 3 ) )
 	{
-		modules::RenRemCMD ( "msg [BR] Only $totalVoters out of $totalPlayers voted, at least a third of players must vote for the vote to pass. VOTE FAILED." );
+		RenRem::RenRemCMD ( "msg [BR] Only $totalVoters out of $totalPlayers voted, at least a third of players must vote for the vote to pass. VOTE FAILED." );
 	}
 
 	elsif ( ( $gdi_yes_votes + $nod_yes_votes ) <= ( $gdi_no_votes + $nod_no_votes ) )
 	{
-		modules::RenRemCMD ( "msg [BR] More no votes than yes votes. VOTE FAILED." );
+		RenRem::RenRemCMD ( "msg [BR] More no votes than yes votes. VOTE FAILED." );
 	}
 
 	else
 	{
-		modules::RenRemCMD ( "msg [BR] More yes votes than no votes. VOTE PASSED." );
+		RenRem::RenRemCMD ( "msg [BR] More yes votes than no votes. VOTE PASSED." );
 
 
 		# Vote nextmap
@@ -4438,11 +4439,11 @@ sub endVote
 			my ($result,$mapname) = modules::SetNextMap($voteHeap{'map'});
 			if ( $result != 1 )
 			{
-				modules::RenRemCMD ( "msg [BR] Error setting next map to $voteHeap{map}." );
+				RenRem::RenRemCMD ( "msg [BR] Error setting next map to $voteHeap{map}." );
 			}
 			else
 			{
-				modules::RenRemCMD( "msg [BR] Setting next map to $mapname." );
+				RenRem::RenRemCMD( "msg [BR] Setting next map to $mapname." );
 			}
 		}
 
@@ -4460,7 +4461,7 @@ sub endVote
 			}
 			else
 			{
-				modules::RenRemCMD( "msg [BR] $voteHeap{kick_target} ran away from the server before the vote ended..." );
+				RenRem::RenRemCMD( "msg [BR] $voteHeap{kick_target} ran away from the server before the vote ended..." );
 			}
 		}
 
@@ -4468,8 +4469,8 @@ sub endVote
 		# Vote cyclemap / gameover
 		elsif ( $heap->{voteType} == 3 )
 		{
-			modules::RenRemCMD( "msg [BR] Switching to next map in rotation in 3 seconds." );
-			modules::RenRemCMDtimed( "gameover", 3 );
+			RenRem::RenRemCMD( "msg [BR] Switching to next map in rotation in 3 seconds." );
+			RenRem::RenRemCMDtimed( "gameover", 3 );
 		}
 	}
 
@@ -4687,7 +4688,7 @@ sub recommendations
 
 	if ( !modules::get_module( "recommend" ) )
 	{
-		modules::RenRemCMD( "msg [BR] Recommendations have been disabled by the Administration." );
+		RenRem::RenRemCMD( "msg [BR] Recommendations have been disabled by the Administration." );
 		return;
 	}
 
@@ -4711,20 +4712,20 @@ sub recallow
 			my $syntaxvalue = $args{settings}->{syntax}->{value};
 
 			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
-			else { modules::RenRemCMD( "msg [BR] Usage: $syntaxvalue" ); }
+			else { RenRem::RenRemCMD( "msg [BR] Usage: $syntaxvalue" ); }
 			return;
 		}
 
 		my ( $result, %player ) = playerData::getPlayerData( $args{'arg1'} );
 		if ( $result == 1 )
 		{
-			modules::RenRemCMD( "msg [BR] Recommendations have been enabled for $player{name}." );
+			RenRem::RenRemCMD( "msg [BR] Recommendations have been enabled for $player{name}." );
 			modules::rec_allow( $player{'name'} );
 		}
 		else
 		{
 			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "$args{arg1} is not ingame, or the name is not unique.", $args{'ircChannelCode'} ); }
-			else { modules::RenRemCMD( "msg [BR] $args{arg1} is not ingame, or the name is not unique." ); }
+			else { RenRem::RenRemCMD( "msg [BR] $args{arg1} is not ingame, or the name is not unique." ); }
 
 			# Write the rec-allow to the logs table
 			brdatabase::writeLog ( 3, "[MISC] $player{name} was rec allowed by $args{nick}." );
@@ -4746,14 +4747,14 @@ sub recignore
 			my $syntaxvalue = $args{settings}->{syntax}->{value};
 
 			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
-			else { modules::RenRemCMD( "msg [BR] Usage: $syntaxvalue" ); }
+			else { RenRem::RenRemCMD( "msg [BR] Usage: $syntaxvalue" ); }
 			return;
 		}
 
 		my ( $result, %player ) = playerData::getPlayerData( $args{'arg1'} );
 		if ( $result == 1 )
 		{
-			modules::RenRemCMD("msg [BR] Recommendations have been disabled for $player{name}.");
+			RenRem::RenRemCMD("msg [BR] Recommendations have been disabled for $player{name}.");
 			modules::rec_ignore( $player{'name'} );
 
 			# Write the rec-ignore to the logs table
@@ -4762,7 +4763,7 @@ sub recignore
 		else
 		{
 			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "$args{arg1} is not ingame, or the name is not unique.", $args{'ircChannelCode'} ); }
-			else { modules::RenRemCMD( "msg [BR] $args{arg1} is not ingame, or the name is not unique." ); }
+			else { RenRem::RenRemCMD( "msg [BR] $args{arg1} is not ingame, or the name is not unique." ); }
 		}
 	}
 	or modules::display_error($@);
@@ -4788,7 +4789,7 @@ sub teamplayers
 		if ( time() - $tpLastUsed < 120 )
 		{
 			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "The !teamplayers/!shown00bs commands can only be used once every 2 minutes!" ); }
-			else { modules::RenRemCMD ( "msg [BR] The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations." ); }
+			else { RenRem::RenRemCMD ( "msg [BR] The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations." ); }
 			return;
 		}
 		else { $tpLastUsed = time(); }
@@ -4828,7 +4829,7 @@ sub teamplayers
 			if ( $args{'nicktype'} == 1 )
 				{ brIRC::ircmsg ( $message, $args{'ircChannelCode'} ); }
 			else
-				{ modules::RenRemCMD( "msg [BR] $message" ); }
+				{ RenRem::RenRemCMD( "msg [BR] $message" ); }
 
 			return;
 		}
@@ -4844,7 +4845,7 @@ sub teamplayers
 		if ( $args{'nicktype'} == 1 )
 			{ brIRC::ircmsg ( $message, $args{'ircChannelCode'} ); }
 		else
-			{ modules::RenRemCMD( "msg [BR] $message" ); }
+			{ RenRem::RenRemCMD( "msg [BR] $message" ); }
 
 
 		# Output GDI players, 5 per line
@@ -4859,7 +4860,7 @@ sub teamplayers
 			if ( $args{'nicktype'} == 1 )
 				{ brIRC::ircmsg ( "8GDI: $message", $args{'ircChannelCode'} ); }
 			else
-				{ modules::RenRemCMD( "msg [BR] GDI:  $message" ); }
+				{ RenRem::RenRemCMD( "msg [BR] GDI:  $message" ); }
 		}
 
 
@@ -4875,7 +4876,7 @@ sub teamplayers
 			if ( $args{'nicktype'} == 1 )
 				{ brIRC::ircmsg ( "4Nod: $message", $args{'ircChannelCode'} ); }
 			else
-				{ modules::RenRemCMD( "msg [BR] Nod:  $message" ); }
+				{ RenRem::RenRemCMD( "msg [BR] Nod:  $message" ); }
 		}
 	}
 	or modules::display_error($@);
@@ -4993,7 +4994,7 @@ sub cmsg
 
 			if ( $args{command} eq "cmsg" )
 			{
-				modules::RenRemCMD( "cmsg $red,$green,$blue \($args{nick}): $message" );
+				RenRem::RenRemCMD( "cmsg $red,$green,$blue \($args{nick}): $message" );
 				brIRC::ircmsg ( "14CMSG: ($args{nick}): $message", $args{'ircChannelCode'} );
 			}
 			elsif ( $args{command} eq "cmsgp" )
@@ -5001,8 +5002,8 @@ sub cmsg
 				my ($result, %player) = playerData::getPlayerData( $sendTo );
 				if ($result == 1)
 				{
-					modules::RenRemCMD( "cmsgp $player{id} $red,$green,$blue \($args{nick} to $player{name}): $message" );
-					modules::RenRemCMD ( "sndp $player{id} yo1.wav" );
+					RenRem::RenRemCMD( "cmsgp $player{id} $red,$green,$blue \($args{nick} to $player{name}): $message" );
+					RenRem::RenRemCMD ( "sndp $player{id} yo1.wav" );
 					brIRC::ircmsg ( "09CMSG sent to $player{name} --> ($args{nick}): $message", $args{'ircChannelCode'} );
 				}
 				else
@@ -5022,8 +5023,8 @@ sub cmsg
 				else
 				{ return; }
 
-				modules::RenRemCMD( "cmsgt $team $red,$green,$blue \($args{nick} to team $team): $message" );
-				modules::RenRemCMD( "sndt $team yo1.wav" );
+				RenRem::RenRemCMD( "cmsgt $team $red,$green,$blue \($args{nick} to team $team): $message" );
+				RenRem::RenRemCMD( "sndt $team yo1.wav" );
 				brIRC::ircmsg ( "09CMSG sent to team $team --> ($args{nick}): $message", $args{'ircChannelCode'}  );
 			}
 		}
@@ -5059,8 +5060,8 @@ sub cmsg
 # 	{
 # 		my ( $area, $xcoord, $ycoord ) = gamelog::getPlayerArea ( $player{name} );
 #
-# 		#modules::RenRemCMD ( "cmsgp $player{id} 30,144,255 You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
-# 		modules::RenRemCMD ( "ppage $player{id} You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
+# 		#RenRem::RenRemCMD ( "cmsgp $player{id} 30,144,255 You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
+# 		RenRem::RenRemCMD ( "ppage $player{id} You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
 # 		brIRC::ircmsg ( "09Page sent to $player{name} --> You are currently in the area $area. Your coordinates are $xcoord, $ycoord.", $args{'ircChannelCode'} );
 # 	}
 # }
@@ -5083,28 +5084,28 @@ sub cmsg
 # 			{
 # 				my ( $area, $xcoord, $ycoord, $character, $vehicle ) = gamelog::getPlayerArea ( $player2{'name'} );
 #
-# 				#modules::RenRemCMD ( "cmsgp $player{id} 30,144,255 You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
+# 				#RenRem::RenRemCMD ( "cmsgp $player{id} 30,144,255 You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
 # 				if ( $vehicle ne "" )
 # 				{
-# 					modules::RenRemCMD ( "ppage $player{id} $player2{name} is in the area $area, as a $character, inside a $vehicle." );
+# 					RenRem::RenRemCMD ( "ppage $player{id} $player2{name} is in the area $area, as a $character, inside a $vehicle." );
 # 					brIRC::ircmsg ( "09Page sent to $player{name} --> $player2{name} is in the area $area, as a $character, inside a $vehicle.", $args{'ircChannelCode'} );
 # 				}
 # 				else
 # 				{
-# 					modules::RenRemCMD ( "ppage $player{id} $player2{name} is in the area $area, as a $character." );
+# 					RenRem::RenRemCMD ( "ppage $player{id} $player2{name} is in the area $area, as a $character." );
 # 					brIRC::ircmsg ( "09Page sent to $player{name} --> $player2{name} is in the area $area, as a $character.", $args{'ircChannelCode'} );
 # 				}
 #
 # 			}
 # 			else
 # 			{
-# 				modules::RenRemCMD ( "ppage $player{id} $player2{name} is not on your team! This command can only be used on your teammates." );
+# 				RenRem::RenRemCMD ( "ppage $player{id} $player2{name} is not on your team! This command can only be used on your teammates." );
 # 				brIRC::ircmsg ( "09Page sent to $player{name} --> $player2{name} is not on your team! This command can only be used on your teammates.", $args{'ircChannelCode'} );
 # 			}
 # 		}
 # 		else
 # 		{
-# 			modules::RenRemCMD ( "ppage $player{id} $args{arg1} was not found in the game, or is not unique." );
+# 			RenRem::RenRemCMD ( "ppage $player{id} $args{arg1} was not found in the game, or is not unique." );
 # 			brIRC::ircmsg ( "09Page sent to $player{name} --> $args{arg1} was not found in the game, or is not unique.", $args{'ircChannelCode'} );
 # 		}
 # 	}
@@ -5124,7 +5125,7 @@ sub cmsg
 # 	{
 # 		if ( $player{'openArea'} )
 # 		{
-# 			modules::RenRemCMD ( "ppage $player{id} You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area." );
+# 			RenRem::RenRemCMD ( "ppage $player{id} You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area." );
 # 			brIRC::ircmsg ( "09Page sent to $player{name} --> You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area.", $args{'ircChannelCode'} );
 # 			return;
 # 		}
@@ -5134,27 +5135,27 @@ sub cmsg
 # 			my $result = gamelog::createArea ( $1, $2, $args{nick} );
 # 			if ( $result == 1 )
 # 			{
-# 				modules::RenRemCMD ( "ppage $player{id} Created new area '$1'. Use !updateArea to expand the area, and close it with !closeArea." );
+# 				RenRem::RenRemCMD ( "ppage $player{id} Created new area '$1'. Use !updateArea to expand the area, and close it with !closeArea." );
 # 				brIRC::ircmsg ( "09Page sent to $player{name} --> Created new area '$1'. Use !updateArea to expand the area, and close it with !closeArea.", $args{'ircChannelCode'} );
 #
 # 				playerData::setKeyValue ( $player{'id'}, "openArea", $1 );
 # 			}
 # 			elsif ( $result == 2 )
 # 			{
-# 				modules::RenRemCMD ( "ppage $player{id} Expanded existing area '$1' to include your current position, and opened for editing." );
+# 				RenRem::RenRemCMD ( "ppage $player{id} Expanded existing area '$1' to include your current position, and opened for editing." );
 # 				brIRC::ircmsg ( "09Page sent to $player{name} --> Expanded existing area '$1' to include your current position, and opened for editing.", $args{'ircChannelCode'} );
 
 # 				playerData::setKeyValue ( $player{'id'}, "openArea", $1 );
 # 			}
 # 			else
 # 			{
-# 				modules::RenRemCMD ( "ppage $player{id} Error: Unable to access area data!" );
+# 				RenRem::RenRemCMD ( "ppage $player{id} Error: Unable to access area data!" );
 # 				brIRC::ircmsg ( "09Page sent to $player{name} --> Error: Unable to access area data!", $args{'ircChannelCode'} );
 # 			}
 # 		}
 # 		else
 # 		{
-# 			modules::RenRemCMD ( "ppage $player{id} Correct Usage: ".$args{settings}->{syntax}->{value} );
+# 			RenRem::RenRemCMD ( "ppage $player{id} Correct Usage: ".$args{settings}->{syntax}->{value} );
 # 			brIRC::ircmsg ( "09Page sent to $player{name} --> Correct Usage: ".$args{settings}->{syntax}->{value}, $args{'ircChannelCode'} );
 # 		}
 # 	}
@@ -5176,20 +5177,20 @@ sub cmsg
 # 			my $result = gamelog::expandArea ( $1, $args{nick} );
 # 			if ( $result == 1 )
 # 			{
-# 				modules::RenRemCMD ( "ppage $player{id} Expanded existing area '$1' to include your current position, and opened for editing." );
+# 				RenRem::RenRemCMD ( "ppage $player{id} Expanded existing area '$1' to include your current position, and opened for editing." );
 # 				brIRC::ircmsg ( "09Page sent to $player{name} --> Expanded existing area '$1' to include your current position, and opened for editing.", $args{'ircChannelCode'} );
 
 # 				playerData::setKeyValue ( $player{'id'}, "openArea", $1 );
 # 			}
 # 			else
 # 			{
-# 				modules::RenRemCMD ( "ppage $player{id} Unable to find any area called '$1'!" );
+# 				RenRem::RenRemCMD ( "ppage $player{id} Unable to find any area called '$1'!" );
 # 				brIRC::ircmsg ( "09Page sent to $player{name} --> Unable to find any area called '$1'!", $args{'ircChannelCode'} );
 # 			}
 # 		}
 # 		else
 # 		{
-# 			modules::RenRemCMD ( "ppage $player{id} You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area." );
+# 			RenRem::RenRemCMD ( "ppage $player{id} You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area." );
 # 			brIRC::ircmsg ( "09Page sent to $player{name} --> You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area.!", $args{'ircChannelCode'} );
 # 		}
 # 	}
@@ -5212,19 +5213,19 @@ sub cmsg
 # 			my $result = gamelog::expandArea ( $player{'openArea'}, $args{nick} );
 # 			if ( $result == 1 )
 # 			{
-# 				modules::RenRemCMD ( "ppage $player{id} Expanded area '$player{openArea}' to include your current position." );
+# 				RenRem::RenRemCMD ( "ppage $player{id} Expanded area '$player{openArea}' to include your current position." );
 # 				brIRC::ircmsg ( "09Page sent to $player{name} --> Expanded area '$player{openArea}' to include your current position.", $args{'ircChannelCode'} );
 # 			}
 # 			else
 # 			{
-# 				modules::RenRemCMD ( "ppage $player{id} Error: Unable to access area data!" );
+# 				RenRem::RenRemCMD ( "ppage $player{id} Error: Unable to access area data!" );
 # 				brIRC::ircmsg ( "09Page sent to $player{name} --> Error: Unable to access area data!", $args{'ircChannelCode'} );
 # 			}
 #
 # 			return;
 # 		}
 #
-# 		modules::RenRemCMD ( "ppage $player{id} You do not have any area open for editing at this time. Create a new area using !addArea, or open an existing area using !openArea." );
+# 		RenRem::RenRemCMD ( "ppage $player{id} You do not have any area open for editing at this time. Create a new area using !addArea, or open an existing area using !openArea." );
 # 		brIRC::ircmsg ( "09Page sent to $player{name} --> You do not have any area open for editing at this time. Create a new area using !addArea, or open an existing area using !openArea.", $args{'ircChannelCode'} );
 # 	}
 # }
@@ -5243,13 +5244,13 @@ sub cmsg
 # 	{
 # 		if ( $player{'openArea'} )
 # 		{
-# 			modules::RenRemCMD ( "ppage $player{id} The area '$player{openArea}' has been closed!" );
+# 			RenRem::RenRemCMD ( "ppage $player{id} The area '$player{openArea}' has been closed!" );
 # 			brIRC::ircmsg ( "09Page sent to $player{name} --> The area '$player{openArea}' has been closed!", $args{'ircChannelCode'} );
 # 			playerData::setKeyValue ( $player{id}, "openArea", "" );
 # 			return;
 # 		}
 #
-# 		modules::RenRemCMD ( "ppage $player{id} You did not have an area open to begin with!" );
+# 		RenRem::RenRemCMD ( "ppage $player{id} You did not have an area open to begin with!" );
 # 		brIRC::ircmsg ( "09Page sent to $player{name} --> You did not have an area open to begin with!", $args{'ircChannelCode'} );
 # 	}
 # }

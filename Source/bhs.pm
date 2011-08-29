@@ -145,7 +145,7 @@ sub playsnda
 
 	if (modules::get_module("bhs") )
 	{
-		modules::RenRemCMD("snda $filename");
+		RenRem::RenRemCMD("snda $filename");
 	}
 }
 
@@ -161,7 +161,7 @@ sub playsndp
 		{
 	   		if ( $player{'bhsVersion'} >= 1.9)
 	   		{
-	   			modules::RenRemCMD("sndp $player{id} $filename");
+	   			RenRem::RenRemCMD("sndp $player{id} $filename");
 	   		}
 		}
 	}
@@ -183,7 +183,7 @@ sub playsndp_team
 			{
 	   			if ( $player->{'bhsVersion'} >= 1.9 )
 	   			{
-					modules::RenRemCMD( "sndp $player->{id} $filename" );
+					RenRem::RenRemCMD( "sndp $player->{id} $filename" );
 				}
 			}
 		}
@@ -198,7 +198,7 @@ sub playsndp_team
 			{
 	   			if ( $player->{'bhsVersion'} >= 1.9 )
 	   			{
-					modules::RenRemCMD( "sndp $player->{id} $filename" );
+					RenRem::RenRemCMD( "sndp $player->{id} $filename" );
 				}
 			}
 		}

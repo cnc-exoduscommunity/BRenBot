@@ -139,8 +139,8 @@ sub check_playername
 	# Checks every name in the playerlist that has less than 1 char.
 	# The LFDS can't process any name with non-ascii chars in it (accents, umlauts) and displays
 	# an empty list. We're kicking them by id.
-#		modules::RenRemCMD ("kick $player{id}") if ($player{'name'} =~ m/[\001\002\037]/);
-#		modules::RenRemCMD ("kick $player{id}") if (length ($player{'name'}) > 30);
+#		RenRem::RenRemCMD ("kick $player{id}") if ($player{'name'} =~ m/[\001\002\037]/);
+#		RenRem::RenRemCMD ("kick $player{id}") if (length ($player{'name'}) > 30);
 	my $id		= shift;
 	my $name	= shift;
 	my $ip		= shift;
@@ -149,26 +149,26 @@ sub check_playername
 	if ( $name =~ m/:/i || $name =~ m/!/i || $name =~ m/&/i )
 	{
 		# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
-		modules::RenRemCMD ( "kick $id" );
-		modules::RenRemCMD ( "msg [BR] $name has been kicked by BRenBot for having disallowed characters in their name. (ip: $ip)" );
+		RenRem::RenRemCMD ( "kick $id" );
+		RenRem::RenRemCMD ( "msg [BR] $name has been kicked by BRenBot for having disallowed characters in their name. (ip: $ip)" );
 	}
 	elsif ( length($name) <= 1 || $name =~ /[\001\002\037]/ )
 	{
 		# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
-		modules::RenRemCMD( "kick $id" );
-		modules::RenRemCMD( "msg [BR] Playername with non-ascii characters detected. Do not use umlauts or accents. Kicking Player!" );
+		RenRem::RenRemCMD( "kick $id" );
+		RenRem::RenRemCMD( "msg [BR] Playername with non-ascii characters detected. Do not use umlauts or accents. Kicking Player!" );
 		brIRC::ircmsg( "Removed a player with non-ascii characters in their name. (ip: $ip)", "A" );
 	}
 	elsif (length($name) >= 30)
 	{
 		# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
-		modules::RenRemCMD( "kick $id" );
+		RenRem::RenRemCMD( "kick $id" );
 		brIRC::ircmsg( "Removed a player with excessively long name. (ip: $ip)", "A" );
 	}
 	elsif ( $name =~ /\\/ )
 	{
 		# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
-		modules::RenRemCMD( "msg [BR] $name, you have backslashes in your name. Please remove them, and reconnect." );
+		RenRem::RenRemCMD( "msg [BR] $name, you have backslashes in your name. Please remove them, and reconnect." );
 		RenRem::RenRemCMDtimed( "kick $id", 1 );
 		brIRC::ircmsg( "Removed a player with backslashes in their name. (ip: $ip)", "A" );
 	}
@@ -188,8 +188,8 @@ sub fakeUser
 		if ( $result == 1 )
 		{
 			# NB: DO NOT USE modules::kick_player as it may remove the incorrect player
-			modules::RenRemCMD( "msg [BR] $player{name} is being kicked by BRenBot for: FAKE NICK" );
-			modules::RenRemCMD( "kick $player{id}" );
+			RenRem::RenRemCMD( "msg [BR] $player{name} is being kicked by BRenBot for: FAKE NICK" );
+			RenRem::RenRemCMD( "kick $player{id}" );
 		}
 	}
 
@@ -202,8 +202,8 @@ sub fakeUser
 			if ( $player->{'name'} eq $fake && $player->{'id'} != $fakedUserID )
 			{
 				# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
-				modules::RenRemCMD( "msg [BR] $player->{name} is being kicked by BRenBot for: Impersonating someone else" );
-				modules::RenRemCMD( "kick $player->{id}");
+				RenRem::RenRemCMD( "msg [BR] $player->{name} is being kicked by BRenBot for: Impersonating someone else" );
+				RenRem::RenRemCMD( "kick $player->{id}");
 			}
 		}
 	}
@@ -222,12 +222,12 @@ sub check_banlist
 		my ( $result2, %player ) = playerData::getPlayerData ( $name );
 		if ( $result2 == 1 )
 		{
-			modules::RenRemCMD( "msg [BR] $player{name} has been BANNED on $timestamp by $banner for: $reason" );
+			RenRem::RenRemCMD( "msg [BR] $player{name} has been BANNED on $timestamp by $banner for: $reason" );
 
 			modules::console_output ( "player_id $player{id} is BANNED" );
 
 			if ( modules::get_module("bhs") )
-				{ modules::RenRemCMD( "pamsg $player{id} You have been BANNED on $timestamp by $banner for: $reason" ); }
+				{ RenRem::RenRemCMD( "pamsg $player{id} You have been BANNED on $timestamp by $banner for: $reason" ); }
 
 			# If we are using SSGM 4.0 then we need to add this ban to it's bans list
 			if ( $brconfig::ssgm_version >= 4 )
@@ -324,7 +324,7 @@ sub ChatMSG
 				if ( modules::get_module( "pingresponse" ) )
 				{
 					if ( $playermsg =~ m/\blag.*\b|\bl+a+g+\b|\bping\b|\b56k\b|\bteleport.*\b|\bwarp.*\b/i && $playermsg !~ m/\!ping/i )
-					{ modules::RenRemCMD ( "msg [BR] $playername, your ping is currently $player{ping}" ); }
+					{ RenRem::RenRemCMD ( "msg [BR] $playername, your ping is currently $player{ping}" ); }
 				}
 
 
@@ -364,7 +364,7 @@ sub add_invite
 
 	push (@invitelist, \%invhash);
 	brIRC::ircmsg( "$name added to invite list." );
-	modules::RenRemCMD( "page $name You will be auto-invited when a slot opens (moderators first)" );
+	RenRem::RenRemCMD( "page $name You will be auto-invited when a slot opens (moderators first)" );
 }
 
 sub del_invite
@@ -388,7 +388,7 @@ sub do_invite
 {
 	my $name=shift;
 #	print "DEBUG: DO-INVITE: $name\n";
-	modules::RenRemCMD("page $name <WWINVITE>");
+	RenRem::RenRemCMD("page $name <WWINVITE>");
 	brIRC::ircmsg( "Sent $name an invite page." );
 }
 
@@ -556,33 +556,33 @@ sub ParseLogInput
 			my $pass  = $2;
 			
 			if ( !$pass )
-				{ modules::RenRemCMD( "page $pager [BR] Usage: !auth <pass>" ); }
+				{ RenRem::RenRemCMD( "page $pager [BR] Usage: !auth <pass>" ); }
 			
 			else
 			{
 				my $authResult = brAuth::AuthenticateByPassword($pager,$pass);
 				if ( $authResult == 1 )
 				{
-					modules::RenRemCMD("page $pager [BR] Authentication was successful!");
+					RenRem::RenRemCMD("page $pager [BR] Authentication was successful!");
 					brIRC::ircmsg( "[BR] Authentication for $pager was successful.", "A" );
 				}
 				elsif ( $authResult == 0 )
 				{
-					modules::RenRemCMD( "page $pager [BR] Wrong password!" );
+					RenRem::RenRemCMD( "page $pager [BR] Wrong password!" );
 					brIRC::ircmsg( "[BR] $pager gave an invalid password.", "A" );
 				}
 				elsif ( $authResult == 2 )
 				{
-					modules::RenRemCMD( "page $pager [BR] You are already authenticated." );
+					RenRem::RenRemCMD( "page $pager [BR] You are already authenticated." );
 				}
 				elsif ( $authResult == 3 )
 				{
-					modules::RenRemCMD( "page $pager [BR] Your nickname is not registered. Register it first." );
+					RenRem::RenRemCMD( "page $pager [BR] Your nickname is not registered. Register it first." );
 				}
 				elsif ( $authResult == 4 )
 				{
 					brIRC::ircmsg( "9[Page] $pager tried to !auth from outside the game!", "A" );
-					modules::RenRemCMD( "page $pager [BR] $pager your auth-exploit has been logged and will be reviewed." );
+					RenRem::RenRemCMD( "page $pager [BR] $pager your auth-exploit has been logged and will be reviewed." );
 				}
 			}
 
@@ -606,7 +606,7 @@ sub ParseLogInput
 
 			if ( $playername =~ /^9\[Page\]\s(.+)/i )
 			{
-				modules::RenRemCMD( "page $1 [BR] Paging commands is NOT allowed!" );
+				RenRem::RenRemCMD( "page $1 [BR] Paging commands is NOT allowed!" );
 				brIRC::ircmsg ( "9Page Sent to $1 --> [BR] Paging commands is NOT allowed!", "A" );
 			}
 			else
@@ -675,8 +675,8 @@ sub ParseLogInput
 
 			clean_invite; # BRINVITE
 			mass_invite;
-			modules::RenRemCMD( "game_info" );
-			modules::RenRemCMD( "player_info" );
+			RenRem::RenRemCMD( "game_info" );
+			RenRem::RenRemCMD( "player_info" );
 
 			# Remove all the data we are storing about them
 			playerData::clearPlayerData ( $player{'id'} );
@@ -752,8 +752,8 @@ sub ParseLogInput
 			}
 
 			# Update game status
-			modules::RenRemCMD( "player_info" );
-			modules::RenRemCMD( "game_info" );
+			RenRem::RenRemCMD( "player_info" );
+			RenRem::RenRemCMD( "game_info" );
 
 		} # end of joined the game
 
@@ -775,8 +775,8 @@ sub ParseLogInput
 			playerData::setKeyValue ( $1, "changedTeam", 1 );
 
 			# Update game data
-			modules::RenRemCMD( "game_info" );
-			modules::RenRemCMD( "player_info" );
+			RenRem::RenRemCMD( "game_info" );
+			RenRem::RenRemCMD( "player_info" );
 		}
 
 		if ( $line =~ "Level loaded OK" )
@@ -805,8 +805,8 @@ sub ParseLogInput
 			modules::do_autobalance();
 
 			# Update game information
-			modules::RenRemCMD( "game_info" );
-			modules::RenRemCMD( "player_info" );
+			RenRem::RenRemCMD( "game_info" );
+			RenRem::RenRemCMD( "player_info" );
 		}
 
 		# Handle any lines which just get thrown out to the IRC
@@ -894,7 +894,7 @@ sub ParseLogInput
 			}
 
 			# Issue a mapnum command to ensure the map number is updated
-			modules::RenRemCMD ( "mapnum" );
+			RenRem::RenRemCMD ( "mapnum" );
 
 			# Restore original map rotation if someone used !setnextmap during the last game
 			my $nextmapChanged = brdatabase::get_global('nextmap_changed');
@@ -1035,7 +1035,7 @@ sub handleInvite
 	{
 		if (check_invite($pager) eq $pager)
 		{
-			modules::RenRemCMD( "page $pager [BR] You are ALREADY invited. Stop SPAMMING." );
+			RenRem::RenRemCMD( "page $pager [BR] You are ALREADY invited. Stop SPAMMING." );
 			brIRC::ircmsg( "9Page Sent to $pager --> [BR] You are ALREADY invited. Stop SPAMMING." );
 		}
 		else
@@ -1048,7 +1048,7 @@ sub handleInvite
 	if ($pagemsg =~ /WWDECLINE/)
 	{
 		brIRC::ircmsg(  "[BR] $pager declined invite...tearing up invitation" );
-		modules::RenRemCMD( "page $pager [BR] Removed your invitation." );
+		RenRem::RenRemCMD( "page $pager [BR] Removed your invitation." );
 		del_invite($pager);
 	}
 }

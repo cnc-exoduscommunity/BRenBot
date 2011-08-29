@@ -4,6 +4,7 @@ package brconfig;
 use strict;
 
 use modules;
+use RenRem;
 use File::HomeDir;							# For scripts.dll 4.0 when paths.ini is NOT set to UseRenFolder
 
 our $starttime;
@@ -500,7 +501,7 @@ sub GetAvailableMaps
 		# NB: We don't just read this from tt.cfg because the gamedefs can also include
 		# things which are not listed in that config file. Use a short delay otherwise
 		# the response comes back before we are listening for it
-		modules::RenRemCMDtimed("listgamedefs",2);
+		RenRem::RenRemCMDtimed("listgamedefs",2);
 	}
 	else
 	{

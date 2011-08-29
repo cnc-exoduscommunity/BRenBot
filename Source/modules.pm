@@ -77,18 +77,6 @@ sub console_output
 }
 
 
-
-sub RenRemCMD
-{
-	RenRem::RenRemCMD(@_);
-}
-
-sub RenRemCMDtimed
-{
-	RenRem::RenRemCMDtimed(@_);
-}
-
-
 # Checks if the name specified is in the users table
 sub user_exists
 {
@@ -200,13 +188,13 @@ sub kick_player
 
 	# Send the server announcement and the message to the kicked player (in SSGM >= 4 the page to
 	# the player is handled by the kick command)
-	RenRemCMD ( 'msg [BR] '.$player{'name'}.' has '.$message );
-	RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message ) if ($brconfig::ssgm_version < 4);
+	RenRem::RenRemCMD ( 'msg [BR] '.$player{'name'}.' has '.$message );
+	RenRem::RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message ) if ($brconfig::ssgm_version < 4);
 
 	# Kick the player from the server (1 second delay to allow the pamsg to reach them)
 	my $command = 'kick '.$player{'id'};
 	$command .= ' '.$reason if ($brconfig::ssgm_version >= 4);
-	RenRemCMDtimed ( $command, 1 );
+	RenRem::RenRemCMDtimed ( $command, 1 );
 
 	# Write a kick record to the log
 	brdatabase::writeLog ( 1, "[KICK] $player{name} ($player{ip}) was kicked by $kicker for '$reason'." );
@@ -222,7 +210,7 @@ sub kick_player
 	# unless we are running SSGM 4.0 or higher (where it is depreciated)
 	elsif ( $brconfig::ssgm_version < 4 )
 	{
-		RenRemCMDtimed ( 'allow '.$player{'id'}, 5 );
+		RenRem::RenRemCMDtimed ( 'allow '.$player{'id'}, 5 );
 	}
 }
 
@@ -266,12 +254,12 @@ sub check_kicks
 
 		my $kickday = ( $daynow == $day ) ? "today" : "yesterday";
 		my $reasonSuffix = ( lc($player{'name'}) eq lc($array[0]->{'name'}) ) ? "" : ( $player{'ip'} eq $array[0]->{'ip'} ) ? " (IP Matched)" : " (Serial Matched)";
-		RenRemCMD( "msg [BR] $player{name} was KICKED $kickday at $hour.$minute by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.$reasonSuffix );
+		RenRem::RenRemCMD( "msg [BR] $player{name} was KICKED $kickday at $hour.$minute by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.$reasonSuffix );
 
 		if ( get_module( "bhs" ) )
-			{ RenRemCMD( "pamsg $player{id} You were KICKED $kickday at $hour.$minute by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.". You may return to the server in ".((86400-(time()-$array[0]->{'timestamp'}))/60)." minutes" ); }
+			{ RenRem::RenRemCMD( "pamsg $player{id} You were KICKED $kickday at $hour.$minute by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.". You may return to the server in ".((86400-(time()-$array[0]->{'timestamp'}))/60)." minutes" ); }
 
-		RenRemCMD( "kick $player{id}" );
+		RenRem::RenRemCMD( "kick $player{id}" );
 		playerData::setKeyValue ( $player{'id'}, "kicked", 1 );
 		return 1;
 	}
@@ -308,19 +296,19 @@ sub ban_player
 	my $message = 'been banned from the server by '.$banner.' for '.$reason;
 
 	# Send the server announcement message
-	RenRemCMD ( 'msg [BR] '.$player{'name'}.' has '.$message );
+	RenRem::RenRemCMD ( 'msg [BR] '.$player{'name'}.' has '.$message );
 
 	# If using SSGM >= 4.0 then use the ban console command (1 second delay to allow the pamsg to reach them)
 	if ( $brconfig::ssgm_version >= 4 )
-		{ RenRemCMDtimed ( 'ban '.$player{'id'}.' '.$reason, 1 ); }
+		{ RenRem::RenRemCMDtimed ( 'ban '.$player{'id'}.' '.$reason, 1 ); }
 
 	# Otherwise use the kick command to evict them (1 second delay to allow the pamsg to reach them)
 	else
 	{
 		# Send the page to the banned player (under SSGM >= 4 the ban console command handles)
-		RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message );
+		RenRem::RenRemCMD ( 'pamsg '.$player{'id'}.' You have '.$message );
 
-		RenRemCMDtimed ( 'kick '.$player{'id'}, 1 );
+		RenRem::RenRemCMDtimed ( 'kick '.$player{'id'}, 1 );
 	}
 
 
@@ -452,7 +440,7 @@ sub show_joinmessage
 	my $message = get_joinmessage($name);
 	if ( defined($message) )
 	{
-		RenRemCMD( "msg [$name] $message" );
+		RenRem::RenRemCMD( "msg [$name] $message" );
 	}
 }
 
@@ -544,16 +532,16 @@ sub check_modules
 		teammessages => "Displays team (f3) chat messages in IRC",
 		pingresponse => "BR reports ping when players request it",
 		join_messages => "Enables !setjoin / !viewjoin on the server",
-		gamespy_players => "Displays Players in ASE",
+		gamespy_players => "Broadcast this server to the GameSpy Arcade server browser",
 		recommend => "Enables the recommendation system",
 		gameresults => "Enables automatic recommendations after each map",
-		gamelog => "Support for gamelog server side mod",
+		gamelog => "Enables support for the SSGM gamelog",
 		bhs => "Support for Tiberian Technologies / Blackhand Studios FDS library (ppage, pamsg etc)",
 		new_gi => "!gi shows info on one line instead of five lines",
 		donate => "Allows players to donate money to their teammates (bhs only)",
 		autorecs => "Enables automatic recommendations based on gameplay (gamelog only)",
 		map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit, donate limit and map rules.",
-		ssgmlog => "Support for ssgm logging (Beacon, Game Results, BW alerts etc)",
+		ssgmlog => "Support for SSGM extended logging (Beacon, Game Results, BW alerts etc)",
 		autobalance => "Enables the autobalance module, which attempts to make teams even when a new map loads.",
 		BRenBot_dll => "Enables support for extended console commands inside BRenBot.dll"
 	);
@@ -590,7 +578,7 @@ sub recommend_player
 	my $reason = shift;					$reason =~ s/'/''/g;
 
 	# Announce recommendation
-	modules::RenRemCMD( "msg $name has been recommended by $recommender for: $reason" );
+	RenRem::RenRemCMD( "msg $name has been recommended by $recommender for: $reason" );
 
 	# Does a record exist for this player?
 	my @recData = brdatabase::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );
@@ -628,7 +616,7 @@ sub n00b_player
 	my $reason = shift;					$reason =~ s/'/''/g;
 
 	# Announce recommendation
-	modules::RenRemCMD( "msg $name has been marked a n00b by $n00ber for: $reason");
+	RenRem::RenRemCMD( "msg $name has been marked a n00b by $n00ber for: $reason");
 
 	# Does a record exist for this player?
 	my @recData = brdatabase::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );
@@ -814,11 +802,11 @@ sub show_recommendations
 				if ( $result == 1 )
 				{
 					if ( $recs == 0 )
-						{ RenRemCMD( "msg [BR] $name does not have any recommendations." ); }
+						{ RenRem::RenRemCMD( "msg [BR] $name does not have any recommendations." ); }
 					else
 					{
 						my $line = get_recommend_line( $name, $recs, $player{'side'} );
-						RenRemCMD( "msg [BR] $line" );
+						RenRem::RenRemCMD( "msg [BR] $line" );
 					}
 				}
 			},
@@ -848,12 +836,12 @@ sub get_bandwidth
 		my %playerlist = playerData::getPlayerList();
 		while ( my ( $id, $player ) = each ( %playerlist ) )
 		{
-			RenRemCMD("GETBW $id");
+			RenRem::RenRemCMD("GETBW $id");
 		}
 	}
 	else
 	{
-		RenRemCMD("GETBW $playerid");
+		RenRem::RenRemCMD("GETBW $playerid");
 	}
 }
 
@@ -947,15 +935,15 @@ sub AddTempModerator
 	if ( $result == 1 )
 	{
 		$main::tempMods{lc($player{'name'})} = $player{'name'};
-		RenRemCMD( "msg [BR] $player{'name'} has been made a temporary game moderator." );
+		RenRem::RenRemCMD( "msg [BR] $player{'name'} has been made a temporary game moderator." );
 	}
 	elsif ( $result == 2 )
 	{
-		RenRemCMD( "msg [BR] $name is not unique, please be more specific." );
+		RenRem::RenRemCMD( "msg [BR] $name is not unique, please be more specific." );
 	}
 	else
 	{
-		RenRemCMD( "msg [BR] $name was not found ingame." );
+		RenRem::RenRemCMD( "msg [BR] $name was not found ingame." );
 	}
 
 	return;
@@ -971,19 +959,19 @@ sub DelTempModerator
 		if ( $main::tempMods{lc($player{'name'})} )
 		{
 			delete $main::tempMods{lc($player{'name'})};
-			RenRemCMD( "msg $player{name} is no longer a temporary game moderator." );
+			RenRem::RenRemCMD( "msg $player{name} is no longer a temporary game moderator." );
 			return;
 		}
 
-		RenRemCMD( "msg [BR] $player{'name'} was not a temporary game moderator to begin with." );
+		RenRem::RenRemCMD( "msg [BR] $player{'name'} was not a temporary game moderator to begin with." );
 	}
 	elsif ( $result == 2 )
 	{
-		RenRemCMD( "msg [BR] $name is not unique, please be more specific." );
+		RenRem::RenRemCMD( "msg [BR] $name is not unique, please be more specific." );
 	}
 	else
 	{
-		RenRemCMD( "msg [BR] $name has not been found." );
+		RenRem::RenRemCMD( "msg [BR] $name has not been found." );
 	}
 
 	return;
@@ -1059,7 +1047,7 @@ sub AutoAnnounce_DoAnnoucement
 
 	if ( serverStatus::getCurrentPlayers() > 0 && length($announcement) > 0 )
 	{
-		modules::RenRemCMD( "msg [BR] $announcement" );
+		RenRem::RenRemCMD( "msg [BR] $announcement" );
 	}
 }
 
@@ -1161,7 +1149,7 @@ sub SetNextMap
 
 		# Send a RenRemCMD to instruct the Resource Manager to change the next map
 		modules::console_output ( "Setting map at index $nextmap->{id} to $mapname." );
-		RenRemCMD ( "mlistc $nextmap->{id} $mapname" );
+		RenRem::RenRemCMD ( "mlistc $nextmap->{id} $mapname" );
 
 		# Unless we have already recorded the fact the nextmap has been changed during this map set
 		# the relevant flag in the database (with the value 4 instead of 1 to indicate a Resource
@@ -1540,15 +1528,15 @@ sub pagePlayer
 		if ( $brconfig::enableCmsg && modules::get_module( "bhs" )
 			&& $player{'bhsVersion'} >= 2.6 && $brconfig::serverBhsVersion >= 2.6 )
 		{
-			RenRemCMD ( "cmsgp $player{id} 0,255,0 \(PM from $sender): $message" );
+			RenRem::RenRemCMD ( "cmsgp $player{id} 0,255,0 \(PM from $sender): $message" );
 		}
 		elsif ( modules::get_module( "bhs" ) )
 		{
-			RenRemCMD ( "ppage $player{id} \(PM from $sender): $message" );
+			RenRem::RenRemCMD ( "ppage $player{id} \(PM from $sender): $message" );
 		}
 		else
 		{
-			RenRemCMD ( "page $player{name} \(PM from $sender): $message" );
+			RenRem::RenRemCMD ( "page $player{name} \(PM from $sender): $message" );
 		}
 	}
 
@@ -1671,8 +1659,8 @@ sub do_autobalance
 			_start => sub
 			{
 				# Make sure we have up to date game info when it calls the alarm
-				modules::RenRemCMD ( "game_info" );
-				modules::RenRemCMD ( "player_info" );
+				RenRem::RenRemCMD ( "game_info" );
+				RenRem::RenRemCMD ( "player_info" );
 				$_[HEAP]->{next_alarm_time} = int( time() ) + 5;
 				$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
 			},
@@ -1705,8 +1693,8 @@ sub do_autobalance
 								if ( $loaded && $loaded->{'name'} eq $player->{'name'} )
 								{
 									modules::console_output ( "Swapping $player->{name} from GDI to Nod." );
-									modules::RenRemCMD( "team2 $player->{id} 0" );
-									modules::RenRemCMD( "msg $player->{name} has been automatically changed to Nod to balance the teams." );
+									RenRem::RenRemCMD( "team2 $player->{id} 0" );
+									RenRem::RenRemCMD( "msg $player->{name} has been automatically changed to Nod to balance the teams." );
 									modules::pagePlayer( $player->{'id'}, "BRenBot", "You have been automatically moved to Nod to balance the teams." );
 									$difference -= 2;
 								}
@@ -1727,8 +1715,8 @@ sub do_autobalance
 								if ( $loaded && $loaded->{'name'} eq $player->{'name'} )
 								{
 									modules::console_output ( "Swapping $player->{name} from Nod to GDI." );
-									modules::RenRemCMD( "team2 $player->{id} 1" );
-									modules::RenRemCMD( "msg $player->{name} has been automatically changed to GDI to balance the teams." );
+									RenRem::RenRemCMD( "team2 $player->{id} 1" );
+									RenRem::RenRemCMD( "msg $player->{name} has been automatically changed to GDI to balance the teams." );
 									modules::pagePlayer( $player->{'id'}, "BRenBot", "You have been automatically moved to GDI to balance the teams." );
 									$difference += 2;
 								}

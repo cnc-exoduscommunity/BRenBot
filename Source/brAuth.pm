@@ -7,9 +7,11 @@ use strict;
 
 # Use third party modules
 use POE;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
 
 # Use BRenBot modules
 use modules;
+use RenRem;
 use playerData;
 use brIRC;
 
@@ -52,7 +54,7 @@ sub GetAuthState
 	{
 		# If the user exists but is not setup in protected nicks
 		# add them and return 0 -> not authed.
-		playerData::setKeyValue ( $player{'name'}, "isAuthed", 0 );
+		SetAuthState( $player{'id'}, 0 );
 		warn_protected_nickname ( $player{'name'} );		# Start warning them to auth
 		return 0;
 	}
@@ -176,7 +178,7 @@ sub warn_protected_nickname
 				if ( $time > 0 && $player{"isAuthed"} != 1  )
 				{
 					# Send them a page to remind them they need to !auth
-					modules::RenRemCMD( "ppage $player{id} $name is a protected nickname. Please authenticate yourself within $time seconds, or you will be kicked." );
+					modules::pagePlayer ( $player{'id'}, "BRenBot", "$name is a protected nickname. Please authenticate yourself within $time seconds, or you will be kicked." );
 					brIRC::ircmsg ( "9Page sent to $name --> $name is a protected nickname. Please authenticate yourself within $time seconds, or you will be kicked.", "A" );
 
 					$_[HEAP]->{time} = ( $time - 20 );

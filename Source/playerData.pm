@@ -6,6 +6,7 @@ use strict;
 use POE;
 use modules;
 use brconfig;
+use RenRem;
 
 
 # Main player data hash
@@ -60,7 +61,7 @@ sub updatePlayerData
 
 			renlog::check_banlist ( $name );
 			modules::check_kicks ( $name );
-			modules::RenRemCMD ( "version $id" );
+			RenRem::RenRemCMD ( "version $id" );
 		}
 	}
 	else
@@ -81,7 +82,7 @@ sub updatePlayerData
 
 		renlog::check_banlist ( $name );
 		modules::check_kicks ( $name );
-		modules::RenRemCMD ( "version $id" );
+		RenRem::RenRemCMD ( "version $id" );
 	}
 }
 
@@ -115,7 +116,7 @@ sub clearPlayerData
 	if ( $main::tempMods{lc($name)} )
 	{
 		delete $main::tempMods{lc($name)};
-		modules::RenRemCMD( "msg [BR] $name is no longer a temporary game moderator." );
+		RenRem::RenRemCMD( "msg [BR] $name is no longer a temporary game moderator." );
 		return;
 	}
 

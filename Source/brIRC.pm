@@ -175,7 +175,7 @@ sub init
 
 					# Send messages to both irc channels and the FDS
 					ircmsg ( "BRenBot ".main::BR_VERSION." reporting for duty! Type !help for a list of commands." );
-					modules::RenRemCMD( "msg BRenBot ".main::BR_VERSION." starting up. Type !help for a list of commands" );
+					RenRem::RenRemCMD( "msg BRenBot ".main::BR_VERSION." starting up. Type !help for a list of commands" );
 				}
 
 				# Reply to NAMES (353)
