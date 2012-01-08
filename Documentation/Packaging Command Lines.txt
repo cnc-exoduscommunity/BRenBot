@@ -15,7 +15,7 @@ but remember to update the version numbers as appropriate.
 
 BRenBot 1.x
 
-pp -o brenbot.exe -N CompanyName="Tiberian Technologies";ProductVersion=1.53.9;ProductName="BRenBot 1.53";FileVersion=1.53.9;LegalCopyright="Tiberian Technologies, All Rights Reserved";FileDescription="Server regulator for the Renegade FDS" -M POE/Filter.pm -M POE/Filter/Stream.pm -M POE/Component/Server/TCP.pm brenbot.pl
+pp -o brenbot.exe -N CompanyName="Tiberian Technologies";ProductVersion=1.53.10;ProductName="BRenBot 1.53";FileVersion=1.53.10;LegalCopyright="Tiberian Technologies, All Rights Reserved";FileDescription="Server regulator for the Renegade FDS" -M POE/Filter.pm -M POE/Filter/Stream.pm -M POE/Component/Server/TCP.pm brenbot.pl
 
 OR
 
