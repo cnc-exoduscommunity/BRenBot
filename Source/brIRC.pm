@@ -595,22 +595,26 @@ sub register
 	my $message = shift;
 	my $sender = shift;
 
-	if ( $message =~ m/^\!register\s(.+)\s(\S+)$/ )
+	eval
 	{
-		my $nick = $1;
-		my $pass = $2;
-
-		my $return = modules::user_exists( $nick );
-		if ($return == 0)
+		if ( $message =~ m/^\!register\s(.+)\s(\S+)$/ )
 		{
-			modules::add_user( $nick, $pass );
-			ircpm ( $sender, "Registered playername $nick." );
+			my $nick = $1;
+			my $pass = $2;
+
+			my $return = modules::user_exists( $nick );
+			if ($return == 0)
+			{
+				modules::add_user( $nick, $pass );
+				ircpm ( $sender, "Registered playername $nick." );
+			}
+			else
+				{ ircpm ( $sender, "User $nick already exists." ); }
 		}
 		else
-			{ ircpm ( $sender, "User $nick already exists." ); }
+			{ ircpm ( $sender, "Usage: !register <playername> <password>" ); }
 	}
-	else
-		{ ircpm ( $sender, "Usage: !register <playername> <password>" ); }
+	or modules::display_error($@);
 }
 
 sub auth
