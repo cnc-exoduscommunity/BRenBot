@@ -132,8 +132,8 @@ sub updateMap
 		$currentMap = $mapName;
 		$mapStartTime = time();
 
-		# Only apply map settings if the last map if we just loaded, otherwise
-		# let the Level Loaded OK event process it.
+		# Only apply map settings if we just loaded, otherwise let the
+		# Level Loaded OK event process it.
 		if ( $lastMap eq "last round" )
 			{ modules::applyMapSettings ( $currentMap, 0 ); }	# Do NOT apply time limit
 

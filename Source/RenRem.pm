@@ -5,7 +5,6 @@ use strict;
 
 use POE;
 
-use modules;
 use brconfig;
 
 my $chill = 0;
