@@ -156,10 +156,10 @@ sub get_global
 sub writeLog
 {
 	my $logCode = shift;
-	my $logContent = shift;					$logContent =~ s/'/''/g;
+	my $logContent = shift;					
 	my $time = time;
 
-	$logContent =~ s/'/''/;
+	$logContent =~ s/'/''/g;
 	execute_query ( "INSERT INTO logs ( logCode, log, timestamp ) VALUES ( $logCode, '$logContent', $time )", 1 );
 }
 
@@ -171,10 +171,11 @@ sub writeLog
 #
 sub findLogs
 {
-	my $searchString = shift;				$searchString =~ s/"/""/;
+	my $searchString = shift;
 	my $limit = shift;
 	if ( !defined ( $limit ) ) { $limit = 8; }
-
+	
+	$searchString =~ s/"/""/g;
 	return execute_query ( "SELECT * FROM logs WHERE log LIKE \"%$searchString%\" ORDER BY timestamp DESC LIMIT 0,$limit", 0 );
 }
 
@@ -190,7 +191,7 @@ sub findLogs_Type
 	my $searchString = shift;
 	my $searchCode = shift;
 
-	$searchString =~ s/"/""/;
+	$searchString =~ s/"/""/g;
 	return execute_query ( "SELECT * FROM logs WHERE log LIKE \"%$searchString%\" AND logCode = $searchCode ORDER BY timestamp DESC LIMIT 0,10", 0 );
 }
 
