@@ -98,7 +98,7 @@ sub AuthenticateByPassword
 #   1 if successful, 0 otherwise
 sub CheckAuthPassword
 {
-	my $name = shift;
+	my $name = lc(shift);
 	my $password = md5_hex(shift);
 	
 	# Make name safe for the database
