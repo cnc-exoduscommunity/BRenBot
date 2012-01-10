@@ -110,7 +110,8 @@ sub CheckAuthPassword
 }
 
 
-# Authenticates the specified player
+# Authenticates the specified player without requiring their password - this should only be used
+# internally after verifying the players credientials
 #
 # \param[in]
 #   Name or ID of the player to authenticate
