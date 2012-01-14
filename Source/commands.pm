@@ -3772,7 +3772,7 @@ sub kick
 		{
 			my $target = $1;
 			my $reason = $2;
-			my $temporary_ban = ($args{'command'} eq "kick") ? 1 : 0;
+			my $temporary_ban = ($args{'command'} eq "qkick") ? 1 : 0;
 
 			# Check they have entered a person to kick and the reason for kicking them
 		   if ( !$reason || !$target )

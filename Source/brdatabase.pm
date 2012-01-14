@@ -156,7 +156,7 @@ sub get_global
 sub writeLog
 {
 	my $logCode = shift;
-	my $logContent = shift;					
+	my $logContent = shift;
 	my $time = time;
 
 	$logContent =~ s/'/''/g;
@@ -174,7 +174,7 @@ sub findLogs
 	my $searchString = shift;
 	my $limit = shift;
 	if ( !defined ( $limit ) ) { $limit = 8; }
-	
+
 	$searchString =~ s/"/""/g;
 	return execute_query ( "SELECT * FROM logs WHERE log LIKE \"%$searchString%\" ORDER BY timestamp DESC LIMIT 0,$limit", 0 );
 }
