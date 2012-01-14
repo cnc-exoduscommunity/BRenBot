@@ -1062,13 +1062,21 @@ sub AutoAnnounce_DoAnnoucement
 ####
 ###################################################
 
+# Displays a runtime error in the console window and/or the admin IRC channel
+#
+# \param[in] $target
+#   Optional. Specify the target for the error message. Valid values are 'b' for both console and
+#   IRC, 'i' for IRC only and 'c' for console only. If not defined both outputs are used.
 sub display_error
 {
 	my $error = shift;
 	return if (!$error);
+	my $target = shift;
 
-	brIRC::ircmsg ( "Runtime Error: $error", "A" );
-	modules::console_output ( "Runtime Error: $error" );
+	if ( !defined($target) || $target eq 'b' || $target eq 'i' )
+		{ brIRC::ircmsg ( "Runtime Error: $error", "A" ); }
+	if ( !defined($target) || $target eq 'b' || $target eq 'c' )
+		{ modules::console_output ( "Runtime Error: $error" ); }
 }
 
 # Searches the list of installed maps to determine if a specified map is installed. Under SSGM >=

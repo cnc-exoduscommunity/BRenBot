@@ -95,8 +95,9 @@ sub execute_query
 	};
 	if ($@)
 	{
-		modules::console_output ( "Failed to execute query: $query\nError: $@" );
-		return ();
+		modules::display_error ( "Failed to execute query: $query\nError: $@", 'c' );
+		modules::display_error ( "An error occured whilst executing a database query, see the console for more information.", 'i' );
+		return();
 	}
 	return @result;
 }
