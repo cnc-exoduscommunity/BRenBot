@@ -311,8 +311,7 @@ Changelog
 ####################################
 
 1.53.11 ( 14 Jan 12 )
- - Fix some quote replacement issues in logging related functionality which could potential cause a
-     crash when logging kicks and/or bans
+ - Fix some quote replacement issues in logging related functionality
  - Fix problem with case sensitivity when verifying auth passwords
 
 1.53.10 ( 08 Jan 12 )
