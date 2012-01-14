@@ -1076,7 +1076,7 @@ sub display_error
 	if ( !defined($target) || $target eq 'b' || $target eq 'i' )
 		{ brIRC::ircmsg ( "Runtime Error: $error", "A" ); }
 	if ( !defined($target) || $target eq 'b' || $target eq 'c' )
-		{ modules::console_output ( "Runtime Error: $error" ); }
+		{ modules::console_output ( "[ERROR] $error" ); }
 }
 
 # Searches the list of installed maps to determine if a specified map is installed. Under SSGM >=
