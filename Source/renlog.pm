@@ -232,7 +232,7 @@ sub check_banlist
 			# If we are using SSGM 4.0 then we need to add this ban to it's bans list
 			if ( $brconfig::ssgm_version >= 4 )
 			{
-				RenRem::RenRemCMD ( 'ban '.$player{'id'}.' Banned on $timestamp by $banner for $reason' );
+				RenRem::RenRemCMD ( 'ban '.$player{'id'}." Banned on $timestamp by $banner for $reason" );
 			}
 
 			# Otherwise remove them from the server the old fashioned way
