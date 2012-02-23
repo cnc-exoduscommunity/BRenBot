@@ -318,6 +318,7 @@ Changelog
  - Fixed IsHalfMod(), IsMod() and IsAdmin() functions in modules.pm
  - Modified map settings announcement to not include the donation limit when it is set to zero or
      the donations module is disabled
+ - Fixed a crash when kicking a banned player who joins the server
 
 1.53.10 ( 08 Jan 12 )
  - Fix missing MD5 library which prevented auth passwords being verified

@@ -232,13 +232,13 @@ sub check_banlist
 			# If we are using SSGM 4.0 then we need to add this ban to it's bans list
 			if ( $brconfig::ssgm_version >= 4 )
 			{
-				RenRemCMD ( 'ban '.$player{'id'}.' Banned on $timestamp by $banner for $reason' );
+				RenRem::RenRemCMD ( 'ban '.$player{'id'}.' Banned on $timestamp by $banner for $reason' );
 			}
 
 			# Otherwise remove them from the server the old fashioned way
 			else
 			{
-				RenRemCMD ( 'kick '.$player{'id'} );
+				RenRem::RenRemCMD ( 'kick '.$player{'id'} );
 			}
 			playerData::setKeyValue ( $player{'id'}, "banned", 1 );
 			return 1;
