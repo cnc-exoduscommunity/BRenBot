@@ -391,32 +391,6 @@ sub is_banned
 }
 
 
-# Checks for RG serial ban - must ran AFTER is_banned due to the
-# time it takes for RG to scan the user and get their serial
-#
-# PARAM		string		Players username
-#
-# RETURN ( $result, $comment, $banner, $timestamp )
-# 0 - No serial ban found
-# 1 - Serial ban found
-sub is_serial_banned
-{
-	my $serial = shift;
-
-	if ( $serial )
-	{
-		my @array = brdatabase::execute_query( "SELECT * FROM bans WHERE serial = '$serial'" );
-		if (scalar(@array) > 0)
-		{
-			my ( $year, $month, $day, $hour, $min, $sec ) = BRTime_To_Date($array[0]->{'timestamp'});
-			return ( 1, $array[0]->{'reason'}." (serial matched)", $array[0]->{'banner'}, "$month.$day.$year" );
-		}
-	}
-
-	return 0;		# No serial to check, or no ban found
-}
-
-
 ###################################################
 ####
 ## Functions related to join messages (module join_messages)
@@ -856,7 +830,7 @@ sub get_bandwidth
 # Returns true if the user is a half mod, false otherwise
 sub IsHalfMod
 {
-	my ($name)=lc(@_);
+	my ($name)=lc($_[0]);
 
 	if ( $brconfig::halfMods{$name} )
 	{
@@ -873,7 +847,7 @@ sub IsHalfMod
 # Returns true if the user is a full mod, false otherwise
 sub IsFullMod
 {
-	my ($name)=lc(@_);
+	my ($name)=lc($_[0]);
 
 	if ( $brconfig::fullMods{$name} )
 	{
@@ -890,7 +864,7 @@ sub IsFullMod
 # Returns true if the user is an admin, false otherwise
 sub IsAdmin
 {
-	my ($name)=lc(@_);
+	my ($name)=lc($_[0]);
 
 	if ( $brconfig::admins{$name} )
 	{

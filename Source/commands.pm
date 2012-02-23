@@ -1823,7 +1823,7 @@ sub autoannounce
 	eval
 	{
 		brconfig::ReadAutoAnnounce();
-		main::RandomAnnounce();
+		modules::AutoAnnounce_DoAnnoucement();
 	}
 	or modules::display_error($@);
 }
