@@ -1604,8 +1604,13 @@ sub applyMapSettings
 	RenRem::RenRemCMD ( "mlimit $minelimit" );
 	RenRem::RenRemCMD ( "vlimit $vehiclelimit" );
 
-	RenRem::RenRemCMDtimed ( "msg [BR] Settings for $map: Time Limit: $new_time, Mine Limit: $minelimit, Vehicle Limit: $vehiclelimit. Donations are allowed after $donatelimit minutes.", 5 );
-	if ( $maprules ) { RenRem::RenRemCMDtimed ( "msg [BR] Special rules for $map: $maprules", 5 ); }
+	my $message = "Settings for $map: Time Limit: $new_time, Mine Limit: $minelimit, Vehicle Limit: $vehiclelimit.";
+	if ( $donatelimit > 0 && get_module( "donate" ) == 1 )
+		{ $message .= "Donations are allowed after $donatelimit minutes."; }
+	RenRem::RenRemCMDtimed ( "msg [BR] $message", 5 );
+	
+	if ( $maprules )
+		{ RenRem::RenRemCMDtimed ( "msg [BR] Special rules for $map: $maprules", 5 ); }
 }
 
 

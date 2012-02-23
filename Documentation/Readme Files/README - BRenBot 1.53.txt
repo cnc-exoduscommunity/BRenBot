@@ -310,9 +310,14 @@ Several plugins are available from the BRenBot website, http://new.brenbot.com/
 Changelog
 ####################################
 
-1.53.11 ( 14 Jan 12 )
+1.53.11 ( ?? ??? 12 )
  - Fix some quote replacement issues in logging related functionality
  - Fix problem with case sensitivity when verifying auth passwords
+ - Removed redundant RG related function is_serial_banned from modules.pm
+ - Fixed autoannounce command calling an old, removed function
+ - Fixed IsHalfMod(), IsMod() and IsAdmin() functions in modules.pm
+ - Modified map settings announcement to not include the donation limit when it is set to zero or
+     the donations module is disabled
 
 1.53.10 ( 08 Jan 12 )
  - Fix missing MD5 library which prevented auth passwords being verified
