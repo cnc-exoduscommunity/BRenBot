@@ -310,7 +310,7 @@ Several plugins are available from the BRenBot website, http://new.brenbot.com/
 Changelog
 ####################################
 
-1.53.11 ( ?? ??? 12 )
+1.53.11 ( 29 Feb 12 )
  - Fix some quote replacement issues in logging related functionality
  - Fix problem with case sensitivity when verifying auth passwords
  - Removed redundant RG related function is_serial_banned from modules.pm
