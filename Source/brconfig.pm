@@ -117,6 +117,7 @@ our $ssgmLogPrefix							= "ssgm";	# Prefix for the ssgm logs
 
 # Server settings - read from svrcfg_cnc.ini
 our $server_timelimit						= 0;		# If this is 0 we shouldn't enforce the 3 second restriction on setnextmap
+our %server_rules;
 
 
 
@@ -313,6 +314,13 @@ sub ReadConfig
 			if (/^\s*Voting_Allow_Kick \s*=\s*(\d)/i)					{ $config_voting_allow_kick = $1; }
 		}
 	}
+  
+  
+  # Make GSA strings safe to broadcast (strip out \ characters)
+  $config_gamespy_broadcast_website =~ s!\\!/!g;
+  $config_gamespy_broadcast_irc =~ s!\\!/!g;
+  $config_gamespy_broadcast_teamspeak =~ s!\\!/!g;
+  $config_gamespy_broadcast_ventrilo =~ s!\\!/!g;
 
 
 	# Give errors on variables which MUST be provided by the config file, and cannot
@@ -376,6 +384,12 @@ sub readServerSettings
 
 	# Clear out the maplist (rotation) prior to repopulating it
 	@maplist = ();
+  
+  # Set default game rules for GSA
+  $server_rules{'driver_gunner'} = 0;
+  $server_rules{'friendly_fire'} = 0;
+  $server_rules{'team_changing'} = 0;
+  $server_rules{'credits'} = 0;
 
 
 	# Set defaults
@@ -423,23 +437,23 @@ sub readServerSettings
 
 		if (/^DriverIsAlwaysGunner\s*=\s*yes/)
 		{
-			#$config{driver_gunner} = 1;
+			$server_rules{'driver_gunner'} = 1;
 		}
 
 		if (/^IsFriendlyFirePermitted\s*=\s*yes/)
 		{
-			#$config{friendly_fire} = 1;
+			$server_rules{'friendly_fire'} = 1;
 		}
 
 		if (/^IsTeamChangingAllowed\s*=\s*yes/)
 		{
-			#$config{team_changing} = 1;
+			$server_rules{'team_changing'} = 1;
 		}
 
 		if (/^StartingCredits\s*=\s*(\S+)/)
 		{
 			chomp(my $startingcredits = $1 );
-			#$config{credits} = $startingcredits;
+			$server_rules{'credits'} = $startingcredits;
 		}
 		if (/^RadarMode\s*=\s*(\S+)/)
 		{

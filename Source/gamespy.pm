@@ -12,7 +12,6 @@ use modules;
 
 sub DATAGRAM_MAXLEN () { 1024 }
 
-my %config; # configuration (admin-pass)
 my $port;
 my $query_port;
 my $queryid = 10;
@@ -43,21 +42,24 @@ sub init
 		return;
 	}
 
+  my $ip;
 	if ( $brconfig::config_gamespy_ip )
 	{
-		$config{'ip'} = $brconfig::config_gamespy_ip;
+		$ip = $brconfig::config_gamespy_ip;
 	}
 	else
 	{
-		$config{'ip'} = modules::get_ip();
+		$ip = modules::get_ip();
 	}
 
-	if (!$config{'ip'})
+	if (!$ip)
 	{
 		modules::console_output ( "[GSA] ERROR: Unable to detect server IP, set Gamespy_IP = <server ip> in brenbot.cfg!" );
 		modules::set_module ( "gamespy_players", -1 );
 		return;
 	}
+  
+  # \todo Is this IP actually used anywhere? Doesn't seem to be... possibly redundant?
 
 
 	# Create UDP server socket and session to respond to user queries
@@ -163,11 +165,11 @@ sub generate_rules
 #	$string .= "\\BW\\1000000";
 	$string .= "\\CSVR\\1";
 	$string .= "\\DED\\1";
-	$string .= "\\DG\\" . $config{'driver_gunner'};;
 	$string .= "\\password\\" . serverStatus::getIsPassworded();
-	$string .= "\\TC\\" . $config{'team_changing'};
-	$string .= "\\FF\\" . $config{'friendly_fire'};
-	$string .= "\\SC\\" . $config{'credits'};
+	$string .= "\\DG\\" . $brconfig::server_rules{'driver_gunner'};
+	$string .= "\\TC\\" . $brconfig::server_rules{'team_changing'};
+	$string .= "\\FF\\" . $brconfig::server_rules{'friendly_fire'};
+	$string .= "\\SC\\" . $brconfig::server_rules{'credits'};
 	$string .= "\\SSC\\brenbot" . main::BR_VERSION;
 	$string .= ( length($brconfig::config_gamespy_broadcast_website) > 0 ) ? "\\Website\\" . $brconfig::config_gamespy_broadcast_website : '';
 	$string .= ( length($brconfig::config_gamespy_broadcast_irc) > 0 ) ? "\\IRC\\" . $brconfig::config_gamespy_broadcast_irc : '';
