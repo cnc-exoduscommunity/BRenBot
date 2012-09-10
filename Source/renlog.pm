@@ -269,7 +269,6 @@ sub ChatMSG
 	if ( $line =~ m/^\[(..):(..):(..)\]\s(\[Team\]\s)?([^%s:]+?):\s(.+)/i )
 	{
 		# Prevent bugs/command abuse caused by players with : in their name
-    # \todo Is this check still required after the regex update to ignore names with : in?
 		if ( "$5$6" =~ m/^Player\s.+\s(joined|left)\sthe\sgame$/
 		 || "$5$6" =~ m/^.+:\s!\s.+\swas\skicked$/ )
 		{ return; }
