@@ -80,7 +80,7 @@ sub init
 				if ( $currentMapNum == -1 ) { RenRem::RenRemCMD ( "mapnum" ); }
 
 				# Request server scripts version if we dont have it already
-				if ( $brconfig::serverBhsVersion eq '0.0' ) { RenRem::RenRemCMD ( "sversion" ); }
+				if ( $brconfig::serverScriptsVersion eq '0.0' ) { RenRem::RenRemCMD ( "sversion" ); }
 
 				RenRem::RenRemCMD( "player_info" );
 				RenRem::RenRemCMD( "game_info" );

@@ -3030,7 +3030,7 @@ sub scripts
 				my $pname = modules::parseModName ( $player->{'name'}, 1 );
 
 				# Append scripts version to name
-				$pname .= " (".sprintf("%.2f", $player->{'bhsVersion'} ).")";
+				$pname .= " (".sprintf("%.2f", $player->{'scriptsVersion'} ).")";
 
 				# Pad name length to 28 characters
 				my $minlength = 28;

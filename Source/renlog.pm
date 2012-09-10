@@ -146,11 +146,12 @@ sub check_playername
 	my $ip		= shift;
 
 	# Check for attempted nickname exploits
-	if ( $name =~ m/:/i || $name =~ m/!/i || $name =~ m/&/i )
+	if ( $name =~ m/(:|\!|\&|%s)/i )
 	{
 		# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
 		RenRem::RenRemCMD ( "kick $id" );
-		RenRem::RenRemCMD ( "msg [BR] $name has been kicked by BRenBot for having disallowed characters in their name. (ip: $ip)" );
+		RenRem::RenRemCMD ( "msg [BR] $name has been kicked by BRenBot for having disallowed characters in their name" );
+		brIRC::ircmsg( "Removed a player with disallowed characters in their name. (ip: $ip)", "A" );
 	}
 	elsif ( length($name) <= 1 || $name =~ /[\001\002\037]/ )
 	{
@@ -261,10 +262,14 @@ sub ChatMSG
 	my $teamMessage = 0;
 
 	# Extract chat name and message text, colorize it.
+  # 10 Sept 2012: Added extra protection by explicitly disallowing : in the username of the player
+  # sending the chat message to help prevent abuse of the ambiguous logging format. Also ignoring
+  # any names with spaces in since we are banning those now (see check_playername)
 	#if ( $line =~ m~\[(..):(..):(..)\]\s+(.+?):\s(.+)~ )
-	if ( $line =~ m/^\[(..):(..):(..)\]\s(\[Team\]\s)?(\S.+?):\s(.+)/i )
+	if ( $line =~ m/^\[(..):(..):(..)\]\s(\[Team\]\s)?([^%s:]+?):\s(.+)/i )
 	{
 		# Prevent bugs/command abuse caused by players with : in their name
+    # \todo Is this check still required after the regex update to ignore names with : in?
 		if ( "$5$6" =~ m/^Player\s.+\s(joined|left)\sthe\sgame$/
 		 || "$5$6" =~ m/^.+:\s!\s.+\swas\skicked$/ )
 		{ return; }
@@ -273,6 +278,9 @@ sub ChatMSG
 		my $playername = $5;
 		my $playermsg  = $6;
 
+    # \todo
+    #   What is the purpose of this? The regex should parse it properly in the first place? Might
+    #   be suitable for removing at some point...
 		if ($playermsg =~ m~\[(..):(..):(..)\]\s+(.+?):\s(.+)~)
 		{
 			$playermsg  = $5;
@@ -280,15 +288,12 @@ sub ChatMSG
 		}
 
 		# Check if the message is coming from linux bhs_tail. If not, drop it, because we dont want duplicate chat messages
-		if ( (modules::get_module("bhs") ) && ($brconfig::config_botmode eq "LFDS") )
-		{
-			next;
-		}
+		next if ( (modules::get_module("bhs") ) && ($brconfig::config_botmode eq "LFDS") );
 
 
 		# Check if this is a team message
 		if ( $4 and $4 eq "[Team] " )
-		{ $teamMessage = 1; }
+      { $teamMessage = 1; }
 
 		if ( $5 ne "Host" && $5 !~ m/^\[Page\]/i )
 		{
@@ -683,7 +688,7 @@ sub ParseLogInput
 		}
 
 		# A player joined the game
-		if ( $line =~ m/Player (.*?) joined the game/ )
+		if ( $line =~ m/^Player (.*?) joined the game$/ )
 		{
 			my $joiner = $1;
 
@@ -735,7 +740,7 @@ sub ParseLogInput
 			# Check if their name is all spaces
 			elsif ( $joiner =~ m/[\s+]$/ )
 			{
-	#			# Schedule the player to be kicked in 2 seconds (needs player_info to be updated FIRST)
+				# Schedule the player to be kicked in 2 seconds (needs player_info to be updated FIRST)
 				POE::Session->create
 				( inline_states =>
 					{
@@ -754,13 +759,13 @@ sub ParseLogInput
 			# Update game status
 			RenRem::RenRemCMD( "player_info" );
 			RenRem::RenRemCMD( "game_info" );
-
+      
 		} # end of joined the game
 
 
 
 		# A player has switched teams
-		if ( $line =~ m/Host: (.+?) changed teams./ )
+		if ( $line =~ m/^Host: (.+?) changed teams.$/ )
 		{
 			# When bhs and linux mode, skip this
 			if ( (modules::get_module("bhs") ) && ($brconfig::config_botmode eq "LFDS") )
@@ -779,7 +784,7 @@ sub ParseLogInput
 			RenRem::RenRemCMD( "player_info" );
 		}
 
-		if ( $line =~ "Level loaded OK" )
+		if ( $line =~ "/^Level loaded OK$/" )
 		{
 			# New Level has reloaded, need to update Player Array...
 
@@ -810,20 +815,20 @@ sub ParseLogInput
 		}
 
 		# Handle any lines which just get thrown out to the IRC
-		if ( $line =~ m/^\w+ not found/
-			|| $line =~ /^Logging on..../
-			|| $line =~ /^Logging onto .+ Server/
-			|| $line =~ /^Failed to log in/
-			|| $line =~ /^Creating game channel/
-			|| $line =~ /^Channel created OK/
-			|| $line =~ /^Terminating game/ )
+		if ( $line =~ /^\w+ not found$/
+			|| $line =~ /^Logging on....$/
+			|| $line =~ /^Logging onto .+ Server$/
+			|| $line =~ /^Failed to log in$/
+			|| $line =~ /^Creating game channel$/
+			|| $line =~ /^Channel created OK$/
+			|| $line =~ /^Terminating game$/ )
 		{
 			brIRC::ircmsg( "9$line", "A" );	# Admin channel only
 		}
 
 		# If server crashed clear all player data, or people rejoining quickly
 		# might be mistaken for nick stealers!
-		if ( $line =~ /^Initializing .+ Mode/ )
+		if ( $line =~ /^Initializing .+ Mode$/ )
 		{
 			brIRC::ircmsg( "9$line" );	# Show in both channels
 			playerData::clearAllData();
@@ -833,12 +838,18 @@ sub ParseLogInput
 
 
 		# Record player scripts version
-		if ( $line =~ /^The version of player (.+?) is (.+)/i )
-			{ playerData::setKeyValue ( $1, "bhsVersion", $2 ); }
+		if ( $line =~ /^The version of player (.+?) is (\d+\.\d+)( r%d+)?/i )
+		{
+			playerData::setKeyValue ( $1, "scriptsVersion", $2 );
+			playerData::setKeyValue ( $1, "scriptsRevision", $3 );
+		}
 
 		# Record the version of the server
-		if ( $line =~ /^The Version of the server is (.+)/ || $line =~ /^The version of (bhs|tt).dll on this machine is (.+)/i )
-			{ $brconfig::serverBhsVersion = $1; }
+		if ( $line =~ /^The Version of the server is (.+)/ || $line =~ /^The version of (?:bhs|tt).dll on this machine is (\d+\.\d+)( r%d+)?/i )
+		{
+			$brconfig::serverScriptsVersion = $1;
+			$brconfig::serverScriptsRevision = $2;
+		}
 
 
 		# Record player bandwidth
@@ -856,7 +867,7 @@ sub ParseLogInput
 			{
 				# Only check them if they have been ingame longer than 4 seconds
 				# Players who have just joined might not have had chance to respond
-				if ( length ( $player->{'bhsVersion'} ) == 0 && ( ( time() - $player->{'joinTime'} ) > 4 ) )
+				if ( length ( $player->{'scriptsVersion'} ) == 0 && ( ( time() - $player->{'joinTime'} ) > 4 ) )
 				{
 					modules::kick_player ( $player->{'id'}, 'BRenBot', 'Scripts version 1.3 or higher is required to play on this map (pre 1.3 installed)' );
 				}

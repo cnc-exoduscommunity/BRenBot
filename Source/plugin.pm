@@ -663,7 +663,7 @@ sub PlayerInGame
 # \deprecated RenGuard is no longer supported
 sub is_on_renguard { return 1; }
 
-# \deprecated Use getPlayerData and use the value of the bhsVersion key within their data hash
-sub get_bhs_version { return playerData::getKeyValue ( shift, "bhsVersion"); }
+# \deprecated Use getPlayerData and use the value of the scriptsVersion key within their data hash
+sub get_bhs_version { return playerData::getKeyValue ( shift, "scriptsVersion"); }
 
 1;

@@ -120,13 +120,13 @@ sub joinstuff
 								my ( $result, %player ) = playerData::getPlayerData( $player{'id'} );
 								if ( $result == 1 )
 								{
-									if ( length($player{'bhsVersion'}) > 0 )
+									if ( length($player{'scriptsVersion'}) > 0 )
 									{
 										# They have reported their version, but is it high enough? This check is not
 										# applicable when bhs.dll is only required by the map
-										if ( $player{'bhsVersion'} < $brconfig::config_minimum_scripts_version && $brconfig::config_minimum_scripts_version > 0 )
+										if ( $player{'scriptsVersion'} < $brconfig::config_minimum_scripts_version && $brconfig::config_minimum_scripts_version > 0 )
 										{
-											modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.'  or higher is required to play on this server ('.$player{'bhsVersion'}.' installed)' );
+											modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.'  or higher is required to play on this server ('.$player{'scriptsVersion'}.' installed)' );
 										}
 									}
 

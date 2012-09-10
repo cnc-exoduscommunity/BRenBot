@@ -8,124 +8,125 @@ use RenRem;
 use File::HomeDir;							# For scripts.dll 4.0 when paths.ini is NOT set to UseRenFolder
 
 our $starttime;
-our $serverBhsVersion						= '0.0';
-our $configfile								= "brenbot.cfg";
+our $serverScriptsVersion                 = '0.0';
+our $serverScriptsRevision                = '0';
+our $configfile                           = "brenbot.cfg";
 our $config_botmode;
 
 # IRC basic settings
 our $config_botname;
-our $config_botfullname						= "BRenBot " . main::BR_VERSION;
+our $config_botfullname                   = "BRenBot " . main::BR_VERSION;
 our $config_ircserver;
 our $config_ircport;
 our $irc_adminChannel;
-our $irc_adminChannel_key					= "";
-our $irc_publicChannel						= "";
-our $irc_publicChannel_key					= "";
-our $irc_charsPerSecond						= 4000;
-our $irc_prefixIRCMessages					= 0;		# Hidden config option
-our $irc_showTeamMessages_PublicChan		= 0;
+our $irc_adminChannel_key                 = "";
+our $irc_publicChannel                    = "";
+our $irc_publicChannel_key                = "";
+our $irc_charsPerSecond                   = 4000;
+our $irc_prefixIRCMessages                = 0;    # Hidden config option
+our $irc_showTeamMessages_PublicChan      = 0;
 
 # IRC NickServ / Qauth settings
-our $irc_nickserv_auth						= "";
-our $irc_nickserv_name						= "Nickserv";
+our $irc_nickserv_auth                    = "";
+our $irc_nickserv_name                    = "Nickserv";
 our $config_q_auth;
 our $config_q_username;
 our $config_q_password;
-our $irc_operUser							= "";
-our $irc_operPass							= "";
+our $irc_operUser                         = "";
+our $irc_operPass                         = "";
 
 # GSA Settings
 our $config_gamespyqueryport;
-our $config_generate_gamespy_queries		= 0;
-our $config_broadcast_to_gamespy			= 0;
-our $config_gamespy_ip						= 0;
+our $config_generate_gamespy_queries      = 0;
+our $config_broadcast_to_gamespy          = 0;
+our $config_gamespy_ip                    = 0;
 our $config_gamespy_gameport;
-our $config_gamespy_broadcast_website		= '';
-our $config_gamespy_broadcast_irc			= '';
-our $config_gamespy_broadcast_teamspeak		= '';
-our $config_gamespy_broadcast_ventrilo		= '';
+our $config_gamespy_broadcast_website     = '';
+our $config_gamespy_broadcast_irc         = '';
+our $config_gamespy_broadcast_teamspeak   = '';
+our $config_gamespy_broadcast_ventrilo    = '';
 
 
 # Filename Settings
-our $config_autoannouncefile				= "autoannounce.cfg";
-our $config_messagesfile					= "messages.cfg";
-our $config_moderatorsfile					= "moderators.cfg";
-our $config_presetsfile						= "presets.cfg";
+our $config_autoannouncefile              = "autoannounce.cfg";
+our $config_messagesfile                  = "messages.cfg";
+our $config_moderatorsfile                = "moderators.cfg";
+our $config_presetsfile                   = "presets.cfg";
 our $config_fdsconfigfile;
 our $config_fdspath;
 our $config_fdslogpath;
-our $config_kicklogfile						= "kicklog.log";
-our $config_banlogfile						= "banlog.log";
-our $config_misclogfile						= "misclog.log";
+our $config_kicklogfile                   = "kicklog.log";
+our $config_banlogfile                    = "banlog.log";
+our $config_misclogfile                   = "misclog.log";
 
 # Other Settings
-our $config_autoannounceinterval			= "600";
-our $config_enableladderlookup				= "0";
-our $config_vehiclekick						= "0";
-our $config_renrem_host						= "127.0.0.1";
+our $config_autoannounceinterval          = "600";
+our $config_enableladderlookup            = "0";
+our $config_vehiclekick                   = "0";
+our $config_renrem_host                   = "127.0.0.1";
 our $config_renrem_port;
 our $config_renrem_password;
 our $config_reserved_slots;
 our $config_reserved;
-our $reserved_slots_active					= '0';
+our $reserved_slots_active                = '0';
 
 our $config_redirect_port;
 our $config_redirect;
-our $config_minimum_scripts_version			= '0';
-our $config_force_bhs_dll_map				= '0';
-our $enable_gamelog_loaded_check			= '1';
-our $enableCmsg								= '1';			# Enable CMSG paging
+our $config_minimum_scripts_version       = '0';
+our $config_force_bhs_dll_map             = '0';
+our $enable_gamelog_loaded_check          = '1';
+our $enableCmsg                           = '1';    # Enable CMSG paging
 
 # Settings for automatic recommendations
-our $config_autorec_minscore				= '500';
-our $config_autorec_minkills				= '10';
-our $config_autorec_minkd					= '1.5';
+our $config_autorec_minscore              = '500';
+our $config_autorec_minkills              = '10';
+our $config_autorec_minkd                 = '1.5';
 
 # Settings for moderators
-our $config_moderators_force_auth			= '1';
-our $config_moderator_symbols				= '1';
-our $config_temp_mod_symbol					= '+';
-our $config_half_mod_symbol					= '%';
-our $config_full_mod_symbol					= '@';
-our $config_admin_symbol					= '&';
-our $show_mod_join_message					= 1;
+our $config_moderators_force_auth         = '1';
+our $config_moderator_symbols             = '1';
+our $config_temp_mod_symbol               = '+';
+our $config_half_mod_symbol               = '%';
+our $config_full_mod_symbol               = '@';
+our $config_admin_symbol                  = '&';
+our $show_mod_join_message                = 1;
 
 # Gamelog settings
-our $gamelog_show_vehicle_purchase			= '1';
-our $gamelog_show_vehicle_stolen			= '1';
-our $gamelog_showCrateMsgs					= '1';
-our $gamelog_showKillMsgs					= '1';
-our $gamelog_showVehicleKillMsgs			= '1';
-our $gamelog_showBuildingKillMsgs			= '1';
-our $gamelog_autorec_light_vehicle_kills	= '8';
-our $gamelog_autorec_heavy_vehicle_kills	= '5';
-our $gamelog_autorec_building_repair		= '2000';
-our $gamelog_autorec_vehicle_repair			= '4000';
+our $gamelog_show_vehicle_purchase        = '1';
+our $gamelog_show_vehicle_stolen          = '1';
+our $gamelog_showCrateMsgs                = '1';
+our $gamelog_showKillMsgs                 = '1';
+our $gamelog_showVehicleKillMsgs          = '1';
+our $gamelog_showBuildingKillMsgs         = '1';
+our $gamelog_autorec_light_vehicle_kills  = '8';
+our $gamelog_autorec_heavy_vehicle_kills  = '5';
+our $gamelog_autorec_building_repair      = '2000';
+our $gamelog_autorec_vehicle_repair       = '4000';
 
 # Voting settings
-our $config_votingenabled					= '1';
-our $config_votingperiod					= '60';
-our $config_voting_allow_nextmap			= '1';
-our $config_voting_allow_gameover			= '1';
-our $config_voting_allow_kick				= '1';
+our $config_votingenabled                 = '1';
+our $config_votingperiod                  = '60';
+our $config_voting_allow_nextmap          = '1';
+our $config_voting_allow_gameover         = '1';
+our $config_voting_allow_kick             = '1';
 
 # SSGM settings - read from ssgm.ini
-our $ssgm_version							= 0;
-our $ssgm_logging_port						= 8080;
-our $gamelog_in_ssgm						= 0;		# If this is set to 1 we don't need to tail gamelog, it's in ssgm instead
-our $ssgmLogPrefix							= "ssgm";	# Prefix for the ssgm logs
+our $ssgm_version                         = 0;
+our $ssgm_logging_port                    = 8080;
+our $gamelog_in_ssgm                      = 0;      # If this is set to 1 we don't need to tail gamelog, it's in ssgm instead
+our $ssgmLogPrefix                        = "ssgm"; # Prefix for the ssgm logs
 
 # Server settings - read from svrcfg_cnc.ini
-our $server_timelimit						= 0;		# If this is 0 we shouldn't enforce the 3 second restriction on setnextmap
+our $server_timelimit                     = 0;      # If this is 0 we shouldn't enforce the 3 second restriction on setnextmap
 our %server_rules;
 
 
 
 
 our @messages;
-our %halfMods;				# Hash to hold half moderators
-our %fullMods;				# Hash to hold full moderators
-our %admins;				# Hash to hold administrators
+our %halfMods;      # Hash to hold half moderators
+our %fullMods;      # Hash to hold full moderators
+our %admins;        # Hash to hold administrators
 our @autoannounce;
 our @maplist;
 our @installed_maps;

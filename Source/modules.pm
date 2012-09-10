@@ -1508,7 +1508,7 @@ sub pagePlayer
 	{
 		# CMSG supported if player and server have bhs.dll >= 2.6
 		if ( $brconfig::enableCmsg && modules::get_module( "bhs" )
-			&& $player{'bhsVersion'} >= 2.6 && $brconfig::serverBhsVersion >= 2.6 )
+			&& $player{'scriptsVersion'} >= 2.6 && $brconfig::serverScriptsVersion >= 2.6 )
 		{
 			RenRem::RenRemCMD ( "cmsgp $player{id} 0,255,0 \(PM from $sender): $message" );
 		}

@@ -159,7 +159,7 @@ sub playsndp
 		my ($result, %player) = playerData::getPlayerData($name);
 		if ($result == 1)
 		{
-	   		if ( $player{'bhsVersion'} >= 1.9)
+	   		if ( $player{'scriptsVersion'} >= 1.9)
 	   		{
 	   			RenRem::RenRemCMD("sndp $player{id} $filename");
 	   		}
@@ -181,7 +181,7 @@ sub playsndp_team
 		{
 			if ( $player->{'side'} eq "GDI" || $player->{'side'} eq "All" )
 			{
-	   			if ( $player->{'bhsVersion'} >= 1.9 )
+	   			if ( $player->{'scriptsVersion'} >= 1.9 )
 	   			{
 					RenRem::RenRemCMD( "sndp $player->{id} $filename" );
 				}
@@ -196,7 +196,7 @@ sub playsndp_team
 		{
 			if ( $player->{'side'} eq "NOD" || $player->{'side'} eq "Sov" )
 			{
-	   			if ( $player->{'bhsVersion'} >= 1.9 )
+	   			if ( $player->{'scriptsVersion'} >= 1.9 )
 	   			{
 					RenRem::RenRemCMD( "sndp $player->{id} $filename" );
 				}
