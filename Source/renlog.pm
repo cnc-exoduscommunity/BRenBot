@@ -146,7 +146,7 @@ sub check_playername
 	my $ip		= shift;
 
 	# Check for attempted nickname exploits
-	if ( $name =~ m/(:|\!|\&|%s)/i )
+	if ( $name =~ /(:|\!|\&|%s)/i )
 	{
 		# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
 		RenRem::RenRemCMD ( "kick $id" );
