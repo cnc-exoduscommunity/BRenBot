@@ -18,9 +18,9 @@ our %plugin_events;
 our %plugin_config;
 our %plugin_gamelog_regexes;
 our %plugin_renlog_regexes;
-our @plugins;              # List of all plugins
-our @gamelogRegexPlugins;        # List of plugins which have gamelog hooks setup
-our @renlogRegexPlugins;        # List of plugins which have renlog hooks setup
+our @plugins;               # List of all plugins
+our @gamelogRegexPlugins;   # List of plugins which have gamelog hooks setup
+our @renlogRegexPlugins;    # List of plugins which have renlog hooks setup
 
 # --------------------------------------------------------------------------------------------------
 
@@ -169,6 +169,18 @@ sub load_plugin
     $poe .= "  inline_states => {\n";
       $poe .= "    _start => \\&plugin_start, \n";
       $poe .= "    _stop => sub { eval{ ".$plugin_name."::stop(\@_) }; print 'Plugin ".$plugin_name."::_stop failed: '.\$\@.\"\\n\"; }, \n";
+      $poe .= '    _child => sub {
+                     if ( \$_[ARG0] == \'lose\' )
+                     {
+                       my $size = scalar(@{$_[HEAP]->{\'child_sessions\'}});
+                       my $idx = 0;
+                       ++$idx until $_[HEAP]->{\'child_sessions\'}[$idx] == $_[ARG1] or $idx >= $size;
+                       if ( $idx < $size )
+                         { delete $_[HEAP]->{\'child_sessions\'}[$idx]; }
+                     }
+                     else
+                       { push(@{$_[HEAP]->{\'child_sessions\'}},$_[ARG1]); }
+                   },'."\n";
       $poe .=     $additional_events;
       $poe .= "    plugin_start => sub { plugin_event('".$plugin_name."','start',\@_); }, \n";
       $poe .= "    command => sub { plugin_event('".$plugin_name."','command',\@_); }, \n";
@@ -178,6 +190,7 @@ sub load_plugin
       $poe .= "    mapload => sub { plugin_event('".$plugin_name."','mapload',\@_); }, \n";
       $poe .= "    changeteam => sub { plugin_event('".$plugin_name."','changeteam',\@_); }, \n";
       $poe .= "    gameresult => sub { plugin_event('".$plugin_name."','gameresult',\@_); }, \n";
+      $poe .= "    shutdown => \\&plugin_shutdown, \n";
     $poe .= "  },\n";
     $poe .= "  args => \[ '$plugin_name' \]\n";
     $poe .= ");\n";
@@ -219,15 +232,29 @@ sub unload_plugin
   if ( $plugin_state != 1 && $plugin_state != 2 )
     { return; }
 
-  # \todo write code to unload a plugin from memory space
-  modules::console_output ( "Unloading plugin $plugin_name" );
-
+  modules::console_output ( "[PLUGIN] Unloading plugin $plugin_name" );
+  
+  my $plugin_session = $_[KERNEL]->alias_resolve('plugin_'.$plugin_name);
+  if ( defined($plugin_session) )
+    { $_[KERNEL]->post($plugin_session,'shutdown'); }
+  
   # Wipe the plugin from all data structures
   delete $plugin_commands{$plugin_name};
   delete $plugin_events{$plugin_name};
   delete $plugin_config{$plugin_name};
   delete $plugin_gamelog_regexes{$plugin_name};
   delete $plugin_renlog_regexes{$plugin_name};
+  
+  # Unimport plugin
+  # \todo this might need to be done in a delayed session, since shutdown event won't run until
+  #       after this method exits...
+  eval "no $plugin_name;";
+  if ($@)
+  {
+    modules::console_output ( "[PLUGIN] Failed to unload $plugin_name.pm: $@" );
+    set_state ( $plugin_name, 2 );
+    return;
+  }
 
   # If the plugin state is 2 leave it set to that (the caller will have set it), otherwise set the
   # state to unloaded
@@ -238,7 +265,7 @@ sub unload_plugin
 # --------------------------------------------------------------------------------------------------
 
 #** \function private plugin_start
-#* \brief Entry point for plugin execution
+#* \brief Entry point for plugin sessions
 #
 # This function sets the POE session alias, copies the configuration data into the plugins shared
 # %config variable and calls the plugin start function
@@ -246,7 +273,9 @@ sub unload_plugin
 sub plugin_start
 {
   my ( $kernel, $plugin_name ) = @_[KERNEL, ARG0];
-  my $alias = "plugin_" . $plugin_name;
+  
+  $_[HEAP]->{'plugin_name'}       = $plugin_name;
+  @{$_[HEAP]->{'child_sessions'}} = ();
 
   eval "
     \$". $plugin_name ."::plugin_name = '$plugin_name';
@@ -262,8 +291,39 @@ sub plugin_start
     return;
   }
 
-  $_[KERNEL]->alias_set($alias);
+  $_[KERNEL]->alias_set("plugin_" . $plugin_name);
   $_[KERNEL]->yield("plugin_start");
+}
+
+# --------------------------------------------------------------------------------------------------
+
+#** \function private plugin_shutdown
+#* \brief Shutdown routine for plugin sessions
+#
+# This function is used to shutdown a plugin session prior to it being unloaded, allowing the POE
+# session to exit gracefully. Note that plugins themselves can cause the session to linger beyond
+# the intended lifespan, so we propagate the shutdown message to any child sessions.
+#*
+sub plugin_shutdown
+{
+  my $kernel = $_[KERNEL];
+  my $plugin_name = $_[HEAP]->{'plugin_name'};
+
+  # Remove the session alias and cancel any pending alarms or delays
+  $_[KERNEL]->alias_remove("plugin_" . $plugin_name);
+  $_[SESSION]->alarm_remove_all();
+  
+  # Progagate message to any child sessions
+  foreach (@{$_[HEAP]->{'child_sessions'}})
+    { $_[KERNEL]->post ( $_, 'shutdown' ); }
+  
+  # Detach sessions to ensure we can shutdown properly even if they linger...
+  while ( scalar(@{$_[HEAP]->{'child_sessions'}}) > 0 )
+  {
+    my $session = pop(@{$_[HEAP]->{'child_sessions'}});
+    $_[KERNEL]->detach_child($session);
+  }
+  
 }
 
 # --------------------------------------------------------------------------------------------------
