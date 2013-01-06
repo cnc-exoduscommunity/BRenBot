@@ -5,7 +5,7 @@ use strict;
 
 use POE;
 use XML::Simple;
-#use Data::Dumper;		# Debugging use only
+#use Data::Dumper;    # Debugging use only
 use Cwd;
 
 use modules;
@@ -18,425 +18,539 @@ our %plugin_events;
 our %plugin_config;
 our %plugin_gamelog_regexes;
 our %plugin_renlog_regexes;
-our @plugins;							# List of all plugins
-our @gamelogRegexPlugins;				# List of plugins which have gamelog hooks setup
-our @renlogRegexPlugins;				# List of plugins which have renlog hooks setup
+our @plugins;              # List of all plugins
+our @gamelogRegexPlugins;        # List of plugins which have gamelog hooks setup
+our @renlogRegexPlugins;        # List of plugins which have renlog hooks setup
 
+# --------------------------------------------------------------------------------------------------
 
-
-sub get_irc_channel
-{
-	return $brconfig::irc_adminChannel;
-}
-
+# \todo This should update the list of plugins in the database, we should use another function for
+#       loading all enabled plugins on bot-start
 sub get_plugins
 {
-	unless(opendir(DATADIR, "plugins/"))
-	{
-		return;
-	}
+  unless(opendir(DATADIR, "plugins/"))
+    { return; }
 
-	my @plugin_files;
-	@plugin_files = grep(/\.pm$/i,readdir(DATADIR));
+  my @plugin_files;
+  @plugin_files = grep(/\.pm$/i,readdir(DATADIR));
 
-	foreach (@plugin_files)
-	{
-		my $plugin = $_;
-		$plugin =~ s/\.pm$//g;
-		modules::console_output ( "Loading plugin $plugin... ", 1 );
-
-		# Load plugin.pm
-		eval "use lib '".getcwd."/plugins'; use $plugin;";
-		if ($@)
-		{
-			modules::console_output ( "Failed! Error loading $plugin.pm: $@", 3 );
-			next;
-		}
-
-
-		# Read plugin.xml file
-		eval
-		{
-			$xml{$plugin} = XMLin ( "plugins/$plugin.xml", ForceArray => [ qw(event group command hook) ], KeyAttr => [ 'name', 'key', 'id', 'event' ] );
-		};
-		if ($@)
-		{
-			modules::console_output ( "Failed! Error reading $plugin.xml: $@", 3 );
-			next;
-		}
-
-		# DEBUGGING
-# 		use Data::Dumper;
-#		open ( DATA_DUMP, '>' . $plugin . '_xmldatadump.txt' );
-#		print DATA_DUMP Dumper( $xml{$plugin} );
-#		close DATA_DUMP;
-
-
-		# Get additional events
-		my %additional_events;
-		eval "%additional_events = %" . $plugin . "::additional_events;";
-		if ($@)
-		{
-			modules::console_output ( "Failed! Error loading additional events: $@", 3 );
-			next;
-		}
-
-		# Build additional events string
-		my $additional_events;
-		while (my ($key, $value) = each %additional_events)
-		{
-			$additional_events .= "  $key => \\&" . $plugin . "::$value, \n";
-		}
-
-
-		# Populate relevant data structures from XML data
-		@{$plugin_commands{$plugin}}		= get_commands($xml{$plugin}, $plugin);
-		@{$plugin_events{$plugin}}			= get_events($xml{$plugin}, $plugin);
-		%{$plugin_config{$plugin}}			= get_plugin_config($xml{$plugin}, $plugin);
-		%{$plugin_gamelog_regexes{$plugin}}	= get_gamelog_regexes ( $xml{$plugin}, $plugin );
-		%{$plugin_renlog_regexes{$plugin}}	= get_renlog_regexes ( $xml{$plugin}, $plugin );
-
-
-		# Loaded successfully, now try to start it...
-		modules::console_output ( "Success! Attempting to start plugin", 3 );
-
-
-		# Build session creation string
-		my $poe = "POE::Session->create (\n";
-		$poe .= "	inline_states => {\n";
-   		$poe .= "		_start => \\&plugin_start, \n";
-   		$poe .= "		_stop => sub { eval{ ".$plugin."::stop(\@_) }; print 'Plugin ".$plugin."::_stop failed: '.\$\@.\"\\n\"; }, \n";
-		$poe .= 		$additional_events;
-   		$poe .= "		plugin_start => sub { plugin_event('".$plugin."','start',\@_); }, \n";
-   		$poe .= "		command => sub { plugin_event('".$plugin."','command',\@_); }, \n";
-   		$poe .= "		text => sub { plugin_event('".$plugin."','text',\@_); }, \n";
-   		$poe .= "		playerjoin => sub { plugin_event('".$plugin."','playerjoin',\@_); }, \n";
-   		$poe .= "		playerleave => sub { plugin_event('".$plugin."','playerleave',\@_); }, \n";
-   		$poe .= "		mapload => sub { plugin_event('".$plugin."','mapload',\@_); }, \n";
-   		$poe .= "		changeteam => sub { plugin_event('".$plugin."','changeteam',\@_); }, \n";
-   		$poe .= "		gameresult => sub { plugin_event('".$plugin."','gameresult',\@_); }, \n";
-		$poe .= "	},\n";
-		$poe .= "	args => \[ '$plugin' \]\n";
-		$poe .= ");\n";
-
-
-		# Execute session creation string
-		eval "\n".$poe;
-		if ($@)
-		{
-			modules::console_output ( "$plugin failed to start! Error: $@" );
-
-			# Wipe the plugin from the data structures
-			delete $plugin_commands{$plugin};
-			delete $plugin_events{$plugin};
-			delete $plugin_config{$plugin};
-			delete $plugin_gamelog_regexes{$plugin};
-			delete $plugin_renlog_regexes{$plugin};
-
-			next;
-		}
-
-		# Plugin completely loaded, add it to the list of plugins
-		push (@plugins, $plugin);
-
-	}	# end of plugin foreach
+  foreach (@plugin_files)
+  {
+    my $plugin = $_;
+    $plugin =~ s/\.pm$//g;
+    load_plugin ( $plugin );
+  }
 }
 
+# --------------------------------------------------------------------------------------------------
+
+#** \function private set_state ( $$plugin_name, $$plugin_state )
+# \brief Sets the state of a plugin
+#
+# \param[in] plugin_name
+#   Name of the plugin to set the state of
+# \param[in] plugin_state
+#   New plugin state (-1 = not found, 0 = unloaded, 1 = loaded, 2 = error)
+#*
+sub set_state
+{
+  # \todo Finish this function
+}
+
+# --------------------------------------------------------------------------------------------------
+
+#** \function public get_state ( $$plugin_name )
+# \brief Get current state of a plugin
+#
+# \param[in] plugin_name
+#   Name of the plugin to get the current state of
+#
+# \return Current plugin state (-1 = not found, 0 = unloaded, 1 = loaded, 2 = error)
+#*
+sub get_state
+{
+  # \todo Update list of plugins in database - get_plugins or similar will do this when updated
+
+  # \todo Finish this function
+  return 0;
+}
+
+# --------------------------------------------------------------------------------------------------
+
+#** \function public load_plugin ( $$plugin_name )
+# \brief Attempt to load a plugin
+#
+# \param[in] plugin_name
+#   Name of the plugin to attempt to load
+#
+# @return Result of loading the plugin ( -1 = not found, 0 = already loaded, 1 = loaded OK, 2 = error)
+#*
+sub load_plugin
+{
+  my $plugin_name = shift;
+  my $plugin_state = get_state($plugin_name);
+
+  # If the plugin was not found or is already loaded return relevant result code
+  if ( $plugin_state == -1 )
+    return -1;
+  if ( $plugin_state == 1 )
+    return 0;
+
+  # OK, plugin exists and is not already loaded, so lets see if we can load it...
+  modules::console_output ( "Attempting to loading plugin $plugin_name... ", 1 );
+
+
+  # Load the plugin XML file first - this is the most likely part to fail
+  eval
+  {
+    $xml{$plugin_name} = XMLin ( "plugins/$plugin_name.xml",
+                        ForceArray => [ qw(event group command hook) ],
+                        KeyAttr => [ 'name', 'key', 'id', 'event' ] );
+  };
+  if ($@)
+  {
+    modules::console_output ( "Failed! Error reading $plugin_name.xml: $@", 3 );
+    set_state ( $plugin_name, 2 );
+    return 2;
+  }
+
+
+  # OK, we got the XML file loaded OK, go ahead and try to load the plugin itself
+  eval "use lib '".getcwd."/plugins'; use $plugin_name;";
+  if ($@)
+  {
+    modules::console_output ( "Failed! Error loading $plugin_name.pm: $@", 3 );
+    set_state ( $plugin_name, 2 );
+    return 2;
+  }
+
+
+  # DEBUGGING CODE
+#  use Data::Dumper;
+#  open ( DATA_DUMP, '>' . $plugin_name . '_xmldatadump.txt' );
+#  print DATA_DUMP Dumper( $xml{$plugin_name} );
+#  close DATA_DUMP;
+
+
+  # Get additional events from XML configuration
+  my %additional_events;
+  eval "%additional_events = %" . $plugin_name . "::additional_events;";
+  if ($@)
+  {
+    modules::console_output ( "Failed! Error loading additional events: $@", 3 );
+    set_state ( $plugin_name, 2 );
+    return 2;
+  }
+
+  # Build additional events string
+  my $additional_events;
+  while (my ($key, $value) = each %additional_events)
+  {
+    $additional_events .= "  $key => \\&" . $plugin_name . "::$value, \n";
+  }
+
+
+  # Populate relevant data structures from XML data
+  # \todo are all of these still actually being used? If not, maybe they should be removed?
+  @{$plugin_commands{$plugin_name}}         = get_commands($xml{$plugin_name}, $plugin_name);
+  @{$plugin_events{$plugin_name}}           = get_events($xml{$plugin_name}, $plugin_name);
+  %{$plugin_config{$plugin_name}}           = get_plugin_config($xml{$plugin_name}, $plugin_name);
+  %{$plugin_gamelog_regexes{$plugin_name}}  = get_gamelog_regexes ( $xml{$plugin_name}, $plugin_name );
+  %{$plugin_renlog_regexes{$plugin_name}}   = get_renlog_regexes ( $xml{$plugin_name}, $plugin_name );
+
+
+  # Loaded successfully, now try to start it...
+  modules::console_output ( "Success! Attempting to start plugin", 3 );
+
+
+  # Build session creation string
+  my $poe = "POE::Session->create (\n";
+    $poe .= "  inline_states => {\n";
+      $poe .= "    _start => \\&plugin_start, \n";
+      $poe .= "    _stop => sub { eval{ ".$plugin_name."::stop(\@_) }; print 'Plugin ".$plugin_name."::_stop failed: '.\$\@.\"\\n\"; }, \n";
+      $poe .=     $additional_events;
+      $poe .= "    plugin_start => sub { plugin_event('".$plugin_name."','start',\@_); }, \n";
+      $poe .= "    command => sub { plugin_event('".$plugin_name."','command',\@_); }, \n";
+      $poe .= "    text => sub { plugin_event('".$plugin_name."','text',\@_); }, \n";
+      $poe .= "    playerjoin => sub { plugin_event('".$plugin_name."','playerjoin',\@_); }, \n";
+      $poe .= "    playerleave => sub { plugin_event('".$plugin_name."','playerleave',\@_); }, \n";
+      $poe .= "    mapload => sub { plugin_event('".$plugin_name."','mapload',\@_); }, \n";
+      $poe .= "    changeteam => sub { plugin_event('".$plugin_name."','changeteam',\@_); }, \n";
+      $poe .= "    gameresult => sub { plugin_event('".$plugin_name."','gameresult',\@_); }, \n";
+    $poe .= "  },\n";
+    $poe .= "  args => \[ '$plugin_name' \]\n";
+    $poe .= ");\n";
+
+
+  # Execute session creation string
+  eval "\n".$poe;
+  if ($@)
+  {
+    modules::console_output( "$plugin_name failed to start! Error: $@" );
+    set_state( $plugin_name, 2 );
+    unload_plugin( $plugin_name );
+    return 2;
+  }
+
+  # Plugin completely loaded, add it to the list of plugins
+  # \todo once we finish the state get/set functions (database backed), do we need to keep this list?
+  push (@plugins, $plugin_name);
+
+  # Return success
+  set_state ( $plugin_name, 1 );
+  return 1;
+}
+
+# --------------------------------------------------------------------------------------------------
+
+#** \function public unload_plugin ( $$plugin_name )
+# \brief Unload a plugin
+#
+# \param[in] plugin_name
+#   Name of the plugin to unload
+#*
+sub unload_plugin
+{
+  my $plugin_name = shift;
+  my $plugin_state = get_state($plugin_name);
+
+  # If the plugin is not currently loaded then do nothing
+  if ( $plugin_state != 1 && $plugin_state != 2 )
+    return;
+
+  # \todo write code to unload a plugin from memory space
+  modules::console_output ( "Unloading plugin $plugin_name" );
+
+  # Wipe the plugin from all data structures
+  delete $plugin_commands{$plugin_name};
+  delete $plugin_events{$plugin_name};
+  delete $plugin_config{$plugin_name};
+  delete $plugin_gamelog_regexes{$plugin_name};
+  delete $plugin_renlog_regexes{$plugin_name};
+
+  # If the plugin state is 2 leave it set to that (the caller will have set it), otherwise set the
+  # state to unloaded
+  if ( $plugin_state != 2 )
+    set_state ( $plugin_name, 0 );
+}
+
+# --------------------------------------------------------------------------------------------------
+
+#** \function private plugin_start
+#* \brief Entry point for plugin execution
+#
+# This function sets the POE session alias, copies the configuration data into the plugins shared
+# %config variable and calls the plugin start function
+#*
+sub plugin_start
+{
+  my ( $kernel, $plugin_name ) = @_[KERNEL, ARG0];
+  my $alias = "plugin_" . $plugin_name;
+
+  eval("
+    \$". $plugin_name ."::plugin_name = '$plugin_name';
+    if ( \$plugin_config{$plugin_name} )
+
+      { \%". $plugin_name ."::config = %{\$plugin_config{$plugin_name}}; }
+  ")
+
+  if ( $@ )
+  {
+    console_output ( "[PLUGIN] Failed to pass configuration data to plugin $plugin_name!" );
+    unload_plugin($plugin_name);
+    return;
+  }
+
+  $_[KERNEL]->alias_set($alias);
+  $_[KERNEL]->yield("plugin_start");
+}
+
+# --------------------------------------------------------------------------------------------------
+
+#** \function private plugin_event ( $$plugin_name, $$event_name, ... )
+# \brief Wrapper used to safely execute the named event on the given plugin
+#
+# \param[in] plugin_name
+#   The name of the plugin to execute an event upon
+# \param[in] plugin_event
+#   The name of the event to execute within the plugin
+# \param[in] ...
+#   Additional arguments to be passed to the plugin event
+#*
+sub plugin_event
+{
+  # Shift plugin name and event name off the arguments array
+  my $plugin_name = shift;
+  my $plugin_event = shift;
+
+  # Execute the event using the remaining arguments
+  eval $plugin_name.'::'.$plugin_event.'(@_);';
+  if ( $@ )
+    modules::console_output ( '[PLUGIN] Plugin '.$plugin_name.'::'.$plugin_event.' failed: '.$@ );
+}
+
+# --------------------------------------------------------------------------------------------------
 
 # Get an array of plugins which have registered for the named event
 sub get_plugin_event
 {
-	my $event = shift;
-	my @found_plugins;
+  my $event = shift;
+  my @found_plugins;
 
-	foreach (@plugins)
-	{
-		my $plugin = $_;
-		my @events = @{$plugin_events{$plugin}};
+  foreach (@plugins)
+  {
+    my $plugin = $_;
+    my @events = @{$plugin_events{$plugin}};
 
-		foreach (@events)
-		{
-			if ($_ eq $event)
-			{
-				push (@found_plugins, $plugin);
-				last;
-			}
-		}
-	}
+    foreach (@events)
+    {
+      if ($_ eq $event)
+      {
+        push (@found_plugins, $plugin);
+        last;
+      }
+    }
+  }
 
-	return @found_plugins;
+  return @found_plugins;
 }
 
 # Returns a list of plugins which have gamelog regex hooks setup
 sub get_plugin_gamelog_regexes
 {
-	return @gamelogRegexPlugins;
+  return @gamelogRegexPlugins;
 }
 
 
 # Returns a list of plugins which have renlog regex hooks setup
 sub get_plugin_renlog_regexes
 {
-	return @renlogRegexPlugins;
-}
-
-
-sub plugin_start
-{
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-   	my $kernel = $_[KERNEL];
-
-   	my $alias = "plugin_" . $args;
-   	$_[KERNEL]->alias_set($alias);
-   	$_[KERNEL]->yield("plugin_start");
-
-	my $set_plugin = "\$" . $args . "::plugin_name = '$args';";
-	eval ("\n" . $set_plugin);
-
-	if ( $plugin_config{$args} )
-	{
-		my %config = %{$plugin_config{$args}};
-		my $set_config = "\%" . $args . "::config = %config;";
-		eval ("\n" . $set_config);
-	}
-}
-
-
-# Execute the named event on the given plugin
-sub plugin_event
-{
-	# Shift plugin name and event name off the arguments array
-	my $plugin = shift;
-	my $event = shift;
-
-	# Execute the event using the remaining arguments
-	eval $plugin.'::'.$event.'(@_);';
-	print 'Plugin '.$plugin.'::'.$event.' failed: '.$@."\n" if $@;
+  return @renlogRegexPlugins;
 }
 
 
 # Returns a hash of all the plugin gamelog regexes, and the events they should trigger
 sub get_gamelog_regexes
 {
-	my $xml = shift;
-	my $plugin = shift;
+  my $xml = shift;
+  my $plugin = shift;
 
-	my $c = $xml->{gamelog_regex_hooks}->{hook};
-	my %regexes;
+  my $c = $xml->{gamelog_regex_hooks}->{hook};
+  my %regexes;
 
-	if ( $c )
-	{
-		push ( @gamelogRegexPlugins, $plugin );
-		for my $event ( keys %{$c} )
-		{
-			my $regex = $c->{$event}->{regex};
-			$regexes{$regex} = $event;
-		}
-	}
+  if ( $c )
+  {
+    push ( @gamelogRegexPlugins, $plugin );
+    for my $event ( keys %{$c} )
+    {
+      my $regex = $c->{$event}->{regex};
+      $regexes{$regex} = $event;
+    }
+  }
 
-	return %regexes;
+  return %regexes;
 }
 
 
 # Returns a hash of all the plugin renlog regexes, and the events they should trigger
 sub get_renlog_regexes
 {
-	my $xml = shift;
-	my $plugin = shift;
+  my $xml = shift;
+  my $plugin = shift;
 
-	my $c = $xml->{renlog_regex_hooks}->{hook};
-	my %regexes;
+  my $c = $xml->{renlog_regex_hooks}->{hook};
+  my %regexes;
 
-	if ( $c )
-	{
-		push ( @renlogRegexPlugins, $plugin );
-		for my $event ( keys %{$c} )
-		{
-			my $regex = $c->{$event}->{regex};
-			$regexes{$regex} = $event;
-		}
-	}
+  if ( $c )
+  {
+    push ( @renlogRegexPlugins, $plugin );
+    for my $event ( keys %{$c} )
+    {
+      my $regex = $c->{$event}->{regex};
+      $regexes{$regex} = $event;
+    }
+  }
 
-	return %regexes;
+  return %regexes;
 }
 
 
 sub get_events
 {
-	my $xml = shift;
-	my $plugin = shift;
-	my @events;
+  my $xml = shift;
+  my $plugin = shift;
+  my @events;
 
-	if ( $xml->{events}->{event} )
-		{ @events = @{$xml->{events}->{event}}; }
-	return (@events);
+  if ( $xml->{events}->{event} )
+    { @events = @{$xml->{events}->{event}}; }
+  return (@events);
 }
 
 sub get_plugin_config
 {
-	my $xml = shift;
-	my $plugin = shift;
-	my %hash;
+  my $xml = shift;
+  my $plugin = shift;
+  my %hash;
 
-	my $c = $xml->{config}->{cvar};
+  my $c = $xml->{config}->{cvar};
 
-	for my $key ( keys %{$c} )
-	{
-		my $value = $c->{$key}->{value};
-		$hash{$key} = $value;
-	}
+  for my $key ( keys %{$c} )
+  {
+    my $value = $c->{$key}->{value};
+    $hash{$key} = $value;
+  }
 
-	return (%hash);
+  return (%hash);
 }
 
 sub get_commands
 {
-	my $xml    = shift;
-	my $plugin = shift;
+  my $xml    = shift;
+  my $plugin = shift;
 
-	my $c = $xml->{command};
-	my @commands;
+  my $c = $xml->{command};
+  my @commands;
 
-	while (my ($key, $value) = each %{$c})
-	{
-		my %hash;
-		$hash{name} = $key;
-		push (@commands, \%hash);
+  while (my ($key, $value) = each %{$c})
+  {
+    my %hash;
+    $hash{name} = $key;
+    push (@commands, \%hash);
 
-		next if ($key eq "event");
+    next if ($key eq "event");
 
-		foreach ($value)
-		{
+    foreach ($value)
+    {
 
-			my @array = @{$_} if ($_ =~ "ARRAY");
+      my @array = @{$_} if ($_ =~ "ARRAY");
 
-			foreach (@array)
-			{
-				$value = $_;
-				my %hash = %{$value};
-			}
-		}
+      foreach (@array)
+      {
+        $value = $_;
+        my %hash = %{$value};
+      }
+    }
 
 
-		if ($value->{alias})
-		{
-			my @aliases;
+    if ($value->{alias})
+    {
+      my @aliases;
 
-			if ($value->{alias} =~ "ARRAY")
-			{
-				@aliases = @{$value->{alias}};
-			}
-			else
-			{
-				@aliases = ($value->{alias});
-			}
+      if ($value->{alias} =~ "ARRAY")
+      {
+        @aliases = @{$value->{alias}};
+      }
+      else
+      {
+        @aliases = ($value->{alias});
+      }
 
-			if (@aliases)
-			{
-				foreach (@aliases)
-				{
-					my %hash;
-					$hash{name}  = $_;
-					$hash{alias} = $key;
-					push (@commands, \%hash);
-				}
-			}
-		}
-	}
+      if (@aliases)
+      {
+        foreach (@aliases)
+        {
+          my %hash;
+          $hash{name}  = $_;
+          $hash{alias} = $key;
+          push (@commands, \%hash);
+        }
+      }
+    }
+  }
 
-	return @commands;
+  return @commands;
 }
 
 
 sub get_command_settings
 {
-	my $command = shift;
-	my $xml = shift;
-	my $plugin = shift;
+  my $command = shift;
+  my $xml = shift;
+  my $plugin = shift;
 
-	my $c = $xml->{command}->{$command};
+  my $c = $xml->{command}->{$command};
 
-	my @alias;
-	my @commandgroups;
-	#my @usergroups;
-	my @modules;
+  my @alias;
+  my @commandgroups;
+  #my @usergroups;
+  my @modules;
 
-	my $count = scalar($c);
-	if ($c->{alias})
-	{
-		my $count = scalar($c->{alias});
+  my $count = scalar($c);
+  if ($c->{alias})
+  {
+    my $count = scalar($c->{alias});
 
-		if ($count > 0)
-		{
-			my @array = (@{$c->{alias}}) if scalar($c->{alias});
+    if ($count > 0)
+    {
+      my @array = (@{$c->{alias}}) if scalar($c->{alias});
 
-			if (@array)
-			{
-				foreach (@{$c->{alias}})
-				{
-					push (@alias, $_);
-				}
-			}
-		} else
-		{
-			push (@alias, $count);
-		}
-	}
+      if (@array)
+      {
+        foreach (@{$c->{alias}})
+        {
+          push (@alias, $_);
+        }
+      }
+    } else
+    {
+      push (@alias, $count);
+    }
+  }
 
-	# dereference command groups
+  # dereference command groups
 
-	if ($c->{group})
-	{
+  if ($c->{group})
+  {
 
-		my $count = scalar($c->{group});
-		if ($count > 0)
-		{
-			my @array = (@{$c->{group}}) if scalar($c->{group});
+    my $count = scalar($c->{group});
+    if ($count > 0)
+    {
+      my @array = (@{$c->{group}}) if scalar($c->{group});
 
-			if (@array)
-			{
-				foreach (@{$c->{group}})
-				{
-					push (@commandgroups, $_);
-				}
-			}
-		} else
-		{
-			push (@commandgroups, $count);
-		}
-	}
+      if (@array)
+      {
+        foreach (@{$c->{group}})
+        {
+          push (@commandgroups, $_);
+        }
+      }
+    } else
+    {
+      push (@commandgroups, $count);
+    }
+  }
 
 
-	if ($c->{module})
-	{
-		my $count = scalar($c->{module});
+  if ($c->{module})
+  {
+    my $count = scalar($c->{module});
 
-		if ($count > 0)
-		{
-			my @array = (@{$c->{module}}) if scalar($c->{module});
+    if ($count > 0)
+    {
+      my @array = (@{$c->{module}}) if scalar($c->{module});
 
-			if (@array)
-			{
-				foreach (@{$c->{module}})
-				{
-					push (@modules, $_);
-				}
-			}
-		} else
-		{
-			push (@modules, $count);
-		}
-	}
+      if (@array)
+      {
+        foreach (@{$c->{module}})
+        {
+          push (@modules, $_);
+        }
+      }
+    } else
+    {
+      push (@modules, $count);
+    }
+  }
 
-	return ($c, \@alias, \@commandgroups, \@modules);
+  return ($c, \@alias, \@commandgroups, \@modules);
 }
 
 sub display_plugin_error
 {
-	my $plugin = shift;
-	my $error = shift;
+  my $plugin = shift;
+  my $error = shift;
 
-	modules::console_output ( "Error in Plugin $plugin - $error" );
+  modules::console_output ( "Error in Plugin $plugin - $error" );
 }
 
 
@@ -522,8 +636,8 @@ sub getGameStatus { return serverStatus::getGameStatus(); }
 # for all players in the server
 sub serverMsg
 {
-	my $msg = shift;
-	RenRemCMD ( "msg $msg" );
+  my $msg = shift;
+  RenRemCMD ( "msg $msg" );
 }
 
 
@@ -578,6 +692,14 @@ sub getPlayerFromObjectID { return gamelog::getPlayerFromObjectID(@_); }
 ## IRC functions
 #########################
 
+#**
+# \deprecated, not required for new IRC infrastructure
+#*
+sub get_irc_channel
+{
+  return $brconfig::irc_adminChannel;
+}
+
 # Get permission level of an IRC user.
 # Parameters: username, channelCode
 sub getIrcPermissions { return brIRC::getUserPermissions(@_); }
@@ -604,13 +726,13 @@ sub ircnotice { brIRC::ircnotice(@_); }
 # Run a BRenBot command from a plugin
 sub call_command
 {
-	my $callername  = shift;
-	my $command     = shift;
+  my $callername  = shift;
+  my $command     = shift;
 
-	$command = "!$command";
+  $command = "!$command";
 
-	eval { commands::parsearg($command, $callername, "Y") };
-	modules::display_error($@) if $@;
+  eval { commands::parsearg($command, $callername, "Y") };
+  modules::display_error($@) if $@;
 }
 
 
@@ -656,8 +778,8 @@ sub console_output { return modules::console_output(@_); }
 # \deprecated Use getPlayerData instead
 sub PlayerInGame
 {
-	my ( $result, %player ) = playerData::getPlayerData($_[0]);
-	return ( $result, "", \%player );
+  my ( $result, %player ) = playerData::getPlayerData($_[0]);
+  return ( $result, "", \%player );
 }
 
 # \deprecated RenGuard is no longer supported
