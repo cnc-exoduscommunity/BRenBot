@@ -42,9 +42,10 @@ sub readXMLData
 	$xml_config = "";
 	my $error;
 
-	eval
-	{
-		$xml_config = XMLin("commands.xml", ForceArray => [ 'group' ] );
+  eval
+  {
+    no warnings 'deprecated';  # Suppress XML::Parser::Expat warning about tied handles...
+    $xml_config = XMLin("commands.xml", ForceArray => [ 'group' ] );
 
 		# DEBUGGING
 	#	use Data::Dumper;

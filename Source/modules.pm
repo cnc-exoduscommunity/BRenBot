@@ -1536,10 +1536,11 @@ sub pagePlayer
 sub loadMapSettings
 {
 	my $error;
-	eval
-	{
-		$mapSettings = XMLin( "mapsettings.xml", SuppressEmpty => 1, ForceArray => [ 'map' ] );
-	}
+  eval
+  {
+    no warnings 'deprecated';  # Suppress XML::Parser::Expat warning about tied handles...
+    $mapSettings = XMLin( "mapsettings.xml", SuppressEmpty => 1, ForceArray => [ 'map' ] );
+  }
 	or $error = $@;
 
 	if ( $error )

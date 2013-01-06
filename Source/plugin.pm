@@ -103,6 +103,7 @@ sub load_plugin
   # Load the plugin XML file first - this is the most likely part to fail
   eval
   {
+    no warnings 'deprecated';  # Suppress XML::Parser::Expat warning about tied handles...
     $xml{$plugin_name} = XMLin ( "plugins/$plugin_name.xml",
                         ForceArray => [ qw(event group command hook) ],
                         KeyAttr => [ 'name', 'key', 'id', 'event' ] );
