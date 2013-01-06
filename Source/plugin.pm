@@ -92,9 +92,9 @@ sub load_plugin
 
   # If the plugin was not found or is already loaded return relevant result code
   if ( $plugin_state == -1 )
-    return -1;
+    { return -1; }
   if ( $plugin_state == 1 )
-    return 0;
+    { return 0; }
 
   # OK, plugin exists and is not already loaded, so lets see if we can load it...
   modules::console_output ( "Attempting to loading plugin $plugin_name... ", 1 );
@@ -216,7 +216,7 @@ sub unload_plugin
 
   # If the plugin is not currently loaded then do nothing
   if ( $plugin_state != 1 && $plugin_state != 2 )
-    return;
+    { return; }
 
   # \todo write code to unload a plugin from memory space
   modules::console_output ( "Unloading plugin $plugin_name" );
@@ -231,7 +231,7 @@ sub unload_plugin
   # If the plugin state is 2 leave it set to that (the caller will have set it), otherwise set the
   # state to unloaded
   if ( $plugin_state != 2 )
-    set_state ( $plugin_name, 0 );
+    { set_state ( $plugin_name, 0 ); }
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -247,12 +247,12 @@ sub plugin_start
   my ( $kernel, $plugin_name ) = @_[KERNEL, ARG0];
   my $alias = "plugin_" . $plugin_name;
 
-  eval("
+  eval "
     \$". $plugin_name ."::plugin_name = '$plugin_name';
     if ( \$plugin_config{$plugin_name} )
 
       { \%". $plugin_name ."::config = %{\$plugin_config{$plugin_name}}; }
-  ")
+  ";
 
   if ( $@ )
   {
@@ -286,7 +286,7 @@ sub plugin_event
   # Execute the event using the remaining arguments
   eval $plugin_name.'::'.$plugin_event.'(@_);';
   if ( $@ )
-    modules::console_output ( '[PLUGIN] Plugin '.$plugin_name.'::'.$plugin_event.' failed: '.$@ );
+    { modules::console_output ( '[PLUGIN] Plugin '.$plugin_name.'::'.$plugin_event.' failed: '.$@ ); }
 }
 
 # --------------------------------------------------------------------------------------------------
