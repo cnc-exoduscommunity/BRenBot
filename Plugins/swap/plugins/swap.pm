@@ -2,7 +2,7 @@
 # Swap plugin for BRenBot by Daniel Paul
 # Allows two players on opposite teams to swap teams with mutual agreement
 #
-# Version 1.00
+# Version 1.02
 #
 package swap;
 
@@ -12,16 +12,16 @@ use plugin;
 # Define additional events in the POE session
 our %additional_events =
 (
-	# !command functions
-	"swap" => "swap",
-	"swapcancel" => "swapcancel"
+  # !command functions
+  "swap" => "swap",
+  "swapcancel" => "swapcancel"
 );
 
 
 # Setup variables
-our $plugin_name;			# BRenBot automatically sets the plugin name
-our %config;				# BRenBot automatically imports the plugin's config (from the xml file) into %config
-our $currentVersion = 1.01;
+our $plugin_name;   # BRenBot automatically sets the plugin name
+our %config;        # BRenBot automatically imports the plugin's config (from the xml file) into %config
+our $currentVersion = 1.02;
 
 # Functional variables
 my $swapRequester = 0;
@@ -223,7 +223,7 @@ sub swap_halftime
 }
 
 # Triggers when 0 seconds are left on a !swap
-sub swap_halftime
+sub swap_fulltime
 {
 	my %args = %{@_[ ARG0 ]};
 	

@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+
+<plugin name="test-plugin">
+  <command name="test-plugin">
+    <permission level="1"/>
+    <syntax value="test-plugin"/>
+    <help value="Dummy command registered by the test plugin"/>
+    <enabled value="1"/>
+    <group>irc</group>
+    <group>ingame</group>
+  </command>
+  <events>
+    <event>command</event>
+    <event>text</event>
+  </events>
+  <config>
+    <cvar name="param1" value="1"/>
+    <cvar name="param2" value="2"/>
+  </config>
+</plugin>
