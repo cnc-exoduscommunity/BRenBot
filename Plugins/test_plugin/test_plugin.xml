@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 
-<plugin name="test-plugin">
-  <command name="test-plugin">
+<plugin name="test_plugin">
+  <command name="test_plugin">
     <permission level="1"/>
-    <syntax value="test-plugin"/>
+    <syntax value="test_plugin"/>
     <help value="Dummy command registered by the test plugin"/>
     <enabled value="1"/>
     <group>irc</group>

@@ -2,7 +2,7 @@
 # Test Plugin for BRenBot 1.x
 # This plugin is used to test the BRenBot plugin interface is working correctly
 #
-package test-plugin;
+package test_plugin;
 
 use POE;
 use plugin;
@@ -13,7 +13,7 @@ use strict;
 our %additional_events =
 (
   # !commands
-  "test-plugin" => "test-plugin",
+  "test_plugin" => "test_plugin",
 );
 
 # plugin_name and config are automatically populated by BRenBot
@@ -26,20 +26,20 @@ our %config;
 # Runs when BRenBot loads the plugin
 sub start
 {
-  plugin::console_output ( '[TEST-PLUGIN] Started' );
+  plugin::console_output ( '[test_plugin] Started' );
 }
 
 # Runs when the plugin is unloaded
 sub stop
 {
-  plugin::console_output ( '[TEST-PLUGIN] Stopped' );
+  plugin::console_output ( '[test_plugin] Stopped' );
 }
 
 # Runs when a !command specified in the .xml file is typed
 sub command
 {
   my %args = %{$_[ ARG0 ]};
-  plugin::console_output ( '[TEST-PLUGIN] Command' );
+  plugin::console_output ( '[test_plugin] Command' );
   
   if ( $args{'command'} eq 'show_commands' )
     { $_[KERNEL]->yield('show_commands' => \%args); }
@@ -49,15 +49,16 @@ sub command
 sub text
 {
   my %args = %{$_[ ARG0 ]};
-  plugin::console_output ( '[TEST-PLUGIN] Text ('.$args{'nick'}.': '.$args{'message'} );
+  plugin::console_output ( '[test_plugin] Text ('.$args{'nick'}.': '.$args{'message'} );
 }
 
 # --------------------------------------------------------------------------------------------------
 # Commands
 
-sub test-plugin
+sub test_plugin
 {
-  plugin::console_output('[TEST-PLUGIN] command called by ' . $args{'nick'});
+  my %args = %{$_[ ARG0 ]};
+  plugin::console_output('[test_plugin] command called by ' . $args{'nick'});
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -72,14 +73,14 @@ sub start_sessions()
     {
       _start          => sub
       {
-        plugin::console_output('[TEST-PLUGIN] Session 1 Started');
-        $_[KERNEL->yield('tick');
+        plugin::console_output('[test_plugin] Session 1 Started');
+        $_[KERNEL]->yield('tick');
       },
-      _stop           => sub { plugin::console_output('[TEST-PLUGIN] Session 1 Stopped'); },
-      shutdown        => sub { plugin::console_output('[TEST-PLUGIN] Session 1 Shutdown'); },
+      _stop           => sub { plugin::console_output('[test_plugin] Session 1 Stopped'); },
+      shutdown        => sub { plugin::console_output('[test_plugin] Session 1 Shutdown'); },
       tick => sub
       {
-        plugin::console_output('[TEST-PLUGIN] Session 1 Tick');
+        plugin::console_output('[test_plugin] Session 1 Tick');
         $_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
       },
     }
@@ -93,15 +94,17 @@ sub start_sessions()
     {
       _start          => sub
       {
-        plugin::console_output('[TEST-PLUGIN] Session 2 Started');
-        $_[KERNEL->alias_add('test-plugin-session-2');
+        plugin::console_output('[test_plugin] Session 2 Started');
+        $_[KERNEL]->alias_add('test_plugin-session-2');
       },
-      _stop           => sub { plugin::console_output('[TEST-PLUGIN] Session 2 Stopped'); },
+      _stop           => sub { plugin::console_output('[test_plugin] Session 2 Stopped'); },
       shutdown        => sub
       {
-        plugin::console_output('[TEST-PLUGIN] Session 2 Shutdown');
-        $_[KERNEL->alias_remove('test-plugin-session-2');
+        plugin::console_output('[test_plugin] Session 2 Shutdown');
+        $_[KERNEL]->alias_remove('test_plugin-session-2');
       },
     }
   );
 }
+
+1;
