@@ -882,5 +882,33 @@
     <group>irc_admin</group>
   </command>
 
+  <command name="plugins">
+    <permission level="3"/>
+    <syntax value="!load_plugin &lt;plugin&gt;"/>
+    <help value="Show the current state of all plugins known to BRenBot."/>
+    <enabled value="1"/>
+    <hideInHelp value="0"/>
+    <group>irc_admin</group>
+    <group>irc_public</group>
+  </command>
+
+  <command name="plugin_load">
+    <permission level="5"/>
+    <syntax value="!load_plugin &lt;plugin&gt;"/>
+    <help value="Attempts to load the specified plugin into BRenBot."/>
+    <enabled value="1"/>
+    <hideInHelp value="0"/>
+    <group>irc_admin</group>
+  </command>
+
+  <command name="plugin_unload">
+    <permission level="5"/>
+    <syntax value="!unload_plugin &lt;plugin&gt;"/>
+    <help value="Attempts to unload the specified plugin from BRenBot."/>
+    <enabled value="1"/>
+    <hideInHelp value="0"/>
+    <group>irc_admin</group>
+  </command>
+
 
 </commands>

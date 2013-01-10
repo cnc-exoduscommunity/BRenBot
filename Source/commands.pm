@@ -593,6 +593,9 @@ sub parsearg
 			#updatearea => \&updateArea,
 			#closearea => \&closeArea,
 			recommendations => \&recommendations,
+      plugins => \&plugins,
+      plugin_load => \&plugin_load,
+      plugin_unload => \&plugin_unload
 		}
 		);
 
@@ -5255,6 +5258,128 @@ sub cmsg
 # 		brIRC::ircmsg ( "09Page sent to $player{name} --> You did not have an area open to begin with!", $args{'ircChannelCode'} );
 # 	}
 # }
+
+
+
+
+
+###################################################
+####
+## Plugin management functions
+####
+###################################################
+
+sub plugins
+{
+  my %args = %{$_[ ARG0 ]};
+  
+  if ($args{'nicktype'} != 1)
+  {
+    RenRem::pagePlayer($args{'nick'}, "The !plugins command can only be executed from IRC.");
+    return;
+  }
+  
+  $args{'nick'} =~ m/(.+)\@.+/i;
+  my $nick = $1;
+  
+  brIRC::ircnotice ( $nick, "1Current plugin states;" );
+  
+  my %plugins = plugin::get_plugins();
+  
+  my @pluginStrings;
+  while ( my($plugin, $state) = each(%plugins))
+  {
+    my $pluginString = ( $state == 1 )
+      ? '09' . $plugin . ''
+      : ( $state == 2 )
+        ? '07' . $plugin . ''
+        : '04' . $plugin . '';
+    push ( @pluginStrings, $pluginString );
+  }
+  
+  # Print to IRC in groups of 4
+  for ( my $i =0; $i <= scalar(@pluginStrings)-1; $i +=4 )
+  {
+    my $plugin1 = modules::padd_string ( 20, $pluginStrings[$i] );
+    my $plugin2 = modules::padd_string ( 20, $pluginStrings[$i+1] );
+    my $plugin3 = modules::padd_string ( 20, $pluginStrings[$i+2] );
+
+    # Fourth one does not need padding, it comes at the end of the line
+    brIRC::ircnotice ( $nick, "$plugin1 $plugin2 $plugin3 $pluginStrings[$i+3]" );
+  }
+}
+
+# --------------------------------------------------------------------------------------------------
+
+sub plugin_load
+{
+  my %args = %{$_[ ARG0 ]};
+  
+  if ($args{'nicktype'} != 1)
+  {
+    RenRem::pagePlayer($args{'nick'}, "The !plugin_load command can only be executed from IRC.");
+    return;
+  }
+  
+  if (!$args{'arg1'})
+  {
+    my $syntaxvalue = $args{'settings'}->{'syntax'}->{'value'};
+    brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
+    return;
+  }
+  
+  my $result = plugins::load_plugin($args{'arg1'});
+  if ( $result == 0 or $result == 1 )
+    { brIRC::ircmsg ( 'The plugin '.$args{'arg1'}.' was successfully loaded', $args{'ircChannelCode'} ); }
+  elsif ( $result == -1 )
+    { brIRC::ircmsg ( 'Unable to find a plugin called '.$args{'arg1'}, $args{'ircChannelCode'} ); }
+  elsif ( $result == 2 )
+    { brIRC::ircmsg ( 'An error occured whilst trying to load the plugin '.$args{'arg1'}, $args{'ircChannelCode'} ); }
+}
+
+# --------------------------------------------------------------------------------------------------
+
+sub plugin_unload
+{
+  my %args = %{$_[ ARG0 ]};
+  
+  if ($args{'nicktype'} != 1)
+  {
+    RenRem::pagePlayer($args{'nick'}, "The !plugin_unload command can only be executed from IRC.");
+    return;
+  }
+  
+  if (!$args{'arg1'})
+  {
+    my $syntaxvalue = $args{'settings'}->{'syntax'}->{'value'};
+    brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
+    return;
+  }
+  
+  plugins::unload_plugin($args{'arg1'});
+  brIRC::ircmsg ( 'The plugin '.$args{'arg1'}.' is now being unloaded...', $args{'ircChannelCode'} );
+  
+  # Create session to check result (it takes 5 seconds to process a plugin unload to allow shutdown)
+  POE::Session->create
+  (
+    inline_states =>
+    {
+      _start        => sub { $_[KERNEL]->delay('check_plugin' => 6); },
+      check_plugin  => sub
+      {
+        my $plugin_state = plugin::get_state($args{'arg1'});
+        if ( $plugin_state == 0 || $plugin_state == -1 )
+          { brIRC::ircmsg ( 'The plugin '.$args{'arg1'}.' was successfully unloaded', $args{'ircChannelCode'} ); }
+        else
+          { brIRC::ircmsg ( 'The plugin '.$args{'arg1'}.' failed to unload, see the console for more information', $args{'ircChannelCode'} ); }
+      },
+    }
+  );
+}
+
+# --------------------------------------------------------------------------------------------------
+
+
 
 
 # Return true

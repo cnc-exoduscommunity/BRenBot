@@ -277,7 +277,7 @@ if ( modules::get_module( "ssgmlog" ) )
 	{ ssgm::start(); }
 
 # Load plugins
-plugin::get_plugins();
+plugin::load_all_plugins();
 
 # Load GSA if necessary
 if ( modules::get_module( "gamespy_players" ) != 0 )

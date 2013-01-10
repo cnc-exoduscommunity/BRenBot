@@ -25,10 +25,40 @@ our @renlogRegexPlugins;    # List of plugins which have renlog hooks setup
 
 # --------------------------------------------------------------------------------------------------
 
-# \todo This should update the list of plugins in the database, we should use another function for
-#       loading all enabled plugins on bot-start
 sub get_plugins
 {
+  # \todo Update list of plugins in database - find_plugins or similar will do this when updated
+  
+  # Temporary implementation
+  unless(opendir(DATADIR, "plugins/"))
+    { return; }
+
+  use lib getcwd.'/plugins'; 
+    
+  my %plugin_states = ();
+  my @plugin_files;
+  @plugin_files = grep(/\.pm$/i,readdir(DATADIR));
+
+  foreach (@plugin_files)
+  {
+    my $plugin = $_;
+    $plugin =~ s/\.pm$//g;
+    $plugin_states{$plugin} = get_state($plugin);
+  }
+  
+  closedir(DATADIR);
+  
+  return \%plugin_states;
+}
+
+# --------------------------------------------------------------------------------------------------
+
+# \todo This should check the database to see which plugins are enabled
+# \todo Config item - autoload new plugins (those not already known about - should this be done in find_plugins?)
+sub load_all_plugins
+{
+  # \todo Update list of plugins in database - find_plugins or similar will do this when updated
+
   unless(opendir(DATADIR, "plugins/"))
     { return; }
 
@@ -44,24 +74,7 @@ sub get_plugins
     load_plugin ( $plugin );
   }
   
-  # Test code
-  POE::Session->create
-  ( inline_states =>
-  { _start => sub {
-      $_[KERNEL]->alias_set("hai");
-      $_[KERNEL]->delay( tick => 10 );
-    },
-    tick => sub {
-      unload_plugin ("test_plugin");
-      $_[KERNEL]->delay( tock => 10 );
-      },
-    tock => sub {
-      $_[KERNEL]->alias_remove("hai");
-      load_plugin ("test_plugin");
-      },
-
-    },
-  );
+  closedir(DATADIR);
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -76,6 +89,8 @@ sub get_plugins
 #*
 sub set_state
 {
+  my $plugin_name = shift;
+  
   # \todo Finish this function
 }
 
@@ -91,9 +106,15 @@ sub set_state
 #*
 sub get_state
 {
-  # \todo Update list of plugins in database - get_plugins or similar will do this when updated
-
+  my $plugin_name = shift;
+  
   # \todo Finish this function
+  
+  # Temporary until database code is added
+  my ($size,$idx) = (scalar(@plugins),0);
+  ++$idx until $plugins[$idx] eq $plugin_name or $idx >= $size;
+  return 1 if ( $idx < $size );
+
   return 0;
 }
 
@@ -111,6 +132,8 @@ sub load_plugin
 {
   my $plugin_name = shift;
   my $plugin_state = get_state($plugin_name);
+  
+  # \todo Update list of plugins in database - find_plugins or similar will do this when updated
 
   # If the plugin was not found or is already loaded return relevant result code
   if ( $plugin_state == -1 )
@@ -251,8 +274,8 @@ sub unload_plugin
   my $plugin_state = get_state($plugin_name);
 
   # If the plugin is not currently loaded then do nothing
- # if ( $plugin_state != 1 && $plugin_state != 2 )
- #   { return; }
+  if ( $plugin_state != 1 && $plugin_state != 2 )
+    { return; }
 
   modules::console_output ( "[PLUGIN] Unloading plugin $plugin_name" );
   
@@ -267,6 +290,10 @@ sub unload_plugin
   delete $plugin_gamelog_regexes{$plugin_name};
   delete $plugin_renlog_regexes{$plugin_name};
   
+  my ($size,$idx) = (scalar(@plugins), 0);
+  ++$idx until $plugins[$idx] eq $plugin_name or $idx >= $size;
+  delete $plugins[$idx] if ( $idx < $size );
+  
   # Unimport plugin package in 5 seconds - this gives the plugin chance to shut down cleanly
   POE::Session->create
   (
@@ -274,7 +301,7 @@ sub unload_plugin
     {
       _start        => sub { $_[KERNEL]->delay('unload_plugin' => 5); },
       unload_plugin => sub
-      {
+      {     
         eval "no $plugin_name;
               Class::Unload->unload('$plugin_name');
               delete \$INC{'$plugin_name.pm'};";
@@ -311,7 +338,6 @@ sub plugin_start
   eval "
     \$". $plugin_name ."::plugin_name = '$plugin_name';
     if ( \$plugin_config{$plugin_name} )
-
       { \%". $plugin_name ."::config = %{\$plugin_config{$plugin_name}}; }
   ";
 
