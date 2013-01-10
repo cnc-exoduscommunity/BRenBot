@@ -7,6 +7,7 @@ use POE;
 use XML::Simple;
 #use Data::Dumper;    # Debugging use only
 use Cwd;
+use Class::Unload;
 
 use modules;
 use RenRem;
@@ -31,6 +32,8 @@ sub get_plugins
   unless(opendir(DATADIR, "plugins/"))
     { return; }
 
+  use lib getcwd.'/plugins'; 
+    
   my @plugin_files;
   @plugin_files = grep(/\.pm$/i,readdir(DATADIR));
 
@@ -40,6 +43,25 @@ sub get_plugins
     $plugin =~ s/\.pm$//g;
     load_plugin ( $plugin );
   }
+  
+  # Test code
+  POE::Session->create
+  ( inline_states =>
+  { _start => sub {
+      $_[KERNEL]->alias_set("hai");
+      $_[KERNEL]->delay( tick => 10 );
+    },
+    tick => sub {
+      unload_plugin ("test_plugin");
+      $_[KERNEL]->delay( tock => 10 );
+      },
+    tock => sub {
+      $_[KERNEL]->alias_remove("hai");
+      load_plugin ("test_plugin");
+      },
+
+    },
+  );
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -97,7 +119,7 @@ sub load_plugin
     { return 0; }
 
   # OK, plugin exists and is not already loaded, so lets see if we can load it...
-  modules::console_output ( "Attempting to loading plugin $plugin_name... ", 1 );
+  modules::console_output ( "[PLUGIN] Loading plugin $plugin_name... ", 1 );
 
 
   # Load the plugin XML file first - this is the most likely part to fail
@@ -110,17 +132,17 @@ sub load_plugin
   };
   if ($@)
   {
-    modules::console_output ( "Failed! Error reading $plugin_name.xml: $@", 3 );
+    modules::console_output ( "Failed!\n\tError reading $plugin_name.xml: $@", 3 );
     set_state ( $plugin_name, 2 );
     return 2;
   }
 
 
   # OK, we got the XML file loaded OK, go ahead and try to load the plugin itself
-  eval "use lib '".getcwd."/plugins'; use $plugin_name;";
+  eval "use $plugin_name;";
   if ($@)
   {
-    modules::console_output ( "Failed! Error loading $plugin_name.pm: $@", 3 );
+    modules::console_output ( "Failed!\n\tError loading $plugin_name.pm: $@", 3 );
     set_state ( $plugin_name, 2 );
     return 2;
   }
@@ -138,7 +160,7 @@ sub load_plugin
   eval "%additional_events = %" . $plugin_name . "::additional_events;";
   if ($@)
   {
-    modules::console_output ( "Failed! Error loading additional events: $@", 3 );
+    modules::console_output ( "Failed!\n\tError loading additional events: $@", 3 );
     set_state ( $plugin_name, 2 );
     return 2;
   }
@@ -161,16 +183,16 @@ sub load_plugin
 
 
   # Loaded successfully, now try to start it...
-  modules::console_output ( "Success! Attempting to start plugin", 3 );
+  modules::console_output ( "Success!", 3 );
 
 
   # Build session creation string
   my $poe = "POE::Session->create (\n";
     $poe .= "  inline_states => {\n";
       $poe .= "    _start => \\&plugin_start, \n";
-      $poe .= "    _stop => sub { eval{ ".$plugin_name."::stop(\@_) }; print 'Plugin ".$plugin_name."::_stop failed: '.\$\@.\"\\n\"; }, \n";
+      $poe .= "    _stop => sub { plugin_event('".$plugin_name."','stop',\@_); }, \n";
       $poe .= '    _child => sub {
-                     if ( \$_[ARG0] == \'lose\' )
+                     if ( \$_[ARG0] eq \'lose\' )
                      {
                        my $size = scalar(@{$_[HEAP]->{\'child_sessions\'}});
                        my $idx = 0;
@@ -200,7 +222,7 @@ sub load_plugin
   eval "\n".$poe;
   if ($@)
   {
-    modules::console_output( "$plugin_name failed to start! Error: $@" );
+    modules::console_output( "[PLUGIN] $plugin_name failed to start! Error: $@" );
     set_state( $plugin_name, 2 );
     unload_plugin( $plugin_name );
     return 2;
@@ -229,14 +251,14 @@ sub unload_plugin
   my $plugin_state = get_state($plugin_name);
 
   # If the plugin is not currently loaded then do nothing
-  if ( $plugin_state != 1 && $plugin_state != 2 )
-    { return; }
+ # if ( $plugin_state != 1 && $plugin_state != 2 )
+ #   { return; }
 
   modules::console_output ( "[PLUGIN] Unloading plugin $plugin_name" );
   
-  my $plugin_session = $_[KERNEL]->alias_resolve('plugin_'.$plugin_name);
+  my $plugin_session = $poe_kernel->alias_resolve('plugin_'.$plugin_name);
   if ( defined($plugin_session) )
-    { $_[KERNEL]->post($plugin_session,'shutdown'); }
+    { $poe_kernel->post($plugin_session,'shutdown'); }
   
   # Wipe the plugin from all data structures
   delete $plugin_commands{$plugin_name};
@@ -245,21 +267,30 @@ sub unload_plugin
   delete $plugin_gamelog_regexes{$plugin_name};
   delete $plugin_renlog_regexes{$plugin_name};
   
-  # Unimport plugin
-  # \todo this might need to be done in a delayed session, since shutdown event won't run until
-  #       after this method exits...
-  eval "no $plugin_name;";
-  if ($@)
-  {
-    modules::console_output ( "[PLUGIN] Failed to unload $plugin_name.pm: $@" );
-    set_state ( $plugin_name, 2 );
-    return;
-  }
+  # Unimport plugin package in 5 seconds - this gives the plugin chance to shut down cleanly
+  POE::Session->create
+  (
+    inline_states =>
+    {
+      _start        => sub { $_[KERNEL]->delay('unload_plugin' => 5); },
+      unload_plugin => sub
+      {
+        eval "no $plugin_name;
+              Class::Unload->unload('$plugin_name');
+              delete \$INC{'$plugin_name.pm'};";
+        if ($@)
+        {
+          modules::console_output ( "[PLUGIN] Failed to unload $plugin_name.pm: $@" );
+          set_state ( $plugin_name, 2 );
+        }
 
-  # If the plugin state is 2 leave it set to that (the caller will have set it), otherwise set the
-  # state to unloaded
-  if ( $plugin_state != 2 )
-    { set_state ( $plugin_name, 0 ); }
+        # If the plugin state is 2 leave it set to that (the caller will have set it), otherwise
+        # set the state to unloaded
+        elsif ( get_state($plugin_name) != 2 )
+          { set_state ( $plugin_name, 0 ); }
+      },
+    }
+  );
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -272,10 +303,10 @@ sub unload_plugin
 #*
 sub plugin_start
 {
-  my ( $kernel, $plugin_name ) = @_[KERNEL, ARG0];
+  my ( $kernel, $heap, $plugin_name ) = @_[KERNEL, HEAP, ARG0];
   
-  $_[HEAP]->{'plugin_name'}       = $plugin_name;
-  @{$_[HEAP]->{'child_sessions'}} = ();
+  $heap->{'plugin_name'}       = $plugin_name;
+  @{$heap->{'child_sessions'}} = ();
 
   eval "
     \$". $plugin_name ."::plugin_name = '$plugin_name';
@@ -286,13 +317,13 @@ sub plugin_start
 
   if ( $@ )
   {
-    console_output ( "[PLUGIN] Failed to pass configuration data to plugin $plugin_name!" );
+    modules::console_output ( "[PLUGIN] Failed to pass configuration data to plugin $plugin_name!" );
     unload_plugin($plugin_name);
     return;
   }
 
-  $_[KERNEL]->alias_set("plugin_" . $plugin_name);
-  $_[KERNEL]->yield("plugin_start");
+  $kernel->alias_set("plugin_" . $plugin_name);
+  $kernel->yield("plugin_start");
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -306,22 +337,22 @@ sub plugin_start
 #*
 sub plugin_shutdown
 {
-  my $kernel = $_[KERNEL];
-  my $plugin_name = $_[HEAP]->{'plugin_name'};
+  my ( $kernel, $heap ) = @_[KERNEL, HEAP];
+  my $plugin_name = $heap->{'plugin_name'};
 
   # Remove the session alias and cancel any pending alarms or delays
-  $_[KERNEL]->alias_remove("plugin_" . $plugin_name);
-  $_[SESSION]->alarm_remove_all();
+  $kernel->alias_remove("plugin_" . $plugin_name);
+  $kernel->alarm_remove_all();
   
   # Progagate message to any child sessions
-  foreach (@{$_[HEAP]->{'child_sessions'}})
-    { $_[KERNEL]->post ( $_, 'shutdown' ); }
+  foreach (@{$heap->{'child_sessions'}})
+    { $kernel->post ( $_, 'shutdown' ); }
   
   # Detach sessions to ensure we can shutdown properly even if they linger...
-  while ( scalar(@{$_[HEAP]->{'child_sessions'}}) > 0 )
+  while ( scalar(@{$heap->{'child_sessions'}}) > 0 )
   {
-    my $session = pop(@{$_[HEAP]->{'child_sessions'}});
-    $_[KERNEL]->detach_child($session);
+    my $session = pop(@{$heap->{'child_sessions'}});
+    $kernel->detach_child($session);
   }
   
 }
@@ -606,14 +637,6 @@ sub get_command_settings
   return ($c, \@alias, \@commandgroups, \@modules);
 }
 
-sub display_plugin_error
-{
-  my $plugin = shift;
-  my $error = shift;
-
-  modules::console_output ( "Error in Plugin $plugin - $error" );
-}
-
 
 
 
@@ -822,6 +845,14 @@ sub getBrBuild { return main::BR_BUILD; }
 # \param[in] $message
 #   Message to be written to the console window
 sub console_output { return modules::console_output(@_); }
+
+sub display_plugin_error
+{
+  my $plugin = shift;
+  my $error = shift;
+
+  modules::console_output ( "[PLUGIN] Error in plugin $plugin - $error" );
+}
 
 
 
