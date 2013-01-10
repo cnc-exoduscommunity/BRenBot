@@ -27,6 +27,7 @@ our %config;
 sub start
 {
   plugin::console_output ( '[test_plugin] Started' );
+  start_sessions();
 }
 
 # Runs when the plugin is unloaded
@@ -77,11 +78,15 @@ sub start_sessions()
         $_[KERNEL]->yield('tick');
       },
       _stop           => sub { plugin::console_output('[test_plugin] Session 1 Stopped'); },
-      shutdown        => sub { plugin::console_output('[test_plugin] Session 1 Shutdown'); },
+      shutdown        => sub
+      {
+        $_[KERNEL]->alarm_remove_all();
+        plugin::console_output('[test_plugin] Session 1 Shutdown');
+      },
       tick => sub
       {
         plugin::console_output('[test_plugin] Session 1 Tick');
-        $_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
+        $_[KERNEL]->delay( tick => 5 );
       },
     }
   );
@@ -95,7 +100,7 @@ sub start_sessions()
       _start          => sub
       {
         plugin::console_output('[test_plugin] Session 2 Started');
-        $_[KERNEL]->alias_add('test_plugin-session-2');
+        $_[KERNEL]->alias_set('test_plugin-session-2');
       },
       _stop           => sub { plugin::console_output('[test_plugin] Session 2 Stopped'); },
       shutdown        => sub
