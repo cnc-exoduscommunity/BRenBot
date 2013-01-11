@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+
+<plugin name="ping">
+  <command name="ping">
+    <permission level="1"/>
+    <syntax value="!ping [&lt;player&gt;]"/>
+    <help value="Shows the ping of the specified player, or your own ping"/>
+    <hideInHelp value="1"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+  </command>
+  <events>
+    <event>command</event>
+    <event>text</event>
+  </events>
+  <config>
+    <!-- Whether to respond to ping related words such as lag or warping when typed in ingame chat
+    messages. Set to 1 to enable, 0 to disable -->
+    <cvar name="chat_response" value="1"/>
+  </config>
+</plugin>
