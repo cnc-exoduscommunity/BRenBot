@@ -13,9 +13,9 @@ use modules;
 use RenRem;
 
 
-our %xml;
-our %plugin_commands;
-our %plugin_events;
+our %commands;              # Hash of commands and aliases in all plugins
+
+our %plugin_events_old;
 our %plugin_config;
 our %plugin_gamelog_regexes;
 our %plugin_renlog_regexes;
@@ -146,12 +146,13 @@ sub load_plugin
 
 
   # Load the plugin XML file first - this is the most likely part to fail
+  my $xml = undef;
   eval
   {
     no warnings 'deprecated';  # Suppress XML::Parser::Expat warning about tied handles...
-    $xml{$plugin_name} = XMLin ( "plugins/$plugin_name.xml",
-                        ForceArray => [ qw(event group command hook) ],
-                        KeyAttr => [ 'name', 'key', 'id', 'event' ] );
+    $xml = XMLin ( "plugins/$plugin_name.xml",
+      ForceArray => [ qw(event group command hook) ],
+      KeyAttr => [ 'name', 'key', 'id', 'event' ] );
   };
   if ($@)
   {
@@ -172,9 +173,8 @@ sub load_plugin
 
 
   # DEBUGGING CODE
-#  use Data::Dumper;
 #  open ( DATA_DUMP, '>' . $plugin_name . '_xmldatadump.txt' );
-#  print DATA_DUMP Dumper( $xml{$plugin_name} );
+#  print DATA_DUMP Dumper( $xml );
 #  close DATA_DUMP;
 
 
@@ -192,17 +192,17 @@ sub load_plugin
   my $additional_events;
   while (my ($key, $value) = each %additional_events)
   {
-    $additional_events .= "  $key => \\&" . $plugin_name . "::$value, \n";
+    $additional_events .= " $key => sub { plugin_event('$plugin_name','$value',\@_); }, \n";
   }
 
 
   # Populate relevant data structures from XML data
   # \todo are all of these still actually being used? If not, maybe they should be removed?
-  @{$plugin_commands{$plugin_name}}         = get_commands($xml{$plugin_name}, $plugin_name);
-  @{$plugin_events{$plugin_name}}           = get_events($xml{$plugin_name}, $plugin_name);
-  %{$plugin_config{$plugin_name}}           = get_plugin_config($xml{$plugin_name}, $plugin_name);
-  %{$plugin_gamelog_regexes{$plugin_name}}  = get_gamelog_regexes ( $xml{$plugin_name}, $plugin_name );
-  %{$plugin_renlog_regexes{$plugin_name}}   = get_renlog_regexes ( $xml{$plugin_name}, $plugin_name );
+  read_xml_commands($plugin_name, $xml);
+  @{$plugin_events_old{$plugin_name}}           = get_events($xml, $plugin_name);
+  read_xml_config($plugin_name, $xml);
+  %{$plugin_gamelog_regexes{$plugin_name}}  = get_gamelog_regexes ( $xml, $plugin_name );
+  %{$plugin_renlog_regexes{$plugin_name}}   = get_renlog_regexes ( $xml, $plugin_name );
 
 
   # Loaded successfully, now try to start it...
@@ -284,8 +284,9 @@ sub unload_plugin
     { $poe_kernel->post($plugin_session,'shutdown'); }
   
   # Wipe the plugin from all data structures
-  delete $plugin_commands{$plugin_name};
-  delete $plugin_events{$plugin_name};
+  foreach(keys %commands) { delete $commands{$_} if $commands{$_}{'plugin_name'} eq $plugin_name; }
+  
+  delete $plugin_events_old{$plugin_name};
   delete $plugin_config{$plugin_name};
   delete $plugin_gamelog_regexes{$plugin_name};
   delete $plugin_renlog_regexes{$plugin_name};
@@ -418,7 +419,7 @@ sub get_plugin_event
   foreach (@plugins)
   {
     my $plugin = $_;
-    my @events = @{$plugin_events{$plugin}};
+    my @events = @{$plugin_events_old{$plugin}};
 
     foreach (@events)
     {
@@ -504,163 +505,92 @@ sub get_events
   return (@events);
 }
 
-sub get_plugin_config
+
+#** \function private read_xml_config ( $plugin_name, $plugin_xml )
+# \brief Read the plugin configuration settings from the XML file and load them into a hash
+#*
+sub read_xml_config
 {
-  my $xml = shift;
-  my $plugin = shift;
-  my %hash;
-
-  my $c = $xml->{config}->{cvar};
-
-  for my $key ( keys %{$c} )
-  {
-    my $value = $c->{$key}->{value};
-    $hash{$key} = $value;
-  }
-
-  return (%hash);
+  my $plugin_name = shift;
+  my $plugin_xml  = shift;
+  
+  $plugin_config{$plugin_name} = {};
+  
+  my $config_nodes = $plugin_xml->{'config'}->{'cvar'};
+  for my $config_key ( keys %{$config_nodes} )
+    { $plugin_config{$plugin_name}{$config_key} = $config_nodes->{$config_key}->{'value'}; }
 }
 
-sub get_commands
+#** \function private read_xml_commands ( $plugin_name, $plugin_xml )
+# \brief Read the plugin commands from the XML file and load them into a hash
+#*
+
+sub read_xml_commands
 {
-  my $xml    = shift;
-  my $plugin = shift;
-
-  my $c = $xml->{command};
-  my @commands;
-
-  while (my ($key, $value) = each %{$c})
+  my $plugin_name = shift;
+  my $plugin_xml  = shift;
+  
+  my $command_nodes = $plugin_xml->{'command'};
+  while (my ($command, $command_config) = each %{$command_nodes})
   {
-    my %hash;
-    $hash{name} = $key;
-    push (@commands, \%hash);
-
-    next if ($key eq "event");
-
-    foreach ($value)
+    $commands{$command} = {
+      'plugin_name'     => $plugin_name,
+      'configuration'   => $command_config
+    };
+    
+    # Load aliases
+    my $alias_nodes = $command_config->{'alias'};
+    if ( defined $alias_nodes and $alias_nodes =~ "ARRAY")
     {
-
-      my @array = @{$_} if ($_ =~ "ARRAY");
-
-      foreach (@array)
+      foreach ( @{$alias_nodes} )
       {
-        $value = $_;
-        my %hash = %{$value};
+        $commands{$_} = {
+          'plugin_name'     => $plugin_name,
+          'alias_for'       => $command
+        };
       }
     }
-
-
-    if ($value->{alias})
+    elsif ( defined $alias_nodes )
     {
-      my @aliases;
-
-      if ($value->{alias} =~ "ARRAY")
-      {
-        @aliases = @{$value->{alias}};
-      }
-      else
-      {
-        @aliases = ($value->{alias});
-      }
-
-      if (@aliases)
-      {
-        foreach (@aliases)
-        {
-          my %hash;
-          $hash{name}  = $_;
-          $hash{alias} = $key;
-          push (@commands, \%hash);
-        }
-      }
+      $commands{$alias_nodes} = {
+        'plugin_name'     => $plugin_name,
+        'alias_for'       => $command
+      };
     }
   }
-
-  return @commands;
 }
 
 
-sub get_command_settings
+#** \function public find_command ( $command_name )
+# \brief Search for a plugin command with the specified name or alias
+#
+# \returns $plugin_name Name of the plugin containing the command, or undef if none was found
+# \returns $command_name The full name of the commmand, or undef if none was found
+# \returns $command_config Configuration settings for the command, or undef if none was found
+#*
+sub find_command
 {
-  my $command = shift;
-  my $xml = shift;
-  my $plugin = shift;
+  my $command_name = shift;
 
-  my $c = $xml->{command}->{$command};
-
-  my @alias;
-  my @commandgroups;
-  #my @usergroups;
-  my @modules;
-
-  my $count = scalar($c);
-  if ($c->{alias})
+  if ( defined $commands{$command_name} )
   {
-    my $count = scalar($c->{alias});
-
-    if ($count > 0)
+    my %command = %{$commands{$command_name}};
+    
+    # Check if this command is an alias for another...
+    if ( defined $command{'alias_for'} )
     {
-      my @array = (@{$c->{alias}}) if scalar($c->{alias});
-
-      if (@array)
-      {
-        foreach (@{$c->{alias}})
-        {
-          push (@alias, $_);
-        }
-      }
-    } else
-    {
-      push (@alias, $count);
+      # Safety check, make sure the command we are an alias for actually exists...
+      if ( !defined $commands{$command{'alias_for'}} )
+        { return (undef,undef,undef); }
+    
+      $command_name = $command{'alias_for'};
+      %command = %{$commands{$command{'alias_for'}}};
     }
+    
+    return ($command{'plugin_name'},$command_name,$command{'configuration'});
   }
-
-  # dereference command groups
-
-  if ($c->{group})
-  {
-
-    my $count = scalar($c->{group});
-    if ($count > 0)
-    {
-      my @array = (@{$c->{group}}) if scalar($c->{group});
-
-      if (@array)
-      {
-        foreach (@{$c->{group}})
-        {
-          push (@commandgroups, $_);
-        }
-      }
-    } else
-    {
-      push (@commandgroups, $count);
-    }
-  }
-
-
-  if ($c->{module})
-  {
-    my $count = scalar($c->{module});
-
-    if ($count > 0)
-    {
-      my @array = (@{$c->{module}}) if scalar($c->{module});
-
-      if (@array)
-      {
-        foreach (@{$c->{module}})
-        {
-          push (@modules, $_);
-        }
-      }
-    } else
-    {
-      push (@modules, $count);
-    }
-  }
-
-  return ($c, \@alias, \@commandgroups, \@modules);
+  
+  return (undef,undef,undef);
 }
 
 

@@ -161,247 +161,186 @@ sub read_commands
 	}
 }
 
-sub get_command_settings
+#** \function private find_command ( $command_name )
+# \brief Attempts to find the command with the specified name or alias
+#
+# \returns $command_name The full name of the commmand, or undef if none was found
+# \returns $command_config Configuration settings for the command, or undef if none was found
+#*
+sub find_command
 {
-	my $command = shift;
+  my $command_name = shift;
+  
+  my $found = 0;
+  foreach ( @commands )
+  {
+    if ( $command_name eq $_->{'name'} )
+    {
+      # If this is an alias then change to the full command name
+      if ( $_->{'alias'} ) { $command_name = $_->{'alias'}; }
+      return ($command_name, $xml_config->{'command'}->{$command_name});
+    }
+  }
 
-	# Check this command exists, and whether this is an alias command
-	# Search for the command in the @commands array
-		my $found = 0;
-		foreach ( @commands )
-		{
-			if ( $command eq $_->{name} )
-			{
-				if ( $_->{alias} ) { $command = $_->{alias}; }		# If alias then change to the full command name
-				$found = 1;
-				last;
-			}
-		}
+  return (undef,undef);
+}
 
-	my $c = $xml_config->{command}->{$command};
+sub parse_command_settings
+{
+  my $configuration = shift;
 
-	my @alias;
-	my @commandgroups;
-	my @modules;
+  my @commandgroups;
+  my @modules;
 
-	# Get list of aliases
-	if ( $c->{alias} )
-	{
-		# Is the alias element an array? If so there are multiple aliases
-		if ( ref($c->{alias}) eq "ARRAY" )
-		{
-			my $numAliases = scalar($c->{alias});
-			foreach ( @{$c->{alias}} )
-			{
-				push (@alias, $_);
-			}
-		}
+  # Get list of groups ( where this command can be used )
+  if ( $configuration->{group} )
+  {
+    # Is the group element an array? If so there are multiple groups
+    if ( ref($configuration->{group}) eq "ARRAY" )
+    {
+      foreach ( @{$configuration->{group}} )
+        { push (@commandgroups, $_); }
+    }
 
-		# Else only one alias
-		else
-		{
-			push (@alias, $c->{alias});
-		}
-	}
-
-	# Get list of groups ( where this command can be used )
-	if ( $c->{group} )
-	{
-		# Is the group element an array? If so there are multiple groups
-		if ( ref($c->{group}) eq "ARRAY" )
-		{
-			my $numAliases = scalar($c->{group});
-			foreach ( @{$c->{group}} )
-			{
-				push (@commandgroups, $_);
-			}
-		}
-
-		# Else only one group
-		else
-		{
-			push (@commandgroups, $c->{group});
-		}
-	}
+    # Else only one group
+    else
+    {
+      push (@commandgroups, $configuration->{group});
+    }
+  }
 
 
-	# Get list of required modules
-	if ( $c->{module} )
-	{
-		# Is the module element an array? If so there are multiple modules
-		if ( ref($c->{module}) eq "ARRAY" )
-		{
-			my $numAliases = scalar($c->{module});
-			foreach ( @{$c->{module}} )
-			{
-				push (@modules, $_);
-			}
-		}
+  # Get list of required modules
+  if ( $configuration->{module} )
+  {
+    # Is the module element an array? If so there are multiple modules
+    if ( ref($configuration->{module}) eq "ARRAY" )
+    {
+      foreach ( @{$configuration->{module}} )
+        { push (@modules, $_); }
+    }
 
-		# Else only one module
-		else
-		{
-			push (@modules, $c->{module});
-		}
-	}
+    # Else only one module
+    else
+    {
+      push (@modules, $configuration->{module});
+    }
+  }
 
-	return ($c, \@alias, \@commandgroups, \@modules);
+  return (\@commandgroups, \@modules);
 }
 
 
 # Parse a command line
 sub parsearg
 {
-	my $arg				= shift;
-	my $playername		= shift;
-	my $plugin			= shift;
-	my $ircChannelCode	= shift;
+  my $arg             = shift;
+  my $playername      = shift;
+  my $plugin          = shift;
+  my $ircChannelCode  = shift;
 
-	if ( $playername =~ /^Host:/ )
-		{ return; }
+  return if ( $playername =~ /^Host:/ );
 
 #	$arg =~ s/\*/\\*/g;
 
-	if ($arg =~ m/\!(\w+)\s*(\S*)\s*(\S*)\s*(\S*)\s*(\S*)\s*(\S*)/i)
-	{
-		my $command = "\L$1";
-		my $arg1 = $2;
-		my $arg2 = $3;
-		my $arg3 = $4;
-		my $arg4 = $5;
-		my $arg5 = $6;
+  if ($arg =~ m/\!(\w+)\s*(\S*)\s*(\S*)\s*(\S*)\s*(\S*)\s*(\S*)/i)
+  {
+    my $command = "\L$1";
+    
+    my %args = (
+      'arg'   => $arg,
+      'arg1'  => $2,
+      'arg2'  => $3,
+      'arg3'  => $4,
+      'arg4'  => $5,
+      'arg5'  => $6
+    );
+    
+    if ( $plugin eq "N" )
+    {
+      if ($playername =~ m/\@IRC/)
+      {
+        $args{'nick'}     = $playername;
+        $args{'nicktype'} = 1;
+      }
+      else
+      {
+        $args{'nick'}     = $playername;
+        $args{'nicktype'} = 0;
+      }
+    }
+    else
+    {
+      $args{'nick'}     = $playername;
+      $args{'nicktype'} = 2;
+    }
 
 
-		my %args;
-		if ( $plugin eq "N" )
-		{
-			if ($playername =~ m/\@IRC/)
-			{
-				$args{nick} = $playername;
-				$args{nicktype} = 1;
-			}
-			else
-			{
-				$args{nick} = $playername;
-				$args{nicktype} = 0;
-			}
-		}
-		else
-		{
-			$args{nick}	 = $playername;
-			$args{nicktype} = 2;
-		}
+    # Check if the player has been shunned..
+    if ( playerData::getKeyValue( $args{'nick'}, "isShunned" ) )
+    {
+      modules::console_output ( $args{'nick'}.=' is being shunned, ignoring their commands...' );
+      return;
+    }
+    
+    
+    # Search for a definition of this command in the main commands list and in any loaded plugins
+    my ($plugin_name, $command_name, $command_config);
+    ($command_name,$command_config) = find_command($command);
+    if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 )
+      { ($plugin_name,$command_name,$command_config) = plugin::find_command($command); }
+    
+    # No (enabled) command found? Guess we'll have to give up then...
+    return if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 );
+    
+    # OK, got a command, parse its configuration...
+    my ($commandgroups, $modules) = parse_command_settings($command_config);
 
-
-		# Check if the player has been shunned..
-		if ( playerData::getKeyValue( $args{nick}, "isShunned" ) )
-		{
-			modules::console_output ( "$args{nick} is being shunned, ignoring their commands..." );
-			return;
-		}
-
-
-		# Search for the command in the @commands array
-		my $found = 0;
-		foreach ( @commands )
-		{
-			if ( $command eq $_->{name} )
-			{
-				if ( $_->{alias} ) { $command = $_->{alias}; }		# If alias then change to the full command name
-				$found = 1;
-				last;
-			}
-		}
-
-
-		# Get command settings
-		my ( $xml_command, $alias, $commandgroups, $modules );
-		if ( $found != 0 ) { ( $xml_command, $alias, $commandgroups, $modules ) = get_command_settings( $command ); }
-
-
-		# Check if the command is disabled (might be overridden in a plugin)
-		if ( $found != 0 && $xml_command->{enabled}->{value} == 0 )
-			{ $found = 0; }
-
-
-		my $found_plugin;
-		if ( $found == 0 )
-		{
-			my @plugins = plugin::get_plugin_event( "command" );
-
-			foreach ( @plugins )
-			{
-				my $plugin = $_;
-				my @commands = @{$plugin::plugin_commands{$plugin}};
-				foreach (@commands)
-				{
-					if ($command eq $_->{name})
-					{
-						if ( $_->{alias} ) { $command = $_->{alias}; }		# If alias then change to the full command name
-						$found_plugin = $plugin;
-						$found = 1;
-						last;
-					}
-				}
-			}
-
-			# Get command settings
-			if ( $found != 0 ) { ( $xml_command, $alias, $commandgroups, $modules ) = plugin::get_command_settings( $command, $plugin::xml{$found_plugin}, $found_plugin ); }
-
-			# If we still have not found anything, or what we have found is disabled,
-			# then there is no valid command, so return early
-			if ( $found == 0 || $xml_command->{enabled}->{value} == 0 )
-			{ return; }
-		}
-
-		# Work out which command group the command came from
-		my $current_commandgroup;
-		if ($args{nicktype} == 1)
-		{
-			if ( $ircChannelCode eq "A" )	{ $current_commandgroup = "irc_admin"; }
-			else							{ $current_commandgroup = "irc_public"; }
-		}
-		elsif ($args{nicktype} == 0)		{ $current_commandgroup = "ingame"; }
-		else								{ $current_commandgroup = "plugin"; }
+    
+    
+    # Work out which command group the command came from
+    my $current_commandgroup;
+    if ($args{'nicktype'} == 1)
+    {
+      if ( $ircChannelCode eq "A" ) { $current_commandgroup = "irc_admin"; }
+      else                          { $current_commandgroup = "irc_public"; }
+    }
+    elsif ($args{'nicktype'} == 0)  { $current_commandgroup = "ingame"; }
+    else                            { $current_commandgroup = "plugin"; }
 
 
 
-		# Check if we can execute the command (Not applicable for plugins)
-		if ( $current_commandgroup ne "plugin" )
-		{
-			$found = 0;
+    # Check if we can execute the command (Not applicable for plugins)
+    if ( $current_commandgroup ne "plugin" )
+    {
+      my $found = 0;
 
-			# See if this command can be run from our location ( irc_admin, irc_public or ingame )
-			foreach ( @{$commandgroups} )
-			{
-				if ( $_ eq $current_commandgroup || ( $_ eq "irc" && $args{nicktype} == 1 ) )
-				{
-					$found = 1;
-					last;
-				}
-			}
+      # See if this command can be run from our location ( irc_admin, irc_public or ingame )
+      foreach ( @{$commandgroups} )
+      {
+        if ( $_ eq $current_commandgroup || ( $_ eq "irc" && $args{nicktype} == 1 ) )
+        {
+          $found = 1;
+          last;
+        }
+      }
 
-			# If we didn't match any of the allowed groups then exit
-			if ( $found != 1 )
-			{
-				modules::console_output ( "$command can not be executed in $current_commandgroup." );
-				return;
-			}
-		}
+      # If we didn't match any of the allowed groups then exit
+      if ( $found != 1 )
+      {
+        modules::console_output ( "$command can not be executed in $current_commandgroup." );
+        return;
+      }
+    }
 
 
 
-		# Ok, we can now actually run the command
-		$args{command}			= $command;
-		$args{arg1}				= $arg1;
-		$args{arg2}				= $arg2;
-		$args{arg3}				= $arg3;
-		$args{arg4}				= $arg4;
-		$args{arg5}				= $arg5;
-		$args{arg}				= $arg;
-		$args{settings}			= $xml_command;
-		$args{'ircChannelCode'}	= $ircChannelCode;
+    # Ok, we can now actually run the command
+    $args{'command'}        = $command_name;
+    $args{'settings'}       = $command_config;
+    $args{'ircChannelCode'} = $ircChannelCode;
 
+    
 		POE::Session->create
 		( inline_states =>
 		{ _start =>
@@ -413,7 +352,7 @@ sub parsearg
 						# permission level of playername
 						modules::console_output ( "$args{nick} 's permission: $permission" );
 
-						my $level = $xml_command->{permission}->{level};
+						my $level = $command_config->{permission}->{level};
 
 						# level of command
 						my @allowed_groups = get_permission_level($level);
@@ -457,7 +396,7 @@ sub parsearg
 
 					#execute command
 
-					$found=1;
+					my $found=1;
 					my $missing_modules;
 					foreach (@{$modules})
 					{
@@ -486,21 +425,9 @@ sub parsearg
 						return;
 					}
 
-					modules::console_output ( "Executing $command" );
-
-
-					if ( $found_plugin )
-					{
-						$alias = "plugin_" . $found_plugin;
-						$_[KERNEL]->post($alias => "command" => \%args);
-					}
-					else
-					{
-						$_[KERNEL]->yield($command => \%args);
-					}
-
-
-
+          modules::console_output ( "Executing $command" );
+          if ( $plugin_name ) { $_[KERNEL]->post("plugin_" . $plugin_name => "command" => \%args); }
+          else                { $_[KERNEL]->yield($command_name => \%args); }
 				},
 
 			teams => \&teams,
@@ -730,265 +657,192 @@ sub showmsgs
 # Function for the !help command, shows a user the commands they can use.
 sub help
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		my $command = $args{arg1};
-		if ($args{arg1})
-		{
-			my $xml_command;
-			my $found=0;
-			foreach (@commands)
-			{
-				if ($command eq $_->{name})
-				{
-					if ($_->{alias})
-					{
-						# fetch command info from the real command, not the alias
-						($xml_command, undef, undef) = get_command_settings($_->{alias});
-						$command = $_->{alias};
-					}
-					else
-					{
-						($xml_command, undef, undef) = get_command_settings($_->{name})
-					}
-					$found=1;
-				}
-			}
+  eval
+  {
+    if ( $args{'arg1'} )
+    {
+      my $command = $args{'arg1'};
+      
+      my ($plugin_name, $command_name, $command_config);
+      ($command_name,$command_config) = find_command($command);
+      if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 )
+        { ($plugin_name,$command_name,$command_config) = plugin::find_command($command); }
+        
+    
+      # No (enabled) command found? Report failure...
+      if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 )
+      {
+        if ($args{'nicktype'} == 1) { brIRC::ircmsg ( "$command is unknown.", $args{'ircChannelCode'} ); }
+        else { RenRem::RenRemCMD("msg [BR] $command is unknown."); }
+        return;
+      }
+      
+      
+      # OK, got a command, print its help data, if any exists
+      if ($command_config->{'help'}->{'value'} and $command_config->{'syntax'}->{'value'})
+      {
+        if ($args{'nicktype'} == 1)
+        {
+          brIRC::ircmsg ( "$command: $command_config->{help}->{value}", $args{'ircChannelCode'} );
+          brIRC::ircmsg ( "Usage: $command_config->{syntax}->{value}", $args{'ircChannelCode'} );
+        }
+        else
+        {
+          RenRem::RenRemCMD("msg [BR] $command: $command_config->{help}->{value}");
+          RenRem::RenRemCMD("msg [BR] Usage: $command_config->{syntax}->{value}");
+        }
+        return;
+      }
+      
+      
+      # No help data.. oh dear...
+      if ($args{'nicktype'} == 1) { brIRC::ircmsg ( "No help for $command!", $args{'ircChannelCode'} ); }
+      else { RenRem::RenRemCMD("msg [BR] No help for $command!"); }
+      return;
+    } # end of command specific help
+    
+    
+    # OK, no command specified so find all commands available to this user at their permission level...
+    my $permission = check_permissions( $args{'nick'}, $args{'ircChannelCode'} );
+    modules::console_output ( $args{'nick'}."'s permission: $permission" );
 
-			if ($found==0)
-			{
-				my @plugins = plugin::get_plugin_event("command");
-				foreach (@plugins)
-				{
-					my $plugin = $_;
-					my @commands = @{$plugin::plugin_commands{$plugin}};
-					foreach (@commands)
-					{
-						if ($command eq $_->{name})
-						{
-							if ($_->{alias})
-							{
-								# fetch command info from the real command, not the alias
-								($xml_command, undef, undef, undef) = plugin::get_command_settings($_->{alias},$plugin::xml{$plugin});
-								$command = $_->{alias};
-							}
-							else
-							{
-								($xml_command, undef, undef, undef) = plugin::get_command_settings($_->{name},$plugin::xml{$plugin});
-							}
-						$found=1;
-						last;
-						}
-					}
-				}
+    my $c = $xml_config->{command};
+    my @found_commands;
+
+    my $current_commandgroup;
+    if ($args{nicktype} == 1)
+    {
+      if ( $args{'ircChannelCode'} eq "A" )
+        { $current_commandgroup = "irc_admin"; }
+      else
+        { $current_commandgroup = "irc_public"; }
+    }
+    else
+      { $current_commandgroup = "ingame" }
 
 
-				if ( $found==0 )
-				{
-					if ($args{nicktype} == 1)
-					{
-						brIRC::ircmsg ( "$command is unknown.", $args{'ircChannelCode'} );
-					}
-					else
-					{
-						RenRem::RenRemCMD("msg [BR] $command is unknown.");
-					}
-					return;
-				}
-			} # end of found=0
-
-			if ($xml_command->{help}->{value})
-			{
-				if ($args{nicktype} == 1)
-				{
-					brIRC::ircmsg ( "$command: $xml_command->{help}->{value}", $args{'ircChannelCode'} );
-					brIRC::ircmsg ( "Usage: $xml_command->{syntax}->{value}", $args{'ircChannelCode'} );
-				}
-				else
-				{
-					RenRem::RenRemCMD("msg [BR] $command: $xml_command->{help}->{value}");
-					RenRem::RenRemCMD("msg [BR] Usage: $xml_command->{syntax}->{value}");
-				}
-				return;
-
-			}
-			else
-			{
-				if ($args{nicktype} == 1)
-				{
-					brIRC::ircmsg ( "No help for $command!", $args{'ircChannelCode'} );
-				}
-				else
-				{
-					RenRem::RenRemCMD("msg [BR] No help for $command!");
-				}
-			}
-
-			return;
-		} # end of command specific help
+    my @plugins = plugin::get_plugin_event("command");
 
 
 
-		my $permission = check_permissions( $args{nick}, $args{'ircChannelCode'} );
-		# permission level of playername
-		modules::console_output ( $args{'nick'}."'s permission: $permission" );
+    # Loop through built in commands
+    foreach (@commands)
+    {
+      my $command_name = $_->{'name'} if ($_->{'name'});
 
-		my $c = $xml_config->{command};
-		my @found_commands;
+      # Don't list aliases
+      next if ( !defined $command_name or exists($_->{'alias'}) );
 
-		my $current_commandgroup;
-		if ($args{nicktype} == 1)
-		{
-			if ( $args{'ircChannelCode'} eq "A" )
-				{ $current_commandgroup = "irc_admin"; }
-			else
-				{ $current_commandgroup = "irc_public"; }
-		}
-		else
-			{ $current_commandgroup = "ingame" }
+      # Get config for this command
+      my $command_config = $xml_config->{'command'}->{$command_name};
+      
+      # Ignore hidden commands
+      next if ( exists($command_config->{'hideInHelp'}->{'value'}) && $command_config->{'hideInHelp'}->{'value'} != 0 );
+      
+      # Get command groups for this users permission level
+      my ($commandgroups, undef) = parse_command_settings($command_config);
+      my @allowed_groups = get_permission_level($command_config->{'permission'}->{'level'});
 
+      # Find which command groups are permitted for this level
+      my $found=0;
+      foreach (@allowed_groups)
+      {
+        $found = 1 if ( $permission eq $_  );
+      }
 
-		my @plugins = plugin::get_plugin_event("command");
-
-
-
-		# Defined variables
-		my $xml_command;
-		my $alias;
-		my $commandgroups;
-
-		# Loop through built in commands
-		foreach (@commands)
-		{
-			my $key = $_->{name} if ($_->{name});
-
-			# Don't list aliases
-			if ( exists($_->{alias}) ) { next; }
-
-			# Get data
-			($xml_command, $alias, $commandgroups, undef) = get_command_settings($key);
-			my @allowed_groups = get_permission_level($xml_command->{permission}->{level});
-
-			# Find which command groups are permitted for this level
-			my $found=0;
-			foreach (@allowed_groups)
-			{
-				$found = 1 if ( $permission eq $_  );
-			}
-
-			if ($found == 1)
-			{
-				$found=0;
-				foreach (@{$commandgroups})
-				{
-					if ( $_ eq $current_commandgroup || ( $_ eq "irc" && $args{nicktype} == 1 ) )
-					{
-						$found=1;
-						last;
-					}
-				}
+      if ($found == 1)
+      {
+        $found=0;
+        foreach (@{$commandgroups})
+        {
+          if ( $_ eq $current_commandgroup || ( $_ eq "irc" && $args{'nicktype'} == 1 ) )
+          {
+            $found=1;
+            last;
+          }
+        }
 
 
-				if ( $found == 1 )
-				{
-					# Only list commands if their hideInHelp != 1
-					if ( !exists($xml_command->{'hideInHelp'}->{'value'}) || $xml_command->{'hideInHelp'}->{'value'} != 1 )
-					{
-						push ( @found_commands, "!$key" );
-					}
-				}
-			}
-		}
+        if ( $found == 1 )
+          { push ( @found_commands, "!$command_name" ); }
+      }
+    }
 
-		# Loop through plugins
-		foreach (@plugins)
-		{
-			my $plugin = $_;
-			my @plugin_commands = @{$plugin::plugin_commands{$plugin}};
+    
+    # Loop through plugins
+    while ( my($command_name, $data) = each %plugin::commands )
+    {
+      # Ignore aliases and hidden commands
+      next if ( $data->{'alias_for'} );
+      
+      # Ignore hidden commands
+      my $command_config = $data->{'configuration'};
+      next if (exists($command_config->{'hideInHelp'}->{'value'}) && $command_config->{'hideInHelp'}->{'value'} != 0);
+      
+      # Get command groups for this users permission level
+      my ($commandgroups, undef) = parse_command_settings($command_config);
+      my @allowed_groups = get_permission_level($command_config->{'permission'}->{'level'});
 
-			# Loop through plugin commands
-			foreach (@plugin_commands)
-			{
-				my $key = $_->{name} if ($_->{name});
+      # Find which command groups are permitted for this level
+      my $found=0;
+      foreach (@allowed_groups)
+      {
+        $found = 1 if ($permission eq $_);
+      }
 
-				# Don't list aliases
-				if ( exists($_->{alias}) ) { next; }
+      if ($found == 1)
+      {
+        $found=0;
 
-				# Get data
-				($xml_command, $alias, $commandgroups, undef) = plugin::get_command_settings( $key, $plugin::xml{$plugin} );
-				my @allowed_groups = get_permission_level($xml_command->{permission}->{level});
-
-				# Find which command groups are permitted for this level
-				my $found=0;
-				foreach (@allowed_groups)
-				{
-					$found = 1 if ($permission eq $_);
-				}
-
-				if ($found == 1)
-				{
-					$found=0;
-
-					foreach (@{$commandgroups})
-					{
-						if ($_ eq $current_commandgroup)
-						{
-							$found=1;
-							last;
-						}
-					}
+        foreach (@{$commandgroups})
+        {
+          if ($_ eq $current_commandgroup)
+          {
+            $found=1;
+            last;
+          }
+        }
+      }
 
 
-					if ( $found == 1 )
-					{
-						# Only list commands if their hideInHelp != 1
-						if ( !exists($xml_command->{'hideInHelp'}->{'value'}) || $xml_command->{'hideInHelp'}->{'value'} != 1 )
-						{
-							push ( @found_commands, "!$key" );
-						}
-					}
+      if ( $found == 1 )
+       { push ( @found_commands, "!$command_name" ); }
 
-				}	# end of found=1
+    }   # end of plugins while loop
 
-			} # end of foreach command
-		}
+    my $line;
+    my @array;
+    for (my $i=0; $i <= scalar(@found_commands)-1; $i = $i+10 )
+    {
+      $line = $found_commands[$i];
+      for ( my $j = 1; $j < 10 && $i+$j < scalar(@found_commands)-1; $j++ )
+      {
+        $line .= " " . $found_commands[$i+$j];
+      }
+      push (@array, $line);
+    }
 
-		my $line;
-		my @array;
-		for (my $i=0; $i <= scalar(@found_commands)-1; $i = $i+10 )
-		{
-			$line = $found_commands[$i];
-			for ( my $j = 1; $j < 10 && $i+$j < scalar(@found_commands)-1; $j++ )
-			{
-				$line .= " " . $found_commands[$i+$j];
-			}
-			push (@array, $line);
-		}
+    if ($args{nicktype} == 1)
+    {
+      $args{nick} =~ /(.+)\@.+/;
+      my $nick = $1;
 
-		if ($args{nicktype} == 1)
-		{
-			$args{nick} =~ /(.+)\@.+/;
-			my $nick = $1;
-
-			brIRC::ircnotice ( $nick, "[BR] Available commands for $args{nick}" );
-			foreach (@array)
-			{
-				brIRC::ircnotice ( $nick, "$_" );
-			}
-		}
-		else
-		{
-			my ( $result, %player ) = playerData::getPlayerData ( $args{nick} );
-			if ( $result == 1 )
-			{
-				modules::pagePlayer ( $player{'id'}, "BRenBot", "Available commands for $player{name}:" );
-				foreach ( @array ) { modules::pagePlayer ( $player{'id'}, "BRenBot", $_ ); }
-			}
-		}
-	}
-	or modules::display_error($@);
+      brIRC::ircnotice ( $nick, "[BR] Available commands for $args{nick}" );
+      foreach (@array) { brIRC::ircnotice ( $nick, "$_" ); print $_."\n"; }
+    }
+    else
+    {
+      my ( $result, %player ) = playerData::getPlayerData ( $args{nick} );
+      if ( $result == 1 )
+      {
+        modules::pagePlayer ( $player{'id'}, "BRenBot", "Available commands for $player{name}:" );
+        foreach ( @array ) { modules::pagePlayer ( $player{'id'}, "BRenBot", $_ ); }
+      }
+    }
+  }
+  or modules::display_error($@);
 }
 
 
