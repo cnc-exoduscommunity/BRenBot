@@ -508,7 +508,6 @@ sub parsearg
 			about => \&about,
 			shun => \&shun,
 			unshun => \&unshun,
-			ping => \&ping,
 			dumplogs => \&dumpLogs,
 			cmsg => \&cmsg,
 			cmsgt => \&cmsg,
@@ -3803,61 +3802,6 @@ sub unshun
 		}
 	}	# End of eval
 	or modules::display_error($@);
-}
-
-
-
-## Ping command
-sub ping
-{
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-
-	# If used from IRC check there is a name given
-	if ( !$args{arg1} && $args{nicktype} == 1 )
-	{
-		my $syntax = $args{settings}->{syntax}->{value};
-		brIRC::ircmsg ( "You must specify which player to get the ping for. Usage: $syntax", $args{'ircChannelCode'} );
-		return;
-	}
-
-	my $searchName;
-
-	if ( $args{arg1} )
-	{
-		$searchName = $args{arg1};
-	}
-	else
-	{
-		$searchName = $args{nick};
-	}
-
-
-	my $message;
-	my ( $result, %player ) = playerData::getPlayerData( $searchName );
-	if ( $result == 1 )
-	{
-		$message = "$player{name} has a ping of $player{ping}.";
-	}
-	elsif ( $result == 2 )
-	{
-		$message = "$searchName is not unique, please be more specific.";
-	}
-	else
-	{
-		$message = "$searchName was not found in the server.";
-	}
-
-
-	if ( $args{nicktype} == 1 )
-	{
-		brIRC::ircmsg ( $message, $args{'ircChannelCode'} );
-	}
-	else
-	{
-		RenRem::RenRemCMD ( "msg [BR] $message" );
-	}
 }
 
 

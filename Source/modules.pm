@@ -504,7 +504,6 @@ sub check_modules
 	my %modulesList =
 	(
 		teammessages => "Displays team (f3) chat messages in IRC",
-		pingresponse => "BR reports ping when players request it",
 		join_messages => "Enables !setjoin / !viewjoin on the server",
 		gamespy_players => "Broadcast this server to the GameSpy Arcade server browser",
 		recommend => "Enables the recommendation system",

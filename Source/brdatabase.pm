@@ -282,7 +282,11 @@ sub check_database
 	 	# Database is out of date, see if any updates need doing...
 	 	modules::console_output ( "Database is out of date, updating to latest version..." );
 
-	 	# No updates to DB yet since SQLite3 conversion...
+    if ( $dbVersion < 1.53 || ($dbVersion == 1.53 && $dbBuild <= 11) )
+    {
+      print "      Deleting redundant module pingresponse...\n";
+      execute_query ( "DELETE FROM modules WHERE name = 'pingresponse'", 1 );
+    }
 
 	 	# Finally set all the globals to the current version
 	 	set_global ( 'version', main::BR_VERSION );

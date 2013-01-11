@@ -151,7 +151,7 @@ sub load_plugin
   {
     no warnings 'deprecated';  # Suppress XML::Parser::Expat warning about tied handles...
     $xml = XMLin ( "plugins/$plugin_name.xml",
-      ForceArray => [ qw(event group command hook) ],
+      ForceArray => [ qw(event group command hook cvar) ],
       KeyAttr => [ 'name', 'key', 'id', 'event' ] );
   };
   if ($@)

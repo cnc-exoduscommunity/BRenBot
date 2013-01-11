@@ -324,14 +324,6 @@ sub ChatMSG
 				}
 
 
-				# Check if we need to do a ping response
-				if ( modules::get_module( "pingresponse" ) )
-				{
-					if ( $playermsg =~ m/\blag.*\b|\bl+a+g+\b|\bping\b|\b56k\b|\bteleport.*\b|\bwarp.*\b/i && $playermsg !~ m/\!ping/i )
-					{ RenRem::RenRemCMD ( "msg [BR] $playername, your ping is currently $player{ping}" ); }
-				}
-
-
 				# Run plugins for public chat messages
 				my @plugins = plugin::get_plugin_event("text");
 				my %args;

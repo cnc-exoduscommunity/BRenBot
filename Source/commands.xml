@@ -581,15 +581,6 @@
     <group>ingame</group>
     <hideInHelp value="0"/>
   </command>
-  <command name="ping">
-    <permission level="2"/>
-    <syntax value="!ping &lt;player&gt;"/>
-    <help value="Shows the ping of the specified player."/>
-    <enabled value="1"/>
-    <group>irc_admin</group>
-    <group>ingame</group>
-    <hideInHelp value="0"/>
-  </command>
 
 
 <!--
