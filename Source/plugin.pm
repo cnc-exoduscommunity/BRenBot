@@ -48,7 +48,7 @@ sub get_plugins
   
   closedir(DATADIR);
   
-  return \%plugin_states;
+  return %plugin_states;
 }
 
 # --------------------------------------------------------------------------------------------------

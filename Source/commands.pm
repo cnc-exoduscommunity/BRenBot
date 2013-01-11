@@ -5272,20 +5272,20 @@ sub cmsg
 sub plugins
 {
   my %args = %{$_[ ARG0 ]};
-  
+
   if ($args{'nicktype'} != 1)
   {
     RenRem::pagePlayer($args{'nick'}, "The !plugins command can only be executed from IRC.");
     return;
   }
-  
+
   $args{'nick'} =~ m/(.+)\@.+/i;
   my $nick = $1;
-  
+
   brIRC::ircnotice ( $nick, "1Current plugin states;" );
-  
+
   my %plugins = plugin::get_plugins();
-  
+
   my @pluginStrings;
   while ( my($plugin, $state) = each(%plugins))
   {
@@ -5296,17 +5296,24 @@ sub plugins
         : '04' . $plugin . '';
     push ( @pluginStrings, $pluginString );
   }
-  
-  # Print to IRC in groups of 4
-  for ( my $i =0; $i <= scalar(@pluginStrings)-1; $i +=4 )
-  {
-    my $plugin1 = modules::padd_string ( 20, $pluginStrings[$i] );
-    my $plugin2 = modules::padd_string ( 20, $pluginStrings[$i+1] );
-    my $plugin3 = modules::padd_string ( 20, $pluginStrings[$i+2] );
 
-    # Fourth one does not need padding, it comes at the end of the line
-    brIRC::ircnotice ( $nick, "$plugin1 $plugin2 $plugin3 $pluginStrings[$i+3]" );
+  # Print to IRC in groups of 5
+  my $msg = "";
+  for ( my $i =0; $i <= scalar(@pluginStrings)-1; ++$i )
+  {
+    if ( ($i+1)%5 != 0 )
+      { $msg .= modules::padd_string ( 20, $pluginStrings[$i] ).' '; }
+    else
+    {
+       # No need to pad the one at the end of the line
+      brIRC::ircnotice ( $nick, $msg . $pluginStrings[$i] );
+      $msg = "";
+    }
   }
+
+  # If there is a partial line remaining then print it out
+  if ( $msg ne "" )
+    { brIRC::ircnotice ( $nick, $msg ); }
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -5314,21 +5321,21 @@ sub plugins
 sub plugin_load
 {
   my %args = %{$_[ ARG0 ]};
-  
+
   if ($args{'nicktype'} != 1)
   {
     RenRem::pagePlayer($args{'nick'}, "The !plugin_load command can only be executed from IRC.");
     return;
   }
-  
+
   if (!$args{'arg1'})
   {
     my $syntaxvalue = $args{'settings'}->{'syntax'}->{'value'};
     brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
     return;
   }
-  
-  my $result = plugins::load_plugin($args{'arg1'});
+
+  my $result = plugin::load_plugin($args{'arg1'});
   if ( $result == 0 or $result == 1 )
     { brIRC::ircmsg ( 'The plugin '.$args{'arg1'}.' was successfully loaded', $args{'ircChannelCode'} ); }
   elsif ( $result == -1 )
@@ -5342,23 +5349,23 @@ sub plugin_load
 sub plugin_unload
 {
   my %args = %{$_[ ARG0 ]};
-  
+
   if ($args{'nicktype'} != 1)
   {
     RenRem::pagePlayer($args{'nick'}, "The !plugin_unload command can only be executed from IRC.");
     return;
   }
-  
+
   if (!$args{'arg1'})
   {
     my $syntaxvalue = $args{'settings'}->{'syntax'}->{'value'};
     brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
     return;
   }
-  
-  plugins::unload_plugin($args{'arg1'});
+
+  plugin::unload_plugin($args{'arg1'});
   brIRC::ircmsg ( 'The plugin '.$args{'arg1'}.' is now being unloaded...', $args{'ircChannelCode'} );
-  
+
   # Create session to check result (it takes 5 seconds to process a plugin unload to allow shutdown)
   POE::Session->create
   (
