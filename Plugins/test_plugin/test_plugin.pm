@@ -42,15 +42,15 @@ sub command
   my %args = %{$_[ ARG0 ]};
   plugin::console_output ( '[test_plugin] Command' );
   
-  if ( $args{'command'} eq 'show_commands' )
-    { $_[KERNEL]->yield('show_commands' => \%args); }
+  if ( $args{'command'} eq 'test_plugin' )
+    { $_[KERNEL]->yield('test_plugin' => \%args); }
 }
 
 # Runs when any text is typed ingame or in IRC
 sub text
 {
   my %args = %{$_[ ARG0 ]};
-  plugin::console_output ( '[test_plugin] Text ('.$args{'nick'}.': '.$args{'message'} );
+  plugin::console_output ( '[test_plugin] Text ('.$args{'nick'}.': '.$args{'message'}.')' );
 }
 
 # --------------------------------------------------------------------------------------------------
