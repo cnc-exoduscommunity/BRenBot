@@ -26,7 +26,7 @@ our %config;
 # Runs when BRenBot loads the plugin
 sub start
 {
-  plugin::console_output ( '[test_plugin] Started' );
+  plugin::console_output ( '[test_plugin] Started. Config is '.$config{'param1'}.' and '.$config{'param2'} );
   start_sessions();
 }
 

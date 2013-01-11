@@ -8,6 +8,7 @@
     <enabled value="1"/>
     <group>irc</group>
     <group>ingame</group>
+    <alias>tpp</alias>
   </command>
   <events>
     <event>command</event>
