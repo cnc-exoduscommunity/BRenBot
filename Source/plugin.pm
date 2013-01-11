@@ -221,7 +221,7 @@ sub load_plugin
                        my $idx = 0;
                        ++$idx until $idx >= $size or $_[HEAP]->{\'child_sessions\'}[$idx] == $_[ARG1];
                        if ( $idx < $size )
-                         { delete $_[HEAP]->{\'child_sessions\'}[$idx]; }
+                         { splice(@{$_[HEAP]->{\'child_sessions\'}},$idx,1); }
                      }
                      else
                        { push(@{$_[HEAP]->{\'child_sessions\'}},$_[ARG1]); }
@@ -292,7 +292,7 @@ sub unload_plugin
   
   my ($size,$idx) = (scalar(@plugins), 0);
   ++$idx until $idx >= $size or $plugins[$idx] eq $plugin_name;
-  delete $plugins[$idx] if ( $idx < $size );
+  splice (@plugins,$idx,1) if ( $idx < $size );
   
   # Unimport plugin package in 5 seconds - this gives the plugin chance to shut down cleanly
   POE::Session->create
