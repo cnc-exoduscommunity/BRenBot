@@ -96,7 +96,7 @@ sub set_state
 
 # --------------------------------------------------------------------------------------------------
 
-#** \function public get_state ( $$plugin_name )
+#** \function public get_state ( $plugin_name )
 # \brief Get current state of a plugin
 #
 # \param[in] plugin_name
@@ -112,7 +112,7 @@ sub get_state
   
   # Temporary until database code is added
   my ($size,$idx) = (scalar(@plugins),0);
-  ++$idx until $plugins[$idx] eq $plugin_name or $idx >= $size;
+  ++$idx until $idx >= $size or $plugins[$idx] eq $plugin_name;
   return 1 if ( $idx < $size );
 
   return 0;
@@ -120,7 +120,7 @@ sub get_state
 
 # --------------------------------------------------------------------------------------------------
 
-#** \function public load_plugin ( $$plugin_name )
+#** \function public load_plugin ( $plugin_name )
 # \brief Attempt to load a plugin
 #
 # \param[in] plugin_name
@@ -219,7 +219,7 @@ sub load_plugin
                      {
                        my $size = scalar(@{$_[HEAP]->{\'child_sessions\'}});
                        my $idx = 0;
-                       ++$idx until $_[HEAP]->{\'child_sessions\'}[$idx] == $_[ARG1] or $idx >= $size;
+                       ++$idx until $idx >= $size or $_[HEAP]->{\'child_sessions\'}[$idx] == $_[ARG1];
                        if ( $idx < $size )
                          { delete $_[HEAP]->{\'child_sessions\'}[$idx]; }
                      }
@@ -262,7 +262,7 @@ sub load_plugin
 
 # --------------------------------------------------------------------------------------------------
 
-#** \function public unload_plugin ( $$plugin_name )
+#** \function public unload_plugin ( $plugin_name )
 # \brief Unload a plugin
 #
 # \param[in] plugin_name
@@ -291,7 +291,7 @@ sub unload_plugin
   delete $plugin_renlog_regexes{$plugin_name};
   
   my ($size,$idx) = (scalar(@plugins), 0);
-  ++$idx until $plugins[$idx] eq $plugin_name or $idx >= $size;
+  ++$idx until $idx >= $size or $plugins[$idx] eq $plugin_name;
   delete $plugins[$idx] if ( $idx < $size );
   
   # Unimport plugin package in 5 seconds - this gives the plugin chance to shut down cleanly
