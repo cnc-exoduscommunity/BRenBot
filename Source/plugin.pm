@@ -28,13 +28,13 @@ our @renlogRegexPlugins;    # List of plugins which have renlog hooks setup
 sub get_plugins
 {
   # \todo Update list of plugins in database - find_plugins or similar will do this when updated
-  
+
   # Temporary implementation
   unless(opendir(DATADIR, "plugins/"))
     { return; }
 
-  use lib getcwd.'/plugins'; 
-    
+  use lib getcwd.'/plugins';
+
   my %plugin_states = ();
   my @plugin_files;
   @plugin_files = grep(/\.pm$/i,readdir(DATADIR));
@@ -45,9 +45,9 @@ sub get_plugins
     $plugin =~ s/\.pm$//g;
     $plugin_states{$plugin} = get_state($plugin);
   }
-  
+
   closedir(DATADIR);
-  
+
   return %plugin_states;
 }
 
@@ -62,8 +62,8 @@ sub load_all_plugins
   unless(opendir(DATADIR, "plugins/"))
     { return; }
 
-  use lib getcwd.'/plugins'; 
-    
+  use lib getcwd.'/plugins';
+
   my @plugin_files;
   @plugin_files = grep(/\.pm$/i,readdir(DATADIR));
 
@@ -73,7 +73,7 @@ sub load_all_plugins
     $plugin =~ s/\.pm$//g;
     load_plugin ( $plugin );
   }
-  
+
   closedir(DATADIR);
 }
 
@@ -90,7 +90,7 @@ sub load_all_plugins
 sub set_state
 {
   my $plugin_name = shift;
-  
+
   # \todo Finish this function
 }
 
@@ -107,9 +107,9 @@ sub set_state
 sub get_state
 {
   my $plugin_name = shift;
-  
+
   # \todo Finish this function
-  
+
   # Temporary until database code is added
   my ($size,$idx) = (scalar(@plugins),0);
   ++$idx until $idx >= $size or $plugins[$idx] eq $plugin_name;
@@ -132,7 +132,7 @@ sub load_plugin
 {
   my $plugin_name = shift;
   my $plugin_state = get_state($plugin_name);
-  
+
   # \todo Update list of plugins in database - find_plugins or similar will do this when updated
 
   # If the plugin was not found or is already loaded return relevant result code
@@ -163,7 +163,7 @@ sub load_plugin
 
 
   # OK, we got the XML file loaded OK, go ahead and try to load the plugin itself
-  eval "use $plugin_name;";
+  eval "use lib getcwd.'/plugins'; use $plugin_name;";
   if ($@)
   {
     modules::console_output ( "Failed!\n\tError loading $plugin_name.pm: $@", 3 );
@@ -278,23 +278,23 @@ sub unload_plugin
     { return; }
 
   modules::console_output ( "[PLUGIN] Unloading plugin $plugin_name" );
-  
+
   my $plugin_session = $poe_kernel->alias_resolve('plugin_'.$plugin_name);
   if ( defined($plugin_session) )
     { $poe_kernel->post($plugin_session,'shutdown'); }
-  
+
   # Wipe the plugin from all data structures
   foreach(keys %commands) { delete $commands{$_} if $commands{$_}{'plugin_name'} eq $plugin_name; }
-  
+
   delete $plugin_events_old{$plugin_name};
   delete $plugin_config{$plugin_name};
   delete $plugin_gamelog_regexes{$plugin_name};
   delete $plugin_renlog_regexes{$plugin_name};
-  
+
   my ($size,$idx) = (scalar(@plugins), 0);
   ++$idx until $idx >= $size or $plugins[$idx] eq $plugin_name;
   splice (@plugins,$idx,1) if ( $idx < $size );
-  
+
   # Unimport plugin package in 5 seconds - this gives the plugin chance to shut down cleanly
   POE::Session->create
   (
@@ -302,7 +302,7 @@ sub unload_plugin
     {
       _start        => sub { $_[KERNEL]->delay('unload_plugin' => 5); },
       unload_plugin => sub
-      {     
+      {
         eval "no $plugin_name;
               Class::Unload->unload('$plugin_name');
               delete \$INC{'$plugin_name.pm'};";
@@ -332,7 +332,7 @@ sub unload_plugin
 sub plugin_start
 {
   my ( $kernel, $heap, $plugin_name ) = @_[KERNEL, HEAP, ARG0];
-  
+
   $heap->{'plugin_name'}       = $plugin_name;
   @{$heap->{'child_sessions'}} = ();
 
@@ -370,18 +370,18 @@ sub plugin_shutdown
   # Remove the session alias and cancel any pending alarms or delays
   $kernel->alias_remove("plugin_" . $plugin_name);
   $kernel->alarm_remove_all();
-  
+
   # Progagate message to any child sessions
   foreach (@{$heap->{'child_sessions'}})
     { $kernel->post ( $_, 'shutdown' ); }
-  
+
   # Detach sessions to ensure we can shutdown properly even if they linger...
   while ( scalar(@{$heap->{'child_sessions'}}) > 0 )
   {
     my $session = pop(@{$heap->{'child_sessions'}});
     $kernel->detach_child($session);
   }
-  
+
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -513,9 +513,9 @@ sub read_xml_config
 {
   my $plugin_name = shift;
   my $plugin_xml  = shift;
-  
+
   $plugin_config{$plugin_name} = {};
-  
+
   my $config_nodes = $plugin_xml->{'config'}->{'cvar'};
   for my $config_key ( keys %{$config_nodes} )
     { $plugin_config{$plugin_name}{$config_key} = $config_nodes->{$config_key}->{'value'}; }
@@ -529,7 +529,7 @@ sub read_xml_commands
 {
   my $plugin_name = shift;
   my $plugin_xml  = shift;
-  
+
   my $command_nodes = $plugin_xml->{'command'};
   while (my ($command, $command_config) = each %{$command_nodes})
   {
@@ -537,7 +537,7 @@ sub read_xml_commands
       'plugin_name'     => $plugin_name,
       'configuration'   => $command_config
     };
-    
+
     # Load aliases
     my $alias_nodes = $command_config->{'alias'};
     if ( defined $alias_nodes and $alias_nodes =~ "ARRAY")
@@ -575,21 +575,21 @@ sub find_command
   if ( defined $commands{$command_name} )
   {
     my %command = %{$commands{$command_name}};
-    
+
     # Check if this command is an alias for another...
     if ( defined $command{'alias_for'} )
     {
       # Safety check, make sure the command we are an alias for actually exists...
       if ( !defined $commands{$command{'alias_for'}} )
         { return (undef,undef,undef); }
-    
+
       $command_name = $command{'alias_for'};
       %command = %{$commands{$command{'alias_for'}}};
     }
-    
+
     return ($command{'plugin_name'},$command_name,$command{'configuration'});
   }
-  
+
   return (undef,undef,undef);
 }
 
