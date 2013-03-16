@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+
+<plugin name="hostauth">
+  <events>
+    <event>playerjoin</event>
+  </events>
+  <config>
+     <cvar name="danpaul88" value="danpaul88.dyndns.org"/>
+  </config>
+</plugin>
