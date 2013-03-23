@@ -648,16 +648,17 @@ sub ParseLogInput
 		}
 
 
-		if ($line =~ m/Player (.+?) left the game/)
+		if ($line =~ m/^Player (.+?) left the game$/)
 		{
 			# Player left, need to update Player Array...
-			brIRC::ircmsg( "11$line" );
-
-			my ( $result, %player ) = playerData::getPlayerData ( $1 );
+      my ( $result, %player ) = playerData::getPlayerData ( $1 );
 			if ( $result != 1 )
 			{
 				$player{'name'} = $1;
 			}
+      
+      if ( !plugin::call_core_override('playerleave_msg', $1) )
+        { brIRC::ircmsg( "11$1 left the game from team ".get_team_colour($player{'side'}).get_team_fullname($player{'side'}) ); }
 
 			my @plugins = plugin::get_plugin_event( "playerleave" );
 			my %args;

@@ -884,7 +884,7 @@ sub get_bhs_version { return playerData::getKeyValue ( shift, "scriptsVersion");
 #** \function public core_override_playerjoin_message ( $plugin_name, $plugin_event )
 # \brief Sets an override event for the "player has joined" IRC message which will be called when a
 #        new player joins the game. All player data except scripts version will be available when
-#        this event is triggered
+#        this event is called
 #
 # \param[in] plugin_name
 #   The name of the plugin setting the override
@@ -901,5 +901,27 @@ sub core_override_playerjoin_message($$)
 
   return 0 if ( exists($core_function_overrides{'playerjoin_msg'}) );
   $core_function_overrides{'playerjoin_msg'} = { 'plugin_name' => $plugin_name, 'plugin_event' => $plugin_event };
+  return 1;
+}
+
+#** \function public core_override_playerleave_message ( $plugin_name, $plugin_event )
+# \brief Sets an override event for the "player has left" IRC message which will be called when a
+#        player leaves the game. All player data will still be available when this event is called
+#
+# \param[in] plugin_name
+#   The name of the plugin setting the override
+# \param[in] plugin_event
+#   The name of an event to call on the plugin
+#
+# @return 1 if the override was set successfully, 0 if another plugin has already overridden this
+#         functionality. This override can only be set once.
+#*
+sub core_override_playerleave_message($$)
+{
+  my $plugin_name = shift;
+  my $plugin_event = shift;
+
+  return 0 if ( exists($core_function_overrides{'playerleave_msg'}) );
+  $core_function_overrides{'playerleave_msg'} = { 'plugin_name' => $plugin_name, 'plugin_event' => $plugin_event };
   return 1;
 }
