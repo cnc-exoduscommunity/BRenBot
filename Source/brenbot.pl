@@ -23,7 +23,7 @@ use strict;
 
 # Define these before loading BRenBot modules as they may be used inside those modules
 use constant BR_VERSION => 1.53;
-use constant BR_BUILD => 12;
+use constant BR_BUILD => 13;
 use constant BR_COPYRIGHT_YEAR => "2003-2012";
 
 # Load BRenBot modules
@@ -62,6 +62,34 @@ brconfig::init();
 our %tempMods;						# List of temporary moderators
 our $currentMod = "Renegade";		# Stores current mod, EG: APB, AR
 
+# Central point for overriding team names and colors
+our $team0Name = "Nod";
+our $team0FullName = "Nod";
+our $team0Colour = "04";
+our $team1Name = "GDI";
+our $team1FullName = "GDI";
+our $team1Colour = "08";
+our $team2Name = "Neutral";
+our $team2FullName = "Neutral";
+our $team2Colour = "09";
+
+sub get_team_colour
+{
+  my $teamname = shift;
+  return $team0Colour if ( $teamname eq $team0Name );
+  return $team1Colour if ( $teamname eq $team1Name );
+  return $team2Colour;
+}
+sub get_team_fullname
+{
+  my $teamname = shift;
+  return $team0FullName if ( $teamname eq $team0Name );
+  return $team1FullName if ( $teamname eq $team1Name );
+  return $team2FullName;
+}
+
+
+
 
 
 
@@ -80,6 +108,9 @@ sub joinstuff
 	{
 		if ( !( renlog::check_banlist( $name ) ) && !( modules::check_kicks( $name ) ) )
 		{
+      if ( !plugin::call_core_override('playerjoin_msg', $name) )
+        { brIRC::ircmsg( "11$name joined the game on team ".get_team_colour($player{'side'}).get_team_fullname($player{'side'}) ); }
+
 			if ( modules::get_module( "join_messages" ) )
 				{ modules::show_joinmessage ( $name ); }
 

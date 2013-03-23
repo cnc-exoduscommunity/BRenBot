@@ -23,6 +23,8 @@ our @plugins;               # List of all plugins
 our @gamelogRegexPlugins;   # List of plugins which have gamelog hooks setup
 our @renlogRegexPlugins;    # List of plugins which have renlog hooks setup
 
+our %core_function_overrides;
+
 # --------------------------------------------------------------------------------------------------
 
 sub get_plugins
@@ -286,6 +288,10 @@ sub unload_plugin
   # Wipe the plugin from all data structures
   foreach(keys %commands) { delete $commands{$_} if $commands{$_}{'plugin_name'} eq $plugin_name; }
 
+  # Wipe the plugin from all core function overloads
+  foreach (keys %core_function_overrides)
+    { delete $core_function_overrides{$_} if $core_function_overrides{$_}{'plugin_name'} eq $plugin_name; }
+
   delete $plugin_events_old{$plugin_name};
   delete $plugin_config{$plugin_name};
   delete $plugin_gamelog_regexes{$plugin_name};
@@ -505,6 +511,31 @@ sub get_events
   return (@events);
 }
 
+# --------------------------------------------------------------------------------------------------
+
+#** \function call_core_override ( $functionality, ... )
+# \brief Calls the current override for the specified core functionality if one is set
+#
+# \return 1 if the core override was called, 0 if this functionality is not overridden
+#*
+sub call_core_override
+{
+  my $functionality = shift;
+
+  if ( exists($core_function_overrides{$functionality}) )
+  {
+    plugin_event(
+      $core_function_overrides{$functionality}{'plugin_name'},
+      $core_function_overrides{$functionality}{'plugin_event'},
+      @_);
+    return 1;
+  }
+  
+  return 0;
+}
+
+# --------------------------------------------------------------------------------------------------
+
 
 #** \function private read_xml_config ( $plugin_name, $plugin_xml )
 # \brief Read the plugin configuration settings from the XML file and load them into a hash
@@ -524,7 +555,6 @@ sub read_xml_config
 #** \function private read_xml_commands ( $plugin_name, $plugin_xml )
 # \brief Read the plugin commands from the XML file and load them into a hash
 #*
-
 sub read_xml_commands
 {
   my $plugin_name = shift;
@@ -837,3 +867,39 @@ sub is_on_renguard { return 1; }
 sub get_bhs_version { return playerData::getKeyValue ( shift, "scriptsVersion"); }
 
 1;
+
+
+
+
+
+
+
+
+###################################################
+####
+## Core Functionality Overrides for plugins
+####
+###################################################
+
+#** \function public core_override_playerjoin_message ( $plugin_name, $plugin_event )
+# \brief Sets an override event for the "player has joined" IRC message which will be called when a
+#        new player joins the game. All player data except scripts version will be available when
+#        this event is triggered
+#
+# \param[in] plugin_name
+#   The name of the plugin setting the override
+# \param[in] plugin_event
+#   The name of an event to call on the plugin
+#
+# @return 1 if the override was set successfully, 0 if another plugin has already overridden this
+#         functionality. This override can only be set once.
+#*
+sub core_override_playerjoin_message($$)
+{
+  my $plugin_name = shift;
+  my $plugin_event = shift;
+
+  return 0 if ( exists($core_function_overrides{'playerjoin_msg'}) );
+  $core_function_overrides{'playerjoin_msg'} = { 'plugin_name' => $plugin_name, 'plugin_event' => $plugin_event };
+  return 1;
+}

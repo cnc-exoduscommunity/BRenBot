@@ -266,7 +266,7 @@ sub ChatMSG
   # sending the chat message to help prevent abuse of the ambiguous logging format. Also ignoring
   # any names with spaces in since we are banning those now (see check_playername)
 	#if ( $line =~ m~\[(..):(..):(..)\]\s+(.+?):\s(.+)~ )
-	if ( $line =~ m/^\[(..):(..):(..)\]\s(\[Team\]\s)?([^%s:]+?):\s(.+)/i )
+	if ( $line =~ m/^\[(\d{2}):(\d{2}):(\d{2})\]\s(\[Team\]\s)?([^\s:]+):\s(.+)/i )
 	{
 		# Prevent bugs/command abuse caused by players with : in their name
 		if ( "$5$6" =~ m/^Player\s.+\s(joined|left)\sthe\sgame$/
@@ -505,7 +505,16 @@ sub ParseLogInput
 
 		if ($line =~ /(GDI|All) : (.+?)\/(.+?) players\s+ (.+?) points/)
 		{
-			if ( $1 eq "All" ) { $main::currentMod = 'APB'; }
+			if ( $1 eq "All" and $main::currentMod ne 'APB' )
+      {
+        $main::currentMod = 'APB';
+        $main::team0Name = 'Sov';
+        $main::team0FullName = 'Soviet';
+        $main::team0Colour = '04';
+        $main::team1Name = 'All';
+        $main::team1FullName = 'Allied';
+        $main::team1Colour = '10';
+      }
 			serverStatus::updateStatus_GDI ( $2, $4, $3 );
 		}
 
@@ -684,7 +693,7 @@ sub ParseLogInput
 			my $joiner = $1;
 
 			$joiners{lc($joiner)} = 1;
-			brIRC::ircmsg( "11$line" );
+			#brIRC::ircmsg( "11$line" );   // Now done in joinstuff
 
 			# Check if a player with that name is already ingame
 			my $tmp_nick = $joiner;
