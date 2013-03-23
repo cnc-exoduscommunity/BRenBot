@@ -284,11 +284,11 @@ sub parsearg
     }
     
     
-    # Search for a definition of this command in the main commands list and in any loaded plugins
-    my ($plugin_name, $command_name, $command_config);
-    ($command_name,$command_config) = find_command($command);
+    # Search for a definition of this command in the main commands list or in any loaded plugins,
+    # with plugin commands checked first to allow plugins to override built-ins
+    my ($plugin_name, $command_name, $command_config) = plugin::find_command($command);
     if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 )
-      { ($plugin_name,$command_name,$command_config) = plugin::find_command($command); }
+      { ($plugin_name,$command_name,$command_config) = find_command($command); }
     
     # No (enabled) command found? Guess we'll have to give up then...
     return if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 );
