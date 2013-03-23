@@ -288,7 +288,7 @@ sub parsearg
     # with plugin commands checked first to allow plugins to override built-ins
     my ($plugin_name, $command_name, $command_config) = plugin::find_command($command);
     if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 )
-      { ($plugin_name,$command_name,$command_config) = find_command($command); }
+      { ($command_name,$command_config) = find_command($command); }
     
     # No (enabled) command found? Guess we'll have to give up then...
     return if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 );
@@ -664,10 +664,9 @@ sub help
     {
       my $command = $args{'arg1'};
       
-      my ($plugin_name, $command_name, $command_config);
-      ($command_name,$command_config) = find_command($command);
+      my ($plugin_name,$command_name,$command_config) = plugin::find_command($command);
       if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 )
-        { ($plugin_name,$command_name,$command_config) = plugin::find_command($command); }
+        { ($command_name,$command_config) = find_command($command); }
         
     
       # No (enabled) command found? Report failure...
