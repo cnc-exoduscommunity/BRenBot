@@ -2554,7 +2554,7 @@ sub banip
 		if ( $ip =~ m/^(\d+\.\d+\.\d+)(\.)?$/ )
 			{ $ip = $1.".*"; }
 
-		modules::record_ban ( '', $args{'nick'}, $reason, '', $ip );
+		modules::record_ban ( '', $args{'nick'}, $reason, $ip, '' );
 
 
 		if ( $ip =~ m/\.\*/ )
