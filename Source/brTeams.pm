@@ -11,18 +11,59 @@ our %teams = {
     'name'          => "Nod",
     'abbreviation'  => "Nod",
     'colour'        => "04,00"
-  }
+  },
   1 => {
     'name'          => "GDI",
     'abbreviation'  => "GDI",
     'colour'        => "08,15"
-  }
+  },
   2 => {
     'name'          => "Neutral",
     'abbreviation'  => "Neutral",
     'colour'        => "09,00"
   }
 };
+
+# --------------------------------------------------------------------------------------------------
+
+# Read the team configuration file if it exists...
+sub read_config
+{
+  my $teamid = -1;
+  
+  eval
+  {
+    open ( TEAMCONFIG, "teams.cfg" );
+    while ( <TEAMCONFIG> )
+    {
+      chomp;  # Kill any \n's
+      
+      if ( $_ !~ m/^\#/ && $_ !~ m/^\s+$/ )   # If the line starts with a hash or is blank ignore it
+      {
+        if ( $_ =~ m/\[TEAM[0-2]\]/i )
+        {
+          $teamid = $1;
+        }
+        elsif ( $teamid != -1 )
+        {
+          if ( $_ =~ m/^name\s*=\s*(\S.*)$/i )
+          {
+            $teams{$teamid}{'name'} = $1;
+          }
+          elsif ( $_ =~ m/^abbreviation\s*=\s*(\S.*)$/i )
+          {
+            $teams{$teamid}{'abbreviation'} = $1;
+          }
+          elsif ( $_ =~ m/^colour\s*=\s*(\d{1,2}(?:,\d{1,2}))?$/i )
+          {
+            $teams{$teamid}{'colour'} = $1;
+          }
+        }
+      }
+    }
+    close ( TEAMCONFIG );
+  }
+}
 
 # --------------------------------------------------------------------------------------------------
 
