@@ -745,6 +745,22 @@ sub set_global { brdatabase::set_global(@_); }
 sub get_global { return brdatabase::get_global(@_); }
 
 
+# Allows plugins to write log entries
+#
+# \param[in] $code
+#    A numerical code for this log entry, each plugin should use a unique code. Codes 1 to 10 are
+#    reserved for use by BRenBot
+# \param[in] $content
+#    The string content of the log entry.
+sub write_to_log
+{
+  # Prevent use of codes below 10
+  if ( $_[0] !~ m/^\d+$/ || $_[0] < 10 )
+    return;
+  brdatabase::writeLog(@_);
+}
+
+
 
 
 #########################

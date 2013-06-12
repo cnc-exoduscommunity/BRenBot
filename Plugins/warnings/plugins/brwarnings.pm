@@ -366,19 +366,19 @@ sub start
   plugin::set_global ( "version_plugin_brwarnings", $currentVersion );
 
   # Load the list of autowarnWords if autoWarnings is enabled
-  if ( $config{autoWarnings} ) { loadautowarnWords(); }
+  if ( $config{'autoWarnings'} ) { loadautowarnWords(); }
 
   # Check the values of some settings in config, and overwrite them if nessicary
-  if ( $config{greetPlayerDelay} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: greetPlayerDelay option is not set or non numerical. Defaulting to 10 seconds.\n"; $config{greetPlayerDelay} = 10; }
-  if ( $config{qkick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: qkick_warnings option is not set or non numerical. Defaulting to 2.\n"; $config{qkick_warnings} = 2; }
-  if ( $config{kick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: kick_warnings option is not set or non numerical. Defaulting to 3.\n"; $config{kick_warnings} = 3; }
-  if ( $config{kick_warnings} < $config{qkick_warnings} ) { print "WARNINGS PLUGIN :: kick_warnings cannot be lower than qkick_warnings. Setting kick_warnings to " . ($config{qkick_warnings}+1); $config{kick_warnings} = $config{qkick_warnings}+1; }
-  if ( $config{ban_warnings} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: ban_warnings option is not set or non numerical. Defaulting to 10.\n"; $config{ban_warnings} = 10; }
-  if ( $config{ban_warnings} < $config{kick_warnings} && $config{ban_warnings} != -1 ) { print "WARNINGS PLUGIN :: ban_warnings cannot be lower than kick_warnings. Setting ban_warnings to " . ($config{kick_warnings}+5); $config{ban_warnings} = $config{kick_warnings}+5; }
-  if ( $config{expire_time} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: expire_time option is not set or non numerical. Defaulting to 14400.\n"; $config{expire_time} = 14400; }
-  if ( $config{irc_kick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: irc_kick_warnings option is not set or non numerical. Defaulting to 3.\n"; $config{irc_kick_warnings} = 3; }
-  if ( $config{irc_expire_time} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: irc_expire_time option is not set or non numerical. Defaulting to 14400.\n"; $config{irc_expire_time} = 14400; }
-  if ( $config{warningsCheckFrequency} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: warningsCheckFrequency option is not set or non numerical. Defaulting to 1800.\n"; $config{warningsCheckFrequency} = 1800; }
+  if ( $config{greetPlayerDelay} !~ m/^\d+$/ ) { showConfigError("greetPlayerDelay option is not set or non numerical. Defaulting to 10 seconds."); $config{greetPlayerDelay} = 10; }
+  if ( $config{qkick_warnings} !~ m/^\d+$/ ) { showConfigError("qkick_warnings option is not set or non numerical. Defaulting to 2."); $config{qkick_warnings} = 2; }
+  if ( $config{kick_warnings} !~ m/^\d+$/ ) { showConfigError("kick_warnings option is not set or non numerical. Defaulting to 3."); $config{kick_warnings} = 3; }
+  if ( $config{kick_warnings} < $config{qkick_warnings} ) { showConfigError("kick_warnings cannot be lower than qkick_warnings. Setting kick_warnings to " . ($config{qkick_warnings}+1)); $config{kick_warnings} = $config{qkick_warnings}+1; }
+  if ( $config{ban_warnings} !~ m/^-?\d+$/ ) { showConfigError("ban_warnings option is not set or non numerical. Defaulting to 10."); $config{ban_warnings} = 10; }
+  if ( $config{ban_warnings} < $config{kick_warnings} && $config{ban_warnings} != -1 ) { showConfigError("ban_warnings cannot be lower than kick_warnings. Setting ban_warnings to " . ($config{kick_warnings}+5)); $config{ban_warnings} = $config{kick_warnings}+5; }
+  if ( $config{expire_time} !~ m/^-?\d+$/ ) { showConfigError("expire_time option is not set or non numerical. Defaulting to 14400."); $config{expire_time} = 14400; }
+  if ( $config{irc_kick_warnings} !~ m/^\d+$/ ) { showConfigError("irc_kick_warnings option is not set or non numerical. Defaulting to 3."); $config{irc_kick_warnings} = 3; }
+  if ( $config{irc_expire_time} !~ m/^-?\d+$/ ) { showConfigError("irc_expire_time option is not set or non numerical. Defaulting to 14400."); $config{irc_expire_time} = 14400; }
+  if ( $config{warningsCheckFrequency} !~ m/^\d+$/ ) { showConfigError("warningsCheckFrequency option is not set or non numerical. Defaulting to 1800."); $config{warningsCheckFrequency} = 1800; }
 
   # Now connect to, and if necessary create, the database
   my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$dbTime,$ctime,$blksize,$blocks) = stat('warnings_plugin.dat');
@@ -394,7 +394,7 @@ sub start
 
   if( !$dbTime )
   {
-    print "WARNINGS PLUGIN :: Database does not exist, creating fresh database\n";
+    plugin::console_output("[Warnings] Database does not exist, creating fresh database");
 
     $dbc->do(
       "CREATE TABLE warnings
@@ -433,107 +433,7 @@ sub start
   }
   else
   {
-    my $dbVersion = $dbc->selectrow_array ( "SELECT version FROM warnings_plugin" );
-
-    if ( $dbVersion != $currentVersion )
-    {
-      print "WARNINGS PLUGIN :: Database is out of date. DB is $dbVersion, current is $currentVersion. Updating to new version\n";
-
-      if ( $dbVersion < 1.2 )
-      {
-        print "WARNINGS PLUGIN :: Updating db to 1.2....\n";
-
-        print "  Adding table autokb\n";
-        $dbc->do ( "CREATE TABLE autokb ( name CHAR(128) PRIMARY KEY )" );
-      }
-
-      if ( $dbVersion < 1.33 )
-      {
-        print "WARNINGS PLUGIN :: Updating db to 1.33....\n";
-
-        # Scan for players on the autokb list who are already banned
-        print "  Removing banned players from autoKB list\n";
-        my $query = $dbc->prepare ( "SELECT name FROM autokb" );
-        $query->execute();
-
-        my @row = $query->fetchrow_array;
-        while ( defined(@row[0]) )
-        {
-          my $autokbname = lc($row[0]);
-
-          my @array = plugin::execute_query( "SELECT * FROM banlist WHERE LOWER(name) = \"$autokbname\"" );
-          if ( scalar(@array) > 0 )
-          {
-            # Already banned, remove from autoKB list
-            $dbc->do ( "DELETE FROM autokb WHERE LOWER(name) = \"$autokbname\"" );
-          }
-          @row = $query->fetchrow_array;
-        }
-      }
-
-      if ( $dbVersion < 1.4 )
-      {
-        print "WARNINGS PLUGIN :: Updating db to 1.4....\n";
-
-        # Move autoKB data to a temporary table, and recreate the autoKB table
-        print "  Adding banner and reason columns to the autoKB table\n";
-
-        # Create temp table and move data
-        $dbc->do ( "CREATE TABLE autokb_temp ( name CHAR(128) PRIMARY KEY )" );
-        $dbc->do ( "INSERT INTO autokb_temp SELECT name FROM autokb" );
-        $dbc->do ( "DROP TABLE autokb" );
-
-        # Recreate autoKB table
-        $dbc->do (
-          "CREATE TABLE autokb
-          ( name				CHAR(128)	PRIMARY KEY
-          ,banner				CHAR(128)
-          ,reason				CHAR(256) )"
-        );
-
-        my $query = $dbc->prepare ( "SELECT name FROM autokb_temp" );
-        $query->execute();
-
-        my @row = $query->fetchrow_array;
-        while ( defined(@row[0]) )
-        {
-          my $autokbname = lc($row[0]);
-
-          my @array = plugin::execute_query( "SELECT * FROM banlist WHERE LOWER(name) = \"$autokbname\"" );
-          if ( scalar(@array) == 0 )
-          {
-            # Not banned yet, copy them back across
-            $dbc->do ( "INSERT INTO autokb (name, banner, reason) VALUES ( \"$row[0]\", \"BRenBot\", \"being on autoKB list.\" )" );
-          }
-          @row = $query->fetchrow_array;
-        }
-
-        $dbc->do ( "DROP TABLE autokb_temp" );
-      }
-
-      if ( $dbVersion < 1.5 )
-      {
-        print "WARNINGS PLUGIN :: Updating db to 1.50....\n";
-
-        # Copy existing logs to brenbot's logging system, then delete logs table
-        print "  Moving logs from logs table to brenbot.dat... this may take a few minutes...\n";
-        my $query = $dbc->prepare ( "SELECT name, content, timestamp FROM logs" );
-        $query->execute();
-
-        my @row = $query->fetchrow_array;
-        while ( defined(@row[0]) )
-        {
-          my $log = "$row[0]: $row[1]";
-          brdatabase::execute_query ( "INSERT INTO logs ( logType, content, timestamp ) VALUES ( 11, \"$log\", $row[2] )", 1 );
-          @row = $query->fetchrow_array;
-        }
-
-        print "  Deleting redundant table logs\n";
-        $dbc->do ( "DROP TABLE logs" );
-      }
-
-      $dbc->do ( "UPDATE warnings_plugin SET version = $currentVersion" );
-    }
+    updateDatabase();
   }
 
   # Load autoKB list
@@ -542,6 +442,12 @@ sub start
   # Run a check for old warnings to expire, which will also handle
   # scheduling future checks
   $_[KERNEL]->yield( "checkOldWarnings" => \%args );
+}
+
+sub showConfigError
+{
+  my error = shift;
+  plugin::console_output("[Warnings] Config Error: $error");
 }
 
 sub stop
@@ -774,34 +680,61 @@ sub giveWarning
 			plugin::RenRemCMD ( "msg $player{name} has been warned by $warnedBy for '$reason'. They now have " . ( $oldWarnings+1 ) . " warning$suffix." );
 
 			# Write the warning log
-			brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} was warned by $warnedBy for '$reason'." );
+			plugin::write_to_log ( 11, "[Warnings] $player{name} was warned by $warnedBy for '$reason'." );
 
 			my $isAutoWarning = ( $warnedBy eq "BRenBot" ) ? 1 : 0;
 
 			# Check if they are at the !ban limit, and if banning is enabled
-			if ( ( ( $oldWarnings+1 ) >= $config{ban_warnings} ) && $config{ban_warnings} != -1 ) { plugin::call_command( "BRenBot", "kb $player{'name'} having $config{ban_warnings} or more warnings." ); updateStats ( 1, $isAutoWarning, 0, 0, 1, 0 ); brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} was banned from the server for reaching $config{ban_warnings} warnings." ); }
+			if ( ( ( $oldWarnings+1 ) >= $config{ban_warnings} ) && $config{ban_warnings} != -1 )
+      {
+        plugin::call_command( "BRenBot", "kb $player{'name'} having $config{ban_warnings} or more warnings." );
+        updateStats ( 1, $isAutoWarning, 0, 0, 1, 0 );
+        plugin::write_to_log ( 11, "[Warnings] $player{name} was banned from the server for reaching $config{ban_warnings} warnings." );
+      }
 			# Check if they are at the !kick limit
-			elsif ( ( $oldWarnings+1 ) >= $config{kick_warnings} ) { plugin::call_command( "BRenBot", "kick $player{'name'} having $config{kick_warnings} or more warnings." ); updateStats ( 1, $isAutoWarning, 0, 1, 0, 0 ); brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} was kicked from the server for reaching $config{kick_warnings} warnings." ); }
+			elsif ( ( $oldWarnings+1 ) >= $config{kick_warnings} )
+      {
+        plugin::call_command( "BRenBot", "kick $player{'name'} having $config{kick_warnings} or more warnings." );
+        updateStats ( 1, $isAutoWarning, 0, 1, 0, 0 );
+        plugin::write_to_log ( 11, "[Warnings] $player{name} was kicked and given a 24 hour ban from the server for reaching $config{kick_warnings} warnings." );
+      }
 			# Check if they are at the !qkick limit
-			elsif ( ( $oldWarnings+1 ) >= $config{qkick_warnings} ) { plugin::call_command( "BRenBot", "qkick $player{'name'} having $config{qkick_warnings} or more warnings." ); updateStats ( 1, $isAutoWarning, 1, 0, 0, 0 ); brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} was Qkicked from the server for reaching $config{qkick_warnings} warnings." ); }
+			elsif ( ( $oldWarnings+1 ) >= $config{qkick_warnings} )
+      {
+        plugin::call_command( "BRenBot", "qkick $player{'name'} having $config{qkick_warnings} or more warnings." );
+        updateStats ( 1, $isAutoWarning, 1, 0, 0, 0 );
+        plugin::write_to_log ( 11, "[Warnings] $player{name} was kicked from the server for reaching $config{qkick_warnings} warnings." );
+      }
+      
 			# Check if punishModerators is on
 			elsif ( $config{punishModerators} )
 			{
 				# Check if they are a mod
-				if ( modules::IsTempMod ( $player{'name'} ) ) { plugin::call_command ( "BRenBot", "dtm $player->{'name'}" ); plugin::RenRemCMD( "msg $player{name} has had their ATM rights revoked for being warned." ); updateStats ( 1, $isAutoWarning, 0, 0, 0, 0 ); brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} had their ATM rights revoked for recieving a warning." ); }
-				elsif ( modules::IsAdmin ( $player{'name'} ) || modules::IsFullMod ( $player{'name'} ) || modules::IsHalfMod ( $player{'name'} ) ) { plugin::call_command ( "BRenBot", "qkick $player{'name'} for being warned as a moderator." ); updateStats ( 1, $isAutoWarning, 1, 0, 0, 0 ); brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} was Qkicked from the server for being warned as a moderator." ); }
-				else
-				{
-					updateStats ( 1, $isAutoWarning, 0, 0, 0, 0 );
-					plugin::RenRemCMD ( "pamsg $player{id} You have been warned by $warnedBy for '$reason'. You now have " . ( $oldWarnings+1 ) . " warning$suffix." );
-				}
-			}
-			else
-			{
-				updateStats ( 1, $isAutoWarning, 0, 0, 0, 0 );
-				plugin::RenRemCMD ( "pamsg $player{id} You have been warned by $warnedBy for '$reason'. You now have " . ( $oldWarnings+1 ) . " warning$suffix." );
-			}
-		}
+				if ( plugin::isTempMod ( $player{'name'} ) )
+        {
+          plugin::call_command ( "BRenBot", "dtm $player->{'name'}" );
+          plugin::RenRemCMD( "msg $player{name} has had their ATM rights revoked for being warned." );
+          updateStats ( 1, $isAutoWarning, 0, 0, 0, 0 );
+          plugin::write_to_log ( 11, "[Warnings] $player{name} had their ATM rights revoked for recieving a warning." );
+        }
+        elsif ( plugin::isAdmin ( $player{'name'} ) || plugin::isFullMod ( $player{'name'} ) || plugin::isHalfMod ( $player{'name'} ) )
+        {
+          plugin::call_command ( "BRenBot", "qkick $player{'name'} for being warned as a moderator." );
+          updateStats ( 1, $isAutoWarning, 1, 0, 0, 0 );
+          plugin::write_to_log ( 11, "[Warnings] $player{name} was Qkicked from the server for being warned as a moderator." );
+        }
+        else
+        {
+          updateStats ( 1, $isAutoWarning, 0, 0, 0, 0 );
+          plugin::RenRemCMD ( "pamsg $player{id} You have been warned by $warnedBy for '$reason'. You now have " . ( $oldWarnings+1 ) . " warning$suffix." );
+        }
+      }
+      else
+      {
+        updateStats ( 1, $isAutoWarning, 0, 0, 0, 0 );
+        plugin::RenRemCMD ( "pamsg $player{id} You have been warned by $warnedBy for '$reason'. You now have " . ( $oldWarnings+1 ) . " warning$suffix." );
+      }
+    }
 		elsif ( $result == 2 )
 		{
 			if ( $warnedBy =~ m/\@IRC$/ ) { plugin::ircmsg ( "4$nickname is not unique, please be more specific.", $channelCode ); }
@@ -822,7 +755,7 @@ sub giveWarning
 		plugin::ircmsg ( "4$nickname has been warned by $warnedBy for '$reason'. They now have " . ( $oldWarnings+1 ) . " warning$suffix.", $channelCode );
 
 		# Write the warning log
-		brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} was warned by $warnedBy for '$reason'" );
+		plugins::write_to_log ( 11, "[Warnings] $player{name} was warned by $warnedBy for '$reason'" );
 
 		my $isAutoWarning = ( $warnedBy eq "BRenBot" ) ? 1 : 0;
 
@@ -832,7 +765,7 @@ sub giveWarning
 			#Work out nickname for kick actions
 			$nickname =~ m/(\S+)\@IRC$/;
 			$_[KERNEL]->post ( IRC => kick => CHANNEL, $1, "You were automatically kicked by BRenBot for for having $config{irc_kick_warnings} or more warnings.");
-			brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} was kicked from the IRC channel for having $config{irc_kick_warnings} or more warnings." );
+			plugins::write_to_log ( 11, "[Warnings] $player{name} was kicked from the IRC channel for having $config{irc_kick_warnings} or more warnings." );
 			updateStats ( 1, $isAutoWarning, 0, 0, 0, 1 );
 		}
 		else { updateStats ( 1, $isAutoWarning, 0, 0, 0, 0 ); }
@@ -848,11 +781,11 @@ sub loadautowarnWords
 	my ($fileHandle, $line);
 	my $status =  1;
 
-	print "WARNINGS PLUGIN :: Beginning to load list of disallowed words\n";
+	plugin::console_output("[Warnings] Beginning to load list of disallowed words");
 
 	if ( !open ( $fileHandle, 'plugins/warnings_words.cfg' ) )
 	{
-		print "WARNINGS PLUGIN :: Failed to open plugins/warnings_words.cfg! Disabling automatic warnings.\n";
+		plugin::console_output("[Warnings] Failed to open plugins/warnings_words.cfg! Disabling automatic warnings.");
 		$config{autoWarnings} = 0;			$config{IRCautoWarnings} = 0;
 		$status = 0;
 	}
@@ -874,9 +807,9 @@ sub loadautowarnWords
 			}
 		}
 
-		if ( !close ( $fileHandle ) ) { print ( "WARNINGS PLUGIN :: Failed to close plugins/warnings_words.cfg!\n" ); }
+		if ( !close ( $fileHandle ) ) { plugin::console_output("[Warnings] Failed to close plugins/warnings_words.cfg!" ); }
 
-		print ( "WARNINGS PLUGIN :: Finished loading list of disallowed words\n" );
+		plugin::console_output("[Warnings] Finished loading list of disallowed words" );
 	}
 
 	# Create the $autowarnWordsList scalar so we don't have to go through the hash each
@@ -965,7 +898,7 @@ sub checkOldWarnings
 	{
 		# At least one of the two is enabled, so run the reduce warnings process
 		my $result = reduceOldWarnings();
-		if ( $result ) { print "WARNINGS PLUGIN :: $result warnings have expired.\n"; }
+		if ( $result ) { plugin::console_output("[Warnings] $result warnings have expired."); }
 
 		# Schedule another execution
 		my $next_time = int( time() ) + $config{warningsCheckFrequency};
@@ -1169,6 +1102,113 @@ sub DBgetFrequentWords
 	$words = substr ( $words, 0, -2 );			# Trim trailing ', '
 
 	return $words;
+}
+
+# --------------------------------------------------------------------------------------------------
+
+sub updateDatabase
+{
+  my $dbVersion = $dbc->selectrow_array ( "SELECT version FROM warnings_plugin" );
+
+  if ( $dbVersion != $currentVersion )
+  {
+    plugin::console_output("[Warnings] Database is out of date. DB is $dbVersion, current is $currentVersion. Updating to new version");
+
+    if ( $dbVersion < 1.2 )
+    {
+      plugin::console_output("[Warnings] Updating db to 1.2....");
+
+      plugin::console_output("[Warnings] Adding table autokb");
+      $dbc->do ( "CREATE TABLE autokb ( name CHAR(128) PRIMARY KEY )" );
+    }
+
+    if ( $dbVersion < 1.33 )
+    {
+      plugin::console_output("[Warnings] Updating db to 1.33....");
+
+      # Scan for players on the autokb list who are already banned
+      plugin::console_output("[Warnings] Removing banned players from autoKB list");
+      my $query = $dbc->prepare ( "SELECT name FROM autokb" );
+      $query->execute();
+
+      my @row = $query->fetchrow_array;
+      while ( defined(@row[0]) )
+      {
+        my $autokbname = lc($row[0]);
+
+        my @array = plugin::execute_query( "SELECT * FROM banlist WHERE LOWER(name) = \"$autokbname\"" );
+        if ( scalar(@array) > 0 )
+        {
+          # Already banned, remove from autoKB list
+          $dbc->do ( "DELETE FROM autokb WHERE LOWER(name) = \"$autokbname\"" );
+        }
+        @row = $query->fetchrow_array;
+      }
+    }
+
+    if ( $dbVersion < 1.4 )
+    {
+      plugin::console_output("[Warnings] Updating db to 1.4....");
+
+      # Move autoKB data to a temporary table, and recreate the autoKB table
+      plugin::console_output("[Warnings] Adding banner and reason columns to the autoKB table");
+
+      # Create temp table and move data
+      $dbc->do ( "CREATE TABLE autokb_temp ( name CHAR(128) PRIMARY KEY )" );
+      $dbc->do ( "INSERT INTO autokb_temp SELECT name FROM autokb" );
+      $dbc->do ( "DROP TABLE autokb" );
+
+      # Recreate autoKB table
+      $dbc->do (
+        "CREATE TABLE autokb
+        ( name				CHAR(128)	PRIMARY KEY
+        ,banner				CHAR(128)
+        ,reason				CHAR(256) )"
+      );
+
+      my $query = $dbc->prepare ( "SELECT name FROM autokb_temp" );
+      $query->execute();
+
+      my @row = $query->fetchrow_array;
+      while ( defined(@row[0]) )
+      {
+        my $autokbname = lc($row[0]);
+
+        my @array = plugin::execute_query( "SELECT * FROM banlist WHERE LOWER(name) = \"$autokbname\"" );
+        if ( scalar(@array) == 0 )
+        {
+          # Not banned yet, copy them back across
+          $dbc->do ( "INSERT INTO autokb (name, banner, reason) VALUES ( \"$row[0]\", \"BRenBot\", \"being on autoKB list.\" )" );
+        }
+        @row = $query->fetchrow_array;
+      }
+
+      $dbc->do ( "DROP TABLE autokb_temp" );
+    }
+
+    if ( $dbVersion < 1.5 )
+    {
+      plugin::console_output("[Warnings] Updating db to 1.50....");
+
+      # Copy existing logs to brenbot's logging system, then delete logs table
+      plugin::console_output("[Warnings] Moving logs from logs table to brenbot.dat... this may take a few minutes...");
+      my $query = $dbc->prepare ( "SELECT name, content, timestamp FROM logs" );
+      $query->execute();
+
+      my @row = $query->fetchrow_array;
+      while ( defined(@row[0]) )
+      {
+        my $log = "$row[0]: $row[1]";
+        plugin::execute_query ( "INSERT INTO logs ( logType, content, timestamp ) VALUES ( 11, \"$log\", $row[2] )", 1 );
+        @row = $query->fetchrow_array;
+      }
+
+      plugin::console_output("[Warnings] Deleting redundant table logs");
+      $dbc->do ( "DROP TABLE logs" );
+    }
+
+    $dbc->do ( "UPDATE warnings_plugin SET version = $currentVersion" );
+  }
 }
 
 
