@@ -660,6 +660,13 @@ sub getPlayerData { return playerData::getPlayerData($_[0]); }
 
 
 # pagePlayer function for plugins
+#
+# \param[in] $player
+#   Name or ID of player to lookup
+# \param[in] $sender
+#   Message sender
+# \param[in] $message
+#   Message to send
 sub pagePlayer { return modules::pagePlayer ( @_ ); }
 
 

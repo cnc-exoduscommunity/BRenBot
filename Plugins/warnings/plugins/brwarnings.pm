@@ -1,7 +1,7 @@
 #
 # Warnings plugin for BRenBot 1.54 by Daniel Paul
 #
-# Version 1.51
+# Version 1.6
 #
 package brwarnings;
 
@@ -10,377 +10,348 @@ use plugin;
 use modules;
 use POSIX;
 
+my $currentVersion = '1.6';
 
-# define additional events in the POE session
-
-our %additional_events =
-(
-	# other functions
-	"greetPlayer" => "greetPlayer",
-	"greetPlayerBadName" => "greetPlayerBadName",
-	"checkOldWarnings" => "checkOldWarnings",
-
-	# !command functions
-	"showWarnings" => "showWarnings",
-	"showAllWarnings" => "showAllWarnings",
-	"warnings" => "warnings",
-	"warnPlayer" => "warnPlayer",
-	"words" => "words",
-	"resetWarnings" => "resetWarnings",
-	"warning_stats" => "warning_stats",
-	"autoWarnings" => "autoWarnings",
-	"flushStats" => "flushStats",
-	"mostWarnedWords" => "mostWarnedWords",
-	"reloadWords" => "reloadWords",
-	"add_autoKB" => "add_autoKB",
-	"remove_autoKB" => "remove_autoKB",
-	"list_autoKB" => "list_autoKB"
-);
-
-# brenbot automatically sets the plugin name
-our $plugin_name;
-
-# brenbot automatically imports the plugin's config (from the xml file) into %config
-our %config;
-
-our %autowarnWords;				# Hash to hold autowarnWords
-our $autowarnWordsList;			# Scalar to hold a list of all autowarnWords
-our $dbc;						# Database connection
-our $dbVersion;
-our $currentVersion = '1.51';
-our %autoKB;
-
-
-# This version of the plugin cannot run on a version lower than 1.53.6 (first version to include plugin::getBrVersion)
-if ( !defined(plugin::getBrVersion) )
+# Check bot compatibility
+if ( !defined(plugin::getBrVersion) || plugin::getBrVersion() < 1.53
+  || (plugin::getBrVersion() == 1.53 && plugin::getBrBuild() < 14 ) )
 {
-	print "Warnings plugin $currentVersion cannot run on a BRenBot version lower than 1.53.6. Please install an older version of the plugin or update BRenBot.\n";
-	return 0;
+  print " == Warnings Plugin Error ==\nThis version of the plugin is not compatible with BRenBot"
+          ." versions older than 1.53.14";
+  return 0;
 }
 
+# --------------------------------------------------------------------------------------------------
+
+# BRenBot supplies these on plugin startup
+our $plugin_name;
+our %config;
+
+# Define additional events in the POE session
+our %additional_events =
+(
+  # other functions
+  "greetPlayer" => "greetPlayer",
+  "greetPlayerBadName" => "greetPlayerBadName",
+  "checkOldWarnings" => "checkOldWarnings",
+
+  # !command functions
+  "showWarnings" => "showWarnings",
+  "showAllWarnings" => "showAllWarnings",
+  "warnings" => "warnings",
+  "warnPlayer" => "warnPlayer",
+  "words" => "words",
+  "resetWarnings" => "resetWarnings",
+  "warning_stats" => "warning_stats",
+  "autoWarnings" => "autoWarnings",
+  "flushStats" => "flushStats",
+  "mostWarnedWords" => "mostWarnedWords",
+  "reloadWords" => "reloadWords",
+  "add_autoKB" => "add_autoKB",
+  "remove_autoKB" => "remove_autoKB",
+  "list_autoKB" => "list_autoKB"
+);
+
+my %autowarnWords;         # Hash to hold autowarnWords
+my $autowarnWordsList;     # Scalar to hold a list of all autowarnWords
+my $dbc;                   # Database connection
+my %autoKB;
+
+# --------------------------------------------------------------------------------------------------
 
 ########### Functions for !commands
 
 # Function for displaying all current warnings for players in the server
 sub showWarnings
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my %warnings = getAllWarnings();
-	my ($warningList, $playerRef);
+  my %warnings = getAllWarnings();
+  my ($warningList, $playerRef);
 
-	if ( $main::version >= 1.51 )
-	{
-		my %playerList = plugin::get_playerlist();
-		while ( my ( $id, $player ) = each ( %playerlist ) )
-		{
-			if ( $warnings{$player->{name}} ) { $warningList .= "$player->{name} ($warnings{$player->{name}}), "; }
-		}
-	}
-	else
-	{
-		my @playerList = plugin::get_playerlist();
-		foreach $playerRef (@playerList)
-		{
-			my %player = %{$playerRef};
-			if ( $warnings{$player{name}} ) { $warningList .= "$player{name} ($warnings{$player{name}}), "; }
-		}
-	}
+  my %playerList = plugin::get_playerlist();
+  while ( my ( $id, $player ) = each ( %playerlist ) )
+  {
+    if ( $warnings{$player->{name}} ) { $warningList .= "$player->{name} ($warnings{$player->{name}}), "; }
+  }
 
-	if ( $warningList )
-	{
-		$warningList = substr ( $warningList, 0, -2 );
-		if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "The following players currently have warnings: $warningList", $args{ircChannelCode} ); }
-		else { plugin::RenRemCMD("msg The following players currently have warnings: $warningList"); }
-	}
-	else
-	{
-		if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "There are no warnings issued at the moment.", $args{ircChannelCode} ); }
-		else { plugin::RenRemCMD("msg There are no warnings issued at the moment."); }
-	}
+  if ( $warningList )
+  {
+    $warningList = substr ( $warningList, 0, -2 );
+    if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "The following players currently have warnings: $warningList", $args{ircChannelCode} ); }
+    else { plugin::RenRemCMD("msg The following players currently have warnings: $warningList"); }
+  }
+  else
+  {
+    if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "There are no warnings issued at the moment.", $args{ircChannelCode} ); }
+    else { plugin::RenRemCMD("msg There are no warnings issued at the moment."); }
+  }
 }
 
 # Function for all current warnings for players in and out of the server, and irc users
 sub showAllWarnings
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my $warningList;
-	my %warnings = getAllWarnings();
+  my $warningList;
+  my %warnings = getAllWarnings();
 
-	while ( my ($key, $value) = each(%warnings) ) { $warningList .= "$key ($value), "; }
-	if ( $warningList )
-	{
-		$warningList = substr ( $warningList, 0, -2 );
-		plugin::ircmsg ( "The following players currently have warnings: $warningList", $args{ircChannelCode} );
-	}
-	else
-	{
-		plugin::ircmsg ( "There are no warnings issued at the moment.", $args{ircChannelCode} );
-	}
+  while ( my ($key, $value) = each(%warnings) ) { $warningList .= "$key ($value), "; }
+  if ( $warningList )
+  {
+    $warningList = substr ( $warningList, 0, -2 );
+    plugin::ircmsg ( "The following players currently have warnings: $warningList", $args{ircChannelCode} );
+  }
+  else
+  {
+    plugin::ircmsg ( "There are no warnings issued at the moment.", $args{ircChannelCode} );
+  }
 }
 
 # Function for all current warnings for a specific person
 sub warnings
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my $queryName = ( $args{arg1} ) ? $args{arg1} : $args{nick};
-	my $warnings = getWarnings ( $queryName );
+  my $queryName = ( $args{arg1} ) ? $args{arg1} : $args{nick};
+  my $warnings = getWarnings ( $queryName );
 
-	if ( $warnings )
-	{
-		my $suffix = ( $warnings == 1 ) ? '' : 's';
-		if ( $args{nicktype} == 1 ) { plugin::ircmsg ( "$queryName currently has $warnings warning$suffix.", $args{ircChannelCode} ); }
-		else { plugin::RenRemCMD("msg $queryName currently has $warnings warning$suffix."); }
-	}
-	else
-	{
-		if ( $args{nicktype} == 1 ) { plugin::ircmsg ( "$queryName does not have any warnings.", $args{ircChannelCode} ); }
-		else { plugin::RenRemCMD("msg $queryName does not have any warnings."); }
-	}
+  if ( $warnings )
+  {
+    my $suffix = ( $warnings == 1 ) ? '' : 's';
+    if ( $args{nicktype} == 1 ) { plugin::ircmsg ( "$queryName currently has $warnings warning$suffix.", $args{ircChannelCode} ); }
+    else { plugin::RenRemCMD("msg $queryName currently has $warnings warning$suffix."); }
+  }
+  else
+  {
+    if ( $args{nicktype} == 1 ) { plugin::ircmsg ( "$queryName does not have any warnings.", $args{ircChannelCode} ); }
+    else { plugin::RenRemCMD("msg $queryName does not have any warnings."); }
+  }
 }
 
 # Function for warning a player
 sub warnPlayer
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	if ( $args{arg} =~ m/\S+\s\S+\s(.+)/ )
-	{
-		# Run giveWarning(), note that only players actually in the server can be warned.
-		my $result = giveWarning ( $args{arg1}, "server", $1, $kernel, $args{nick}, $args{ircChannelCode} );
-	}
-	else
-	{
-		# No reason given for the warning
-		if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "$args{nick}, you must give a reason for the warning. Usage : !warn <player> <reason>", $args{ircChannelCode} ); }
-		else { plugin::RenRemCMD("msg $args{nick}, you must give a reason for the warning. Usage : !warn <player> <reason>"); }
-	}
+  if ( $args{arg} =~ m/\S+\s\S+\s(.+)/ )
+  {
+    # Run giveWarning(), note that only players actually in the server can be warned.
+    my $result = giveWarning ( $args{'arg1'}, "server", $1, $args{'nick'}, $args{'ircChannelCode'} );
+  }
+  else
+  {
+    # No reason given for the warning
+    if ( $args{'nick'} =~ m/\@IRC$/ ) { plugin::ircmsg ( "$args{nick}, you must give a reason for the warning. Usage : !warn <player> <reason>", $args{ircChannelCode} ); }
+    else { plugin::RenRemCMD("msg $args{nick}, you must give a reason for the warning. Usage : !warn <player> <reason>"); }
+  }
 }
 
 # Function for displaying the list of autowarnWords
 sub words
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
-
-	plugin::ircmsg ( "The following words and/or phrases are disallowed: $autowarnWordsList", $args{ircChannelCode} );
+  my %args = %{@_[ ARG0 ]};
+  plugin::ircmsg ( "The following words and/or phrases are disallowed: $autowarnWordsList", $args{'ircChannelCode'} );
 }
 
 # Function for resetting a players warnings
 sub resetWarnings
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	if ( $args{arg1} )
-	{
-		my $result = deleteWarnings ( $args{arg1} );
+  if ( $args{arg1} )
+  {
+    my $result = deleteWarnings ( $args{arg1} );
 
-		if ( $result == 1 )
-		{
-			if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "Warnings have been reset to 0 for $args{arg1}.", $args{ircChannelCode} ); }
-			else { plugin::RenRemCMD("msg Warnings have been reset to 0 for $args{arg1}."); }
-		}
-		else
-		{
-			if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "$args{arg1} does not have any warnings to reset!.", $args{ircChannelCode} ); }
-			else { plugin::RenRemCMD("msg $args{arg1} does not have any warnings to reset!."); }
-		}
-	}
-	else
-	{
-		if ( $args{nicktype} == 1 ) { plugin::ircmsg ( "You must specify the player name to reset warnings for. USAGE: !reset_warnings <playername>", $args{ircChannelCode} ); }
-		else { plugin::RenRemCMD("msg You must specify the player name to reset warnings for. USAGE: !reset_warnings <playername>"); }
-	}
+    if ( $result == 1 )
+    {
+      if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "Warnings have been reset to 0 for $args{arg1}.", $args{ircChannelCode} ); }
+      else { plugin::RenRemCMD("msg Warnings have been reset to 0 for $args{arg1}."); }
+    }
+    else
+    {
+      if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "$args{arg1} does not have any warnings to reset!.", $args{ircChannelCode} ); }
+      else { plugin::RenRemCMD("msg $args{arg1} does not have any warnings to reset!."); }
+    }
+  }
+  else
+  {
+    if ( $args{nicktype} == 1 ) { plugin::ircmsg ( "You must specify the player name to reset warnings for. USAGE: !reset_warnings <playername>", $args{ircChannelCode} ); }
+    else { plugin::RenRemCMD("msg You must specify the player name to reset warnings for. USAGE: !reset_warnings <playername>"); }
+  }
 }
 
 # Function for showing todays stats
 sub warning_stats
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my ( $timeFrame, $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks );
-	if ( $args{arg1} eq "month" )
-	{
-		( $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks ) = getMonthlyStats();
-		$timeFrame = strftime "%B", localtime();
-	}
-	elsif ( $args{arg1} eq "total" )
-	{
-		( $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks ) = getTotalStats();
-		$timeFrame = "all time";
-	}
-	else
-	{
-		( $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks ) = getDailyStats();
-		$timeFrame = strftime "the %d of %B", localtime();
-	}
-	plugin::ircmsg ( "Warnings plugin stats for $timeFrame", $args{ircChannelCode} );
-	plugin::ircmsg ( "Warnings Issued: $warnings, Automatic Warnings: $autoWarnings, Qkicks: $qkicks, Kicks: $kicks, Bans: $bans, IRC Kicks: $ircKicks", $args{ircChannelCode} );
+  my ( $timeFrame, $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks );
+  if ( $args{arg1} eq "month" )
+  {
+    ( $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks ) = getMonthlyStats();
+    $timeFrame = strftime "%B", localtime();
+  }
+  elsif ( $args{arg1} eq "total" )
+  {
+    ( $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks ) = getTotalStats();
+    $timeFrame = "all time";
+  }
+  else
+  {
+    ( $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks ) = getDailyStats();
+    $timeFrame = strftime "the %d of %B", localtime();
+  }
+
+  plugin::ircmsg ( "Warnings plugin stats for $timeFrame", $args{ircChannelCode} );
+  plugin::ircmsg ( "Warnings Issued: $warnings, Automatic Warnings: $autoWarnings, Qkicks: $qkicks, Kicks: $kicks, Bans: $bans, IRC Kicks: $ircKicks", $args{ircChannelCode} );
 }
 
 # Function for displaying, and changing status of automatic warnings.
 sub autoWarnings
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my $startStatus = ( $config{autoWarnings} == 1 ) ? "enabled" : "disabled";
-	if ( ( $args{arg1} ne "on" ) && ( $args{arg1} ne "off" ) )
-	{
-		if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "Automatic warnings in the server are currently $startStatus.", $args{ircChannelCode} ); }
-		else { plugin::RenRemCMD("msg Automatic warnings are currently $startStatus."); }
-	}
+  my $startStatus = ( $config{autoWarnings} == 1 ) ? "enabled" : "disabled";
+  if ( ( $args{arg1} ne "on" ) && ( $args{arg1} ne "off" ) )
+  {
+    if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "Automatic warnings in the server are currently $startStatus.", $args{ircChannelCode} ); }
+    else { plugin::RenRemCMD("msg Automatic warnings are currently $startStatus."); }
+  }
 
-	elsif ( ( $config{autoWarnings} == 1 && $args{arg1} eq "on" ) || ( $config{autoWarnings} == 0 && $args{arg1} eq "off" ) )
-	{
-		if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "Automatic warnings in the server are already $startStatus.", $args{ircChannelCode} ); }
-		else { plugin::RenRemCMD("msg Automatic warnings are already $startStatus."); }
-	}
-	else
-	{
-		$config{autoWarnings} = ( $args{arg1} eq "on" ) ? 1 : 0;
-		my $newStatus = ( $config{autoWarnings} == 1 ) ? "enabled" : "disabled";
+  elsif ( ( $config{autoWarnings} == 1 && $args{arg1} eq "on" ) || ( $config{autoWarnings} == 0 && $args{arg1} eq "off" ) )
+  {
+    if ( $args{nick} =~ m/\@IRC$/ ) { plugin::ircmsg ( "Automatic warnings in the server are already $startStatus.", $args{ircChannelCode} ); }
+    else { plugin::RenRemCMD("msg Automatic warnings are already $startStatus."); }
+  }
 
-		my $duration = ".";
-		if ( $args{arg2} =~ m/^\d+$/ )
-		{
-			# Create a copy of $args to send with the alarm, and set the new parameters
-			my %args2 = %{$args};
-			$args2{arg1} = ( $args{arg1} eq "on" ) ? "off" : "on";
-			delete $args2{arg2};
+  else
+  {
+    $config{autoWarnings} = ( $args{arg1} eq "on" ) ? 1 : 0;
+    my $newStatus = ( $config{autoWarnings} == 1 ) ? "enabled" : "disabled";
 
-			# Set alarm to disable again after the specified duration
-			my $disableTime = int( time() ) + $args{arg2};
-			$kernel->alarm( "autoWarnings" => $disableTime => \%args2 );
+    my $duration = ".";
+    if ( $args{arg2} =~ m/^\d+$/ )
+    {
+      # Create a copy of $args to send with the alarm, and set the new parameters
+      my %args2 = %{$args};
+      $args2{arg1} = ( $args{arg1} eq "on" ) ? "off" : "on";
+      delete $args2{arg2};
 
-			my $seconds = 0;
-			my $minutes = 0;
-			while ( $args{arg2} >= 60 ) { $minutes++; $args{arg2} = $args{arg2}-60; }
-			$seconds = $args{arg2};
+      # Set alarm to disable again after the specified duration
+      my $disableTime = int( time() ) + $args{arg2};
+      $_[KERNEL]->alarm( "autoWarnings" => $disableTime => \%args2 );
 
-			$duration = ( $seconds ) ? " for the next $minutes minutes and $seconds seconds." : " for the next $minutes minutes.";
-		}
+      my $seconds = 0;
+      my $minutes = 0;
+      while ( $args{arg2} >= 60 ) { $minutes++; $args{arg2} = $args{arg2}-60; }
+      $seconds = $args{arg2};
 
-		# Output message
-		plugin::RenRemCMD( "msg Automatic warnings are now $newStatus$duration" );
-	}
+      $duration = ( $seconds ) ? " for the next $minutes minutes and $seconds seconds." : " for the next $minutes minutes.";
+    }
+
+    # Output message
+    plugin::RenRemCMD( "msg Automatic warnings are now $newStatus$duration" );
+  }
 }
 
 # Function for flushing out the statistics in the database
 sub flushStats
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	DBflushStats();
+  DBflushStats();
 
-	plugin::ircmsg ( "All database statistics for the warnings plugin have been cleared!", $args{ircChannelCode} );
+  plugin::ircmsg ( "All database statistics for the warnings plugin have been cleared!", $args{'ircChannelCode'} );
 }
 
 # Function for getting the 5 most frequent words the autowarnings system has warned people for
 sub mostWarnedWords
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
-	my $words;
+  my %args = %{@_[ ARG0 ]};
 
-	$words = DBgetFrequentWords(5);
+  my $words = DBgetFrequentWords(5);
 
-	if ( $words ) { plugin::ircmsg ( "The following words have been warned for the most: $words", $args{ircChannelCode} ); }
-	else { plugin::ircmsg ( "There is no data available yet.", $args{ircChannelCode} ); }
+  if ( $words ) { plugin::ircmsg ( "The following words have been warned for the most: $words", $args{'ircChannelCode'} ); }
+  else { plugin::ircmsg ( "There is no data available yet.", $args{'ircChannelCode'} ); }
 }
 
 # Function for reloading the warnings_words.cfg file
 sub reloadWords
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my $result = loadautowarnWords();
-	if ( $result ) { plugin::ircmsg ( "The plugins/warnings_words.cfg file has been reloaded.", $args{ircChannelCode} ); }
-	else { plugin::ircmsg ( "4An error occured while reloading the plugins/warnings_words.cfg file! Automatic warnings may have been disabled!", $args{ircChannelCode} ); }
+  my $result = loadautowarnWords();
+  
+  if ( $result ) { plugin::ircmsg ( "The plugins/warnings_words.cfg file has been reloaded.", $args{ircChannelCode} ); }
+  else { plugin::ircmsg ( "4An error occured while reloading the plugins/warnings_words.cfg file! Automatic warnings may have been disabled!", $args{ircChannelCode} ); }
 }
 
 # Function for adding users to the auto KB list
 sub add_autoKB
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my $message;
+  my $message;
 
-	if ( $args{arg} =~ m/\!autoKB\s(\S+)\s(.+)/i )
-	{
-		my $name = $1;				$name =~ s/"/\'/;
-		my $reason = $2;			$reason =~ s/"/\'/;
-		if ( $autoKB{lc($name)} )
-			{ $message = "$name is already on the autoKB list"; }
-		else
-		{
-			$dbc->do ( "INSERT INTO autoKB ( name, banner, reason ) VALUES ( \"$name\", \"$args{nick}\", \"$reason\" )" );
-			$autoKB{lc($name)} = 1;
-			$message = "$name has been added to the autoKB list for $reason";
-		}
-	}
-	else { $message = 'Usage: !autoKB <playername> <reason>'; }
+  if ( $args{arg} =~ m/\!autoKB\s(\S+)\s(.+)/i )
+  {
+    my $name = $1;				$name =~ s/"/\'/;
+    my $reason = $2;			$reason =~ s/"/\'/;
+    if ( $autoKB{lc($name)} )
+      { $message = "$name is already on the autoKB list"; }
+    else
+    {
+      $dbc->do ( "INSERT INTO autoKB ( name, banner, reason ) VALUES ( \"$name\", \"$args{nick}\", \"$reason\" )" );
+      $autoKB{lc($name)} = 1;
+      $message = "$name has been added to the autoKB list for $reason";
+    }
+  }
+  else { $message = 'Usage: !autoKB <playername> <reason>'; }
 
-	if ( $args{nicktype} == 1 ) { plugin::ircmsg ( $message, $args{ircChannelCode} ); }
-	else { plugin::RenRemCMD ( "msg $message" ); }
+  if ( $args{nicktype} == 1 ) { plugin::ircmsg ( $message, $args{ircChannelCode} ); }
+  else { plugin::RenRemCMD ( "msg $message" ); }
 }
 
 # Function for removing users from the auto KB list
 sub remove_autoKB
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my $name = $args{arg1};				$name =~ s/"/\'/;
-	my $message;
+  my $name = $args{arg1};				$name =~ s/"/\'/;
+  my $message;
 
-	if ( $args{arg1} )
-	{
-		if ( $autoKB{lc($name)} )
-		{
-			$dbc->do ( "DELETE FROM autoKB WHERE LOWER(name) = \"" . lc($name) . "\"" );
-			delete $autoKB{lc($name)};
-			$message = "$name has been removed from the autoKB list";
-		}
-		else { $message = "There is nobody called $name on the autoKB list"; }
-	}
-	else { $message = 'You must specify the player to remove from the auto KB list.'; }
+  if ( $args{arg1} )
+  {
+    if ( $autoKB{lc($name)} )
+    {
+      $dbc->do ( "DELETE FROM autoKB WHERE LOWER(name) = \"" . lc($name) . "\"" );
+      delete $autoKB{lc($name)};
+      $message = "$name has been removed from the autoKB list";
+    }
+    else { $message = "There is nobody called $name on the autoKB list"; }
+  }
+  else { $message = 'You must specify the player to remove from the auto KB list.'; }
 
-	if ( $args{nicktype} == 1 ) { plugin::ircmsg ( $message, $args{ircChannelCode} ); }
-	else { plugin::RenRemCMD ( "msg $message" ); }
+  if ( $args{nicktype} == 1 ) { plugin::ircmsg ( $message, $args{ircChannelCode} ); }
+  else { plugin::RenRemCMD ( "msg $message" ); }
 }
 
 # Function for listing users on the auto KB list
 sub list_autoKB
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	my $autoKBlist;
+  my $autoKBlist;
 
-	while ( my ($player, $value) = each( %autoKB ) ) { $autoKBlist .= "$player, "; }
+  while ( my ($player, $value) = each( %autoKB ) ) { $autoKBlist .= "$player, "; }
 
-	if ( $autoKBlist )
-	{
-		$autoKBlist = substr ( $autoKBlist, 0, -2 );
-		plugin::ircmsg ( "The following players will be banned on sight: $autoKBlist", $args{ircChannelCode} );
-	}
-	else { plugin::ircmsg ( "There are no players on the auto KB list at this time.", $args{ircChannelCode} ); }
+  if ( $autoKBlist )
+  {
+    $autoKBlist = substr ( $autoKBlist, 0, -2 );
+    plugin::ircmsg ( "The following players will be banned on sight: $autoKBlist", $args{ircChannelCode} );
+  }
+  else { plugin::ircmsg ( "There are no players on the auto KB list at this time.", $args{ircChannelCode} ); }
 }
 
 
@@ -389,189 +360,188 @@ sub list_autoKB
 
 sub start
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	# Set our current version in the globals table
-	plugin::set_global ( "version_plugin_brwarnings", $currentVersion );
+  # Set our current version in the globals table
+  plugin::set_global ( "version_plugin_brwarnings", $currentVersion );
 
-	# Load the list of autowarnWords if autoWarnings is enabled
-	if ( $config{autoWarnings} ) { loadautowarnWords(); }
+  # Load the list of autowarnWords if autoWarnings is enabled
+  if ( $config{autoWarnings} ) { loadautowarnWords(); }
 
-	# Check the values of some settings in config, and overwrite them if nessicary
-	if ( $config{greetPlayerDelay} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: greetPlayerDelay option is not set or non numerical. Defaulting to 10 seconds.\n"; $config{greetPlayerDelay} = 10; }
-	if ( $config{qkick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: qkick_warnings option is not set or non numerical. Defaulting to 2.\n"; $config{qkick_warnings} = 2; }
-	if ( $config{kick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: kick_warnings option is not set or non numerical. Defaulting to 3.\n"; $config{kick_warnings} = 3; }
-	if ( $config{kick_warnings} < $config{qkick_warnings} ) { print "WARNINGS PLUGIN :: kick_warnings cannot be lower than qkick_warnings. Setting kick_warnings to " . ($config{qkick_warnings}+1); $config{kick_warnings} = $config{qkick_warnings}+1; }
-	if ( $config{ban_warnings} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: ban_warnings option is not set or non numerical. Defaulting to 10.\n"; $config{ban_warnings} = 10; }
-	if ( $config{ban_warnings} < $config{kick_warnings} && $config{ban_warnings} != -1 ) { print "WARNINGS PLUGIN :: ban_warnings cannot be lower than kick_warnings. Setting ban_warnings to " . ($config{kick_warnings}+5); $config{ban_warnings} = $config{kick_warnings}+5; }
-	if ( $config{expire_time} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: expire_time option is not set or non numerical. Defaulting to 14400.\n"; $config{expire_time} = 14400; }
-	if ( $config{irc_kick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: irc_kick_warnings option is not set or non numerical. Defaulting to 3.\n"; $config{irc_kick_warnings} = 3; }
-	if ( $config{irc_expire_time} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: irc_expire_time option is not set or non numerical. Defaulting to 14400.\n"; $config{irc_expire_time} = 14400; }
-	if ( $config{warningsCheckFrequency} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: warningsCheckFrequency option is not set or non numerical. Defaulting to 1800.\n"; $config{warningsCheckFrequency} = 1800; }
+  # Check the values of some settings in config, and overwrite them if nessicary
+  if ( $config{greetPlayerDelay} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: greetPlayerDelay option is not set or non numerical. Defaulting to 10 seconds.\n"; $config{greetPlayerDelay} = 10; }
+  if ( $config{qkick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: qkick_warnings option is not set or non numerical. Defaulting to 2.\n"; $config{qkick_warnings} = 2; }
+  if ( $config{kick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: kick_warnings option is not set or non numerical. Defaulting to 3.\n"; $config{kick_warnings} = 3; }
+  if ( $config{kick_warnings} < $config{qkick_warnings} ) { print "WARNINGS PLUGIN :: kick_warnings cannot be lower than qkick_warnings. Setting kick_warnings to " . ($config{qkick_warnings}+1); $config{kick_warnings} = $config{qkick_warnings}+1; }
+  if ( $config{ban_warnings} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: ban_warnings option is not set or non numerical. Defaulting to 10.\n"; $config{ban_warnings} = 10; }
+  if ( $config{ban_warnings} < $config{kick_warnings} && $config{ban_warnings} != -1 ) { print "WARNINGS PLUGIN :: ban_warnings cannot be lower than kick_warnings. Setting ban_warnings to " . ($config{kick_warnings}+5); $config{ban_warnings} = $config{kick_warnings}+5; }
+  if ( $config{expire_time} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: expire_time option is not set or non numerical. Defaulting to 14400.\n"; $config{expire_time} = 14400; }
+  if ( $config{irc_kick_warnings} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: irc_kick_warnings option is not set or non numerical. Defaulting to 3.\n"; $config{irc_kick_warnings} = 3; }
+  if ( $config{irc_expire_time} !~ m/^-?\d+$/ ) { print "WARNINGS PLUGIN :: irc_expire_time option is not set or non numerical. Defaulting to 14400.\n"; $config{irc_expire_time} = 14400; }
+  if ( $config{warningsCheckFrequency} !~ m/^\d+$/ ) { print "WARNINGS PLUGIN :: warningsCheckFrequency option is not set or non numerical. Defaulting to 1800.\n"; $config{warningsCheckFrequency} = 1800; }
 
-	# Now connect to, and if necessary create, the database
-	my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$dbTime,$ctime,$blksize,$blocks) = stat('warnings_plugin.dat');
+  # Now connect to, and if necessary create, the database
+  my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$dbTime,$ctime,$blksize,$blocks) = stat('warnings_plugin.dat');
 
-	if ( $^O eq "MSWin32" )
-	{
-		$dbc = DBI->connect("dbi:SQLite2:dbname=warnings_plugin.dat","","",{RaiseError => 1});
-	}
-	else	# Use alternative SQLite driver for linux
-	{
-		$dbc = DBI->connect("dbi:SQLite:dbname=warnings_plugin.dat","","",{RaiseError => 1});
-	}
+  if ( $^O eq "MSWin32" )
+  {
+    $dbc = DBI->connect("dbi:SQLite2:dbname=warnings_plugin.dat","","",{RaiseError => 1});
+  }
+  else	# Use alternative SQLite driver for linux
+  {
+    $dbc = DBI->connect("dbi:SQLite:dbname=warnings_plugin.dat","","",{RaiseError => 1});
+  }
 
-	if( !$dbTime )
-	{
-		print "WARNINGS PLUGIN :: Database does not exist, creating fresh database\n";
+  if( !$dbTime )
+  {
+    print "WARNINGS PLUGIN :: Database does not exist, creating fresh database\n";
 
-		$dbc->do(
-			"CREATE TABLE warnings
-			(name				char(128)	PRIMARY KEY
-			,warnings			int
-			,lastWarnTime		int)"
-		);
+    $dbc->do(
+      "CREATE TABLE warnings
+      (name				char(128)	PRIMARY KEY
+      ,warnings			int
+      ,lastWarnTime		int)"
+    );
 
-		$dbc->do(
-			"CREATE TABLE statistics
-			(day				char(6)		PRIMARY KEY
-			,warnings			int
-			,autoWarnings		int
-			,qkicks				int
-			,kicks				int
-			,bans				int
-			,ircKicks			int)"
-		);
+    $dbc->do(
+      "CREATE TABLE statistics
+      (day				char(6)		PRIMARY KEY
+      ,warnings			int
+      ,autoWarnings		int
+      ,qkicks				int
+      ,kicks				int
+      ,bans				int
+      ,ircKicks			int)"
+    );
 
-		$dbc->do(
-			"CREATE TABLE badword_statistics
-			(word				char(128)	PRIMARY KEY
-			,timesCaught		int)"
-		);
+    $dbc->do(
+      "CREATE TABLE badword_statistics
+      (word				char(128)	PRIMARY KEY
+      ,timesCaught		int)"
+    );
 
-		$dbc->do (
-			"CREATE TABLE autokb
-			( name				CHAR(128)	PRIMARY KEY
-			,banner				CHAR(128)
-			,reason				CHAR(256) )"
-		);
+    $dbc->do (
+      "CREATE TABLE autokb
+      ( name				CHAR(128)	PRIMARY KEY
+      ,banner				CHAR(128)
+      ,reason				CHAR(256) )"
+    );
 
-		$dbc->do( "CREATE TABLE warnings_plugin ( version int PRIMARY KEY)" );
+    $dbc->do( "CREATE TABLE warnings_plugin ( version int PRIMARY KEY)" );
 
-		$dbc->do( "INSERT INTO warnings_plugin(version) VALUES ($currentVersion)" );
-	}
-	else
-	{
-		$dbVersion = $dbc->selectrow_array ( "SELECT version FROM warnings_plugin" );
+    $dbc->do( "INSERT INTO warnings_plugin(version) VALUES ($currentVersion)" );
+  }
+  else
+  {
+    my $dbVersion = $dbc->selectrow_array ( "SELECT version FROM warnings_plugin" );
 
-		if ( $dbVersion != $currentVersion )
-		{
-			print "WARNINGS PLUGIN :: Database is out of date. DB is $dbVersion, current is $currentVersion. Updating to new version\n";
+    if ( $dbVersion != $currentVersion )
+    {
+      print "WARNINGS PLUGIN :: Database is out of date. DB is $dbVersion, current is $currentVersion. Updating to new version\n";
 
-			if ( $dbVersion < 1.2 )
-			{
-				print "WARNINGS PLUGIN :: Updating db to 1.2....\n";
+      if ( $dbVersion < 1.2 )
+      {
+        print "WARNINGS PLUGIN :: Updating db to 1.2....\n";
 
-				print "  Adding table autokb\n";
-				$dbc->do ( "CREATE TABLE autokb ( name CHAR(128) PRIMARY KEY )" );
-			}
+        print "  Adding table autokb\n";
+        $dbc->do ( "CREATE TABLE autokb ( name CHAR(128) PRIMARY KEY )" );
+      }
 
-			if ( $dbVersion < 1.33 )
-			{
-				print "WARNINGS PLUGIN :: Updating db to 1.33....\n";
+      if ( $dbVersion < 1.33 )
+      {
+        print "WARNINGS PLUGIN :: Updating db to 1.33....\n";
 
-				# Scan for players on the autokb list who are already banned
-				print "  Removing banned players from autoKB list\n";
-				my $query = $dbc->prepare ( "SELECT name FROM autokb" );
-				$query->execute();
+        # Scan for players on the autokb list who are already banned
+        print "  Removing banned players from autoKB list\n";
+        my $query = $dbc->prepare ( "SELECT name FROM autokb" );
+        $query->execute();
 
-				my @row = $query->fetchrow_array;
-				while ( defined(@row[0]) )
-				{
-					my $autokbname = lc($row[0]);
+        my @row = $query->fetchrow_array;
+        while ( defined(@row[0]) )
+        {
+          my $autokbname = lc($row[0]);
 
-					my @array = plugin::execute_query( "SELECT * FROM banlist WHERE LOWER(name) = \"$autokbname\"" );
-					if ( scalar(@array) > 0 )
-					{
-						# Already banned, remove from autoKB list
-						$dbc->do ( "DELETE FROM autokb WHERE LOWER(name) = \"$autokbname\"" );
-					}
-					@row = $query->fetchrow_array;
-				}
-			}
+          my @array = plugin::execute_query( "SELECT * FROM banlist WHERE LOWER(name) = \"$autokbname\"" );
+          if ( scalar(@array) > 0 )
+          {
+            # Already banned, remove from autoKB list
+            $dbc->do ( "DELETE FROM autokb WHERE LOWER(name) = \"$autokbname\"" );
+          }
+          @row = $query->fetchrow_array;
+        }
+      }
 
-			if ( $dbVersion < 1.4 )
-			{
-				print "WARNINGS PLUGIN :: Updating db to 1.4....\n";
+      if ( $dbVersion < 1.4 )
+      {
+        print "WARNINGS PLUGIN :: Updating db to 1.4....\n";
 
-				# Move autoKB data to a temporary table, and recreate the autoKB table
-				print "  Adding banner and reason columns to the autoKB table\n";
+        # Move autoKB data to a temporary table, and recreate the autoKB table
+        print "  Adding banner and reason columns to the autoKB table\n";
 
-				# Create temp table and move data
-				$dbc->do ( "CREATE TABLE autokb_temp ( name CHAR(128) PRIMARY KEY )" );
-				$dbc->do ( "INSERT INTO autokb_temp SELECT name FROM autokb" );
-				$dbc->do ( "DROP TABLE autokb" );
+        # Create temp table and move data
+        $dbc->do ( "CREATE TABLE autokb_temp ( name CHAR(128) PRIMARY KEY )" );
+        $dbc->do ( "INSERT INTO autokb_temp SELECT name FROM autokb" );
+        $dbc->do ( "DROP TABLE autokb" );
 
-				# Recreate autoKB table
-				$dbc->do (
-					"CREATE TABLE autokb
-					( name				CHAR(128)	PRIMARY KEY
-					,banner				CHAR(128)
-					,reason				CHAR(256) )"
-				);
+        # Recreate autoKB table
+        $dbc->do (
+          "CREATE TABLE autokb
+          ( name				CHAR(128)	PRIMARY KEY
+          ,banner				CHAR(128)
+          ,reason				CHAR(256) )"
+        );
 
-				my $query = $dbc->prepare ( "SELECT name FROM autokb_temp" );
-				$query->execute();
+        my $query = $dbc->prepare ( "SELECT name FROM autokb_temp" );
+        $query->execute();
 
-				my @row = $query->fetchrow_array;
-				while ( defined(@row[0]) )
-				{
-					my $autokbname = lc($row[0]);
+        my @row = $query->fetchrow_array;
+        while ( defined(@row[0]) )
+        {
+          my $autokbname = lc($row[0]);
 
-					my @array = plugin::execute_query( "SELECT * FROM banlist WHERE LOWER(name) = \"$autokbname\"" );
-					if ( scalar(@array) == 0 )
-					{
-						# Not banned yet, copy them back across
-						$dbc->do ( "INSERT INTO autokb (name, banner, reason) VALUES ( \"$row[0]\", \"BRenBot\", \"being on autoKB list.\" )" );
-					}
-					@row = $query->fetchrow_array;
-				}
+          my @array = plugin::execute_query( "SELECT * FROM banlist WHERE LOWER(name) = \"$autokbname\"" );
+          if ( scalar(@array) == 0 )
+          {
+            # Not banned yet, copy them back across
+            $dbc->do ( "INSERT INTO autokb (name, banner, reason) VALUES ( \"$row[0]\", \"BRenBot\", \"being on autoKB list.\" )" );
+          }
+          @row = $query->fetchrow_array;
+        }
 
-				$dbc->do ( "DROP TABLE autokb_temp" );
-			}
+        $dbc->do ( "DROP TABLE autokb_temp" );
+      }
 
-			if ( $dbVersion < 1.5 )
-			{
-				print "WARNINGS PLUGIN :: Updating db to 1.50....\n";
+      if ( $dbVersion < 1.5 )
+      {
+        print "WARNINGS PLUGIN :: Updating db to 1.50....\n";
 
-				# Copy existing logs to brenbot's logging system, then delete logs table
-				print "  Moving logs from logs table to brenbot.dat... this may take a few minutes...\n";
-				my $query = $dbc->prepare ( "SELECT name, content, timestamp FROM logs" );
-				$query->execute();
+        # Copy existing logs to brenbot's logging system, then delete logs table
+        print "  Moving logs from logs table to brenbot.dat... this may take a few minutes...\n";
+        my $query = $dbc->prepare ( "SELECT name, content, timestamp FROM logs" );
+        $query->execute();
 
-				my @row = $query->fetchrow_array;
-				while ( defined(@row[0]) )
-				{
-					my $log = "$row[0]: $row[1]";
-					brdatabase::execute_query ( "INSERT INTO logs ( logType, content, timestamp ) VALUES ( 11, \"$log\", $row[2] )", 1 );
-					@row = $query->fetchrow_array;
-				}
+        my @row = $query->fetchrow_array;
+        while ( defined(@row[0]) )
+        {
+          my $log = "$row[0]: $row[1]";
+          brdatabase::execute_query ( "INSERT INTO logs ( logType, content, timestamp ) VALUES ( 11, \"$log\", $row[2] )", 1 );
+          @row = $query->fetchrow_array;
+        }
 
-				print "  Deleting redundant table logs\n";
-				$dbc->do ( "DROP TABLE logs" );
-			}
+        print "  Deleting redundant table logs\n";
+        $dbc->do ( "DROP TABLE logs" );
+      }
 
-			$dbc->do ( "UPDATE warnings_plugin SET version = $currentVersion" );
-		}
-	}
+      $dbc->do ( "UPDATE warnings_plugin SET version = $currentVersion" );
+    }
+  }
 
-	# Load autoKB list
-	load_autoKB_list();
+  # Load autoKB list
+  load_autoKB_list();
 
-	# Run a check for old warnings to expire, which will also handle
-	# scheduling future checks
-	$kernel->yield( "checkOldWarnings" => \%args );
+  # Run a check for old warnings to expire, which will also handle
+  # scheduling future checks
+  $_[KERNEL]->yield( "checkOldWarnings" => \%args );
 }
 
 sub stop
@@ -585,67 +555,67 @@ sub stop
 
 sub command
 {
-	# trigger on !commands
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  # trigger on !commands
+  my $kernel = @_[KERNEL];
+  my %args = %{$args};
 
-	# each command from IRC/ingame comes here first. have to trigger the approriate functions from here
-	if ( $args{command} eq "show_warnings" )
-	{
-		$kernel->yield("showWarnings" => \%args);
-	}
-	elsif ( $args{command} eq "show_all_warnings" )
-	{
-		$kernel->yield("showAllWarnings" => \%args);
-	}
-	elsif ( $args{command} eq "warnings" )
-	{
-		$kernel->yield("warnings" => \%args);
-	}
-	elsif ( $args{command} eq "warn" )
-	{
-		$kernel->yield("warnPlayer" => \%args);
-	}
-	elsif ( $args{command} eq "words" )
-	{
-		$kernel->yield("words" => \%args);
-	}
-	elsif ( $args{command} eq "reset_warnings" )
-	{
-		$kernel->yield("resetWarnings" => \%args);
-	}
-	elsif ( $args{command} eq "warning_stats" )
-	{
-		$kernel->yield("warning_stats" => \%args);
-	}
-	elsif ( $args{command} eq "autowarnings" )
-	{
-		$kernel->yield("autoWarnings" => \%args);
-	}
-	elsif ( $args{command} eq "clearwarningstats" )
-	{
-		$kernel->yield("flushStats" => \%args);
-	}
-	elsif ( $args{command} eq "mostwarnedwords" )
-	{
-		$kernel->yield("mostWarnedWords" => \%args);
-	}
-	elsif ( $args{command} eq "reload_autowarn_words" )
-	{
-		$kernel->yield("reloadWords" => \%args);
-	}
-	elsif ( $args{command} eq "autokb" )
-	{
-		$kernel->yield("add_autoKB" => \%args);
-	}
-	elsif ( $args{command} eq "del_autokb" )
-	{
-		$kernel->yield("remove_autoKB" => \%args);
-	}
-	elsif ( $args{command} eq "autokb_list" )
-	{
-		$kernel->yield("list_autoKB" => \%args);
-	}
+  # each command from IRC/ingame comes here first. have to trigger the approriate functions from here
+  if ( $args{command} eq "show_warnings" )
+  {
+    $kernel->yield("showWarnings" => \%args);
+  }
+  elsif ( $args{command} eq "show_all_warnings" )
+  {
+    $kernel->yield("showAllWarnings" => \%args);
+  }
+  elsif ( $args{command} eq "warnings" )
+  {
+    $kernel->yield("warnings" => \%args);
+  }
+  elsif ( $args{command} eq "warn" )
+  {
+    $kernel->yield("warnPlayer" => \%args);
+  }
+  elsif ( $args{command} eq "words" )
+  {
+    $kernel->yield("words" => \%args);
+  }
+  elsif ( $args{command} eq "reset_warnings" )
+  {
+    $kernel->yield("resetWarnings" => \%args);
+  }
+  elsif ( $args{command} eq "warning_stats" )
+  {
+    $kernel->yield("warning_stats" => \%args);
+  }
+  elsif ( $args{command} eq "autowarnings" )
+  {
+    $kernel->yield("autoWarnings" => \%args);
+  }
+  elsif ( $args{command} eq "clearwarningstats" )
+  {
+    $kernel->yield("flushStats" => \%args);
+  }
+  elsif ( $args{command} eq "mostwarnedwords" )
+  {
+    $kernel->yield("mostWarnedWords" => \%args);
+  }
+  elsif ( $args{command} eq "reload_autowarn_words" )
+  {
+    $kernel->yield("reloadWords" => \%args);
+  }
+  elsif ( $args{command} eq "autokb" )
+  {
+    $kernel->yield("add_autoKB" => \%args);
+  }
+  elsif ( $args{command} eq "del_autokb" )
+  {
+    $kernel->yield("remove_autoKB" => \%args);
+  }
+  elsif ( $args{command} eq "autokb_list" )
+  {
+    $kernel->yield("list_autoKB" => \%args);
+  }
 }
 
 
@@ -669,31 +639,16 @@ sub text
 				# Check if the message was paged
 				if ( $args{nick} =~ m/^\[Page\] (.+)$/i )
 				{
-					my $playerInGame = 0;
 					# Someone is paging swearwords to the server... lets see if they
 					# are in the server
-					if ( $main::version >= 1.51 )
-					{
-						my ( $result, %player ) = plugin::getPlayerData ( $1 );
-						if ( $result == 1 )
-						{
-							$playerInGame = 1;
-							# Oh look, they are in the server... lets surprise them!
-							plugin::call_command ( "BRenBot", "kick $player{name} Paging abuse to the server. Bye Bye." );
-						}
-					}
-					else
-					{
-						my ( $result, $error, $player ) = plugin::PlayerInGame ( $1 );
-						if ( $result == 1 )
-						{
-							$playerInGame = 1;
-							# Oh look, they are in the server... lets surprise them!
-							plugin::call_command ( "BRenBot", "kick $player->{name} Paging abuse to the server. Bye Bye." );
-						}
-					}
+          my ( $result, %player ) = plugin::getPlayerData ( $1 );
+          if ( $result == 1 )
+          {
+            # Oh look, they are in the server... lets surprise them!
+            plugin::call_command ( "BRenBot", "kick $player{name} Paging abuse to the server. Bye Bye." );
+          }
 
-					if ( !$playerInGame )
+					else
 					{
 						# Shame, lets just add them to the autoKB list then
 						my $name = $1;				$name =~ s/"/\'/;
@@ -703,16 +658,15 @@ sub text
 							$autoKB{lc($name)} = 1;
 							plugin::ircmsg ( "$name has been automatically added to the autoKB list for paging abuse to the server.", $args{ircChannelCode} );
 						}
-						else { plugin::ircmsg ( "$name is already on the autoKB list.", $args{ircChannelCode} ); }
 					}
 				}
 
 				else
 				{
-					giveWarning ( $args{nick}, $nickLocation, "using a disallowed word or phrase", $kernel, "BRenBot", $args{ircChannelCode} );
-					updateWordCount ( $key );			# Update the database with how many times this word has been detected
+					giveWarning ( $args{nick}, $nickLocation, "using a disallowed word or phrase", "BRenBot", $args{ircChannelCode} );
+					updateWordCount ( $key );     # Update the database with how many times this word has been detected
 				}
-				last;									# End the while loop
+				last;         # End the while loop, already found a disallowed word
 			}
 		}
 	}
@@ -746,19 +700,11 @@ sub playerjoin
 				# We found a disallowed word, now send them a page and set qkick timer ticking
 				keys %autowarnWords;			# Reset autowarnWords hash position back to start
 
-				if ( $main::version >= 1.51 )
-				{
-					my ( $result, %player ) = plugin::getPlayerData ( $args{nick} );
-					if ( $result == 1 )	{ plugin::RenRemCMD ( "ppage $player{id} Your name contains the word '$key', which is not allowed on this server. Please come back with a different name." ); }
-				}
-				else
-				{
-					my ( $result, $error, $player ) = plugin::PlayerInGame ( $args{nick} );
-					if ( $result == 1 )	{ plugin::RenRemCMD ( "ppage $player->{id} Your name contains the word '$key', which is not allowed on this server. Please come back with a different name." ); }
-				}
+        my ( $result, %player ) = plugin::getPlayerData ( $args{nick} );
+        if ( $result == 1 )	{ plugin::RenRemCMD ( "ppage $player{id} Your name contains the word '$key', which is not allowed on this server. Please come back with a different name." ); }
 
 				my $next_time = int( time() ) + 5;
-				$kernel->alarm( greetPlayerBadName => $next_time => \%args );
+				$_[KERNEL]->alarm( greetPlayerBadName => $next_time => \%args );
 				last;					# End the while loop
 			}
 		}
@@ -770,7 +716,7 @@ sub playerjoin
 	elsif ( $config{greetPlayers} )
 	{
 		my $next_time = int( time() ) + $config{greetPlayerDelay};
-		$kernel->alarm( greetPlayer => $next_time => \%args );
+		$_[KERNEL]->alarm( greetPlayer => $next_time => \%args );
 	}
 }
 
@@ -782,79 +728,42 @@ sub playerjoin
 # Function for greeting players when they join the server, if enabled
 sub greetPlayer
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	if ( $main::version >= 1.51 )
-	{
-		my ( $result, %player ) = plugin::getPlayerData ( $args{nick} );
-		if ( $result == 1 )
-		{
-			my $warnings = getWarnings ( $player{name} );
-			if ( !$warnings ) { $warnings = 0; }
-			my $message = $config{greetPlayerMessage};
-			# Replace %warnings with number of warnings
-			$message =~ s/%warnings/$warnings/gi;
+  my ( $result, %player ) = plugin::getPlayerData ( $args{nick} );
+  if ( $result == 1 )
+  {
+    my $warnings = getWarnings ( $player{name} );
+    if ( !$warnings ) { $warnings = 0; }
+    my $message = $config{greetPlayerMessage};
+    # Replace %warnings with number of warnings
+    $message =~ s/%warnings/$warnings/gi;
 
-			plugin::RenRemCMD ("ppage $player{id} $message");
-		}
-	}
-	else
-	{
-		my ( $result, $error, $player ) = plugin::PlayerInGame ( $args{nick} );
-		if ( $result == 1 )
-		{
-			my $warnings = getWarnings ( $player->{name} );
-			if ( !$warnings ) { $warnings = 0; }
-			my $message = $config{greetPlayerMessage};
-			# Replace %warnings with number of warnings
-			$message =~ s/%warnings/$warnings/gi;
-
-			plugin::RenRemCMD ("ppage $player->{id} $message");
-		}
-	}
+    plugin::RenRemCMD ("ppage $player{id} $message");
+  }
 }
 
 
 # Function for qkicking people with disallowed usernames
 sub greetPlayerBadName
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{@_[ ARG0 ]};
 
-	if ( $main::version >= 1.51 )
-	{
-		my ( $result, %player ) = plugin::getPlayerData ( $args{nick} );
-		if ( $result == 1 ) { plugin::call_command( "BRenBot", "qkick $player{'name'} a disallowed word in their username." ); }
-	}
-	else
-	{
-		my ( $result, $error, $player ) = plugin::PlayerInGame ( $args{nick} );
-		if ( $result == 1 ) { plugin::call_command( "BRenBot", "qkick $player->{'name'} a disallowed word in their username." ); }
-	}
+  my ( $result, %player ) = plugin::getPlayerData ( $args{nick} );
+  if ( $result == 1 ) { plugin::call_command( "BRenBot", "qkick $player{'name'} a disallowed word in their username." ); }
 }
 
 
 # Function for warning a player, and, if nessicary, qkicking or kicking them
 sub giveWarning
 {
-	my ( $nickname, $nickLocation, $reason, $kernel, $warnedBy, $channelCode ) = @_[ 0, 1, 2, 3, 4, 5 ];
+	my ( $nickname, $nickLocation, $reason, $warnedBy, $channelCode ) = @_[ 0, 1, 2, 3, 4 ];
 
 	# Check if it is a player in the server
 	if ( $nickLocation eq "server" )
 	{
 		# Check player is in the server
-		my $result;
-		my %player;
-
-		if ( $main::version >= 1.51 )
-			{ ( $result, %player ) = plugin::getPlayerData ( $nickname ); }
-		else
-		{
-			my $playerPtr;
-			( $result, undef, $playerPtr ) = plugin::PlayerInGame ( $nickname );
-			%player = %{$playerPtr};
-		}
+		my ( $result, %player ) = plugin::getPlayerData ( $nickname );
 
 		if ( $result == 1 )
 		{
@@ -922,7 +831,7 @@ sub giveWarning
 		{
 			#Work out nickname for kick actions
 			$nickname =~ m/(\S+)\@IRC$/;
-			$kernel->post ( IRC => kick => CHANNEL, $1, "You were automatically kicked by BRenBot for for having $config{irc_kick_warnings} or more warnings.");
+			$_[KERNEL]->post ( IRC => kick => CHANNEL, $1, "You were automatically kicked by BRenBot for for having $config{irc_kick_warnings} or more warnings.");
 			brdatabase::writeLog ( 11, "[WARNINGS PLUGIN] $player{name} was kicked from the IRC channel for having $config{irc_kick_warnings} or more warnings." );
 			updateStats ( 1, $isAutoWarning, 0, 0, 0, 1 );
 		}
@@ -1060,7 +969,7 @@ sub checkOldWarnings
 
 		# Schedule another execution
 		my $next_time = int( time() ) + $config{warningsCheckFrequency};
-		$kernel->alarm( "checkOldWarnings" => $next_time => \%args );
+		$_[KERNEL]->alarm( "checkOldWarnings" => $next_time => \%args );
 	}
 }
 
