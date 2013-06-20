@@ -7,7 +7,6 @@ package brwarnings;
 
 use POE;
 use plugin;
-use modules;
 use POSIX;
 
 my $currentVersion = '1.6';
@@ -16,8 +15,8 @@ my $currentVersion = '1.6';
 if ( !defined(plugin::getBrVersion) || plugin::getBrVersion() < 1.53
   || (plugin::getBrVersion() == 1.53 && plugin::getBrBuild() < 14 ) )
 {
-  print " == Warnings Plugin Error ==\nThis version of the plugin is not compatible with BRenBot"
-          ." versions older than 1.53.14";
+  print " == Warnings Plugin Error ==\n"
+      . "This version of the plugin is not compatible with BRenBot versions older than 1.53.14\n";
   return 0;
 }
 
@@ -755,7 +754,7 @@ sub giveWarning
 		plugin::ircmsg ( "4$nickname has been warned by $warnedBy for '$reason'. They now have " . ( $oldWarnings+1 ) . " warning$suffix.", $channelCode );
 
 		# Write the warning log
-		plugins::write_to_log ( 11, "[Warnings] $player{name} was warned by $warnedBy for '$reason'" );
+		plugin::write_to_log ( 11, "[Warnings] $player{name} was warned by $warnedBy for '$reason'" );
 
 		my $isAutoWarning = ( $warnedBy eq "BRenBot" ) ? 1 : 0;
 
@@ -765,7 +764,7 @@ sub giveWarning
 			#Work out nickname for kick actions
 			$nickname =~ m/(\S+)\@IRC$/;
 			$_[KERNEL]->post ( IRC => kick => CHANNEL, $1, "You were automatically kicked by BRenBot for for having $config{irc_kick_warnings} or more warnings.");
-			plugins::write_to_log ( 11, "[Warnings] $player{name} was kicked from the IRC channel for having $config{irc_kick_warnings} or more warnings." );
+			plugin::write_to_log ( 11, "[Warnings] $player{name} was kicked from the IRC channel for having $config{irc_kick_warnings} or more warnings." );
 			updateStats ( 1, $isAutoWarning, 0, 0, 0, 1 );
 		}
 		else { updateStats ( 1, $isAutoWarning, 0, 0, 0, 0 ); }

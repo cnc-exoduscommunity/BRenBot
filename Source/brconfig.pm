@@ -77,11 +77,6 @@ our $config_force_bhs_dll_map             = '0';
 our $enable_gamelog_loaded_check          = '1';
 our $enableCmsg                           = '1';    # Enable CMSG paging
 
-# Settings for automatic recommendations
-our $config_autorec_minscore              = '500';
-our $config_autorec_minkills              = '10';
-our $config_autorec_minkd                 = '1.5';
-
 # Settings for moderators
 our $config_moderators_force_auth         = '1';
 our $config_moderator_symbols             = '1';
@@ -98,10 +93,6 @@ our $gamelog_showCrateMsgs                = '1';
 our $gamelog_showKillMsgs                 = '1';
 our $gamelog_showVehicleKillMsgs          = '1';
 our $gamelog_showBuildingKillMsgs         = '1';
-our $gamelog_autorec_light_vehicle_kills  = '8';
-our $gamelog_autorec_heavy_vehicle_kills  = '5';
-our $gamelog_autorec_building_repair      = '2000';
-our $gamelog_autorec_vehicle_repair       = '4000';
 
 # Voting settings
 our $config_votingenabled                 = '1';
@@ -281,11 +272,6 @@ sub ReadConfig
 			if (/^\s*Enable_Gamelog_Loaded_Checks\s*=\s*(1|0)/i)		{$enable_gamelog_loaded_check = $1; }
 			if (/^\s*Enable_CMSG_Paging\s*=\s*(0|1)/i)					{ $enableCmsg = $1; }
 
-			# Settings for automatic recommendations
-			if (/^\s*Autorec_Minimum_Score\s*=\s*(\d+)/i)				{ $config_autorec_minscore = $1; }
-			if (/^\s*Autorec_Minimum_Kills\s*=\s*(\d+)/i)				{ $config_autorec_minkills = $1; }
-			if (/^\s*Autorec_Minimum_KD\s*=\s*(\d+\.?\d+?)/i)			{ $config_autorec_minkd = $1; }
-
 			# Settings for moderators
 			if (/^\s*Moderators_Force_Auth\s*=\s*(\d)/i)				{ $config_moderators_force_auth = $1; }
 			if (/^\s*Moderators_Show_Symbols\s*=\s*(\d)/i)				{ $config_moderator_symbols = $1; }
@@ -302,10 +288,6 @@ sub ReadConfig
 			if (/^\s*Gamelog_Show_Kill_Messages\s*=\s*(\d)/i)			{ $gamelog_showKillMsgs = $1; }
 			if (/^\s*Gamelog_Show_Vehicle_Kill_Messages\s*=\s*(\d)/i)	{ $gamelog_showVehicleKillMsgs = $1; }
 			if (/^\s*Gamelog_Show_Building_Kill_Messages\s*=\s*(\d)/i)	{ $gamelog_showBuildingKillMsgs = $1; }
-			if (/^\s*Gamelog_Autorec_Light_Vehicle_Kills\s*=\s*(\d+)/i)	{ $gamelog_autorec_light_vehicle_kills = $1; }
-			if (/^\s*Gamelog_Autorec_Heavy_Vehicle_Kills\s*=\s*(\d+)/i)	{ $gamelog_autorec_heavy_vehicle_kills = $1; }
-			if (/^\s*Gamelog_Autorec_Building_Repair\s*=\s*(\d+)/i)		{ $gamelog_autorec_building_repair = $1; }
-			if (/^\s*Gamelog_Autorec_Vehicle_Repair\s*=\s*(\d+)/i)		{ $gamelog_autorec_vehicle_repair = $1; }
 
 			# Voting settings
 			if (/^\s*VotingEnabled\s*=\s*(\d)/i)						{ $config_votingenabled = $1; }

@@ -114,9 +114,6 @@ sub joinstuff
 			if ( modules::get_module( "join_messages" ) )
 				{ modules::show_joinmessage ( $name ); }
 
-			if ( modules::get_module( "recommend" ) )
-				{ modules::show_recommendations( $name ); }
-
 			# If they are authed, or not protected, show their mod status
 			my $authed = brAuth::GetAuthState ( $player{name} );
 			if ( $authed == 1 || $authed == 2 && !($brconfig::config_moderators_force_auth) )

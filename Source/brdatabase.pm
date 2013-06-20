@@ -234,9 +234,6 @@ sub check_tables
 		logs => "CREATE TABLE logs ( id INTEGER PRIMARY KEY AUTOINCREMENT, logCode INTEGER, log TEXT, timestamp INTEGER )",
 		modules => "CREATE TABLE modules ( name TEXT PRIMARY KEY, description TEXT, status INTEGER, locked INTEGER DEFAULT 0 )",
 		auth_users => "CREATE TABLE auth_users ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, password TEXT )",
-		recommendations => "CREATE TABLE recommendations ( name TEXT PRIMARY KEY, recommendations INTEGER DEFAULT 0, n00bs INTEGER DEFAULT 0  )",
-		recommendations_ignored_users => "CREATE TABLE recommendations_ignored_users ( name TEXT PRIMARY KEY )",
-		recommendations_recent_history => "CREATE TABLE recommendations_recent_history ( timestamp INTEGER, recommender TEXT, recommendee TEXT, isN00b INTEGER, reason TEXT )",
 		join_messages => "CREATE TABLE join_messages ( name TEXT PRIMARY KEY, message TEXT )"
 	);
 

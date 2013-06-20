@@ -506,13 +506,10 @@ sub check_modules
 		teammessages => "Displays team (f3) chat messages in IRC",
 		join_messages => "Enables !setjoin / !viewjoin on the server",
 		gamespy_players => "Broadcast this server to the GameSpy Arcade server browser",
-		recommend => "Enables the recommendation system",
-		gameresults => "Enables automatic recommendations after each map",
 		gamelog => "Enables support for the SSGM gamelog",
 		bhs => "Support for Tiberian Technologies / Blackhand Studios FDS library (ppage, pamsg etc)",
 		new_gi => "!gi shows info on one line instead of five lines",
 		donate => "Allows players to donate money to their teammates (bhs only)",
-		autorecs => "Enables automatic recommendations based on gameplay (gamelog only)",
 		map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit, donate limit and map rules.",
 		ssgmlog => "Support for SSGM extended logging (Beacon, Game Results, BW alerts etc)",
 		autobalance => "Enables the autobalance module, which attempts to make teams even when a new map loads.",
@@ -1224,12 +1221,12 @@ sub GetNextMap
 
 sub padd_string
 {
-	my $maxlength = shift;
+	my $minlength = shift;
 	my $string	= shift;
 
 	my $output = $string;
 
-	for (my $i=1; $i <= $maxlength - length($string); $i++)
+	for (my $i=1; $i <= $minlength - length($string); $i++)
 	{
 		$output .= " ";
 	}

@@ -11,7 +11,7 @@ use gamelog;
 use brconfig;
 use modules;
 use brIRC;
-use gamespy;		# Used by !set command
+use gamespy;    # Used by !set command
 use brAuth;
 use RenRem;
 
@@ -445,8 +445,6 @@ sub parsearg
 			deltempmod => \&deltempmod,
 			scripts => \&scripts,
 			ids => \&ids,
-			teamplayers => \&teamplayers,
-			shown00bs => \&teamplayers,
 			hostmsg => \&hostmsg,
 			auth => \&auth,
 			kicklog => \&kicklog,
@@ -471,8 +469,6 @@ sub parsearg
 			postmsg => \&postmsg,
 			vote => \&vote,
 			voting => \&voting,
-			recommend => \&recommend,
-			n00b => \&n00b,
 			setjoin => \&setjoin,
 			rotation => \&rotation,
 			maplist => \&maplist,
@@ -495,8 +491,6 @@ sub parsearg
 			stop => \&stop,
 			getbw => \&getbw,
 			setbw => \&setbw,
-			recignore => \&recignore,
-			recallow => \&recallow,
 			wpage => \&wpage,
 			viewjoin => \&viewjoin,
 			delregister => \&delregister,
@@ -518,7 +512,6 @@ sub parsearg
 			#openarea => \&openArea,
 			#updatearea => \&updateArea,
 			#closearea => \&closeArea,
-			recommendations => \&recommendations,
       plugins => \&plugins,
       plugin_load => \&plugin_load,
       plugin_unload => \&plugin_unload
@@ -1676,12 +1669,12 @@ sub postrule
 
 sub autoannounce
 {
-	eval
-	{
-		brconfig::ReadAutoAnnounce();
-		modules::AutoAnnounce_DoAnnoucement();
-	}
-	or modules::display_error($@);
+  eval
+  {
+    brconfig::ReadAutoAnnounce();
+    modules::AutoAnnounce_DoAnnoucement();
+  }
+  or modules::display_error($@);
 }
 
 sub donate
@@ -3338,76 +3331,55 @@ sub playerinfo
 	or modules::display_error($@);
 } # end of playerinfo
 
+# --------------------------------------------------------------------------------------------------
 
+# !players command, commonly aliased as !pl, this command prints a list of ingame players to IRC. It
+# cannot be used ingame. This command does not show detailed per-player stats, use the !playerinfo
+# command for that.
 sub players
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		my @noddies;
-		my @gdiguys;
-		my @gdi;
-		my @nod;
+  eval
+  {
+    if ( serverStatus::getCurrentPlayers() == 0 )
+    {
+      brIRC::ircmsg ( "There are no players ingame at this time.", $args{'ircChannelCode'} );
+      return;
+    }
 
-		if ( serverStatus::getCurrentPlayers() == 0 )
-		{
-			brIRC::ircmsg ( "There are no players ingame at this time.", $args{'ircChannelCode'} );
-			return;
-		}
-
-		my %playerlist = playerData::getPlayerList();
-		while ( my ( $id, $player ) = each ( %playerlist ) )
-		{
-			#my $pname = $_->{'name'};
-			my $side = $player->{'side'};
-
-			my $pname = modules::parseModName ( $player->{'name'}, 1 );
-
-			my $maxlength = 22;
-			for (my $i=1;$i<=$maxlength - length($pname);$i++)
-			{
-				$pname .= " ";
-			}
-			push (@noddies, $pname) if ($side eq "NOD" || $side eq "Sov");
-			push (@gdiguys, $pname) if ($side eq "GDI" || $side eq "All");
-
-		} # end of playerlist
-	#		$gdiguys =~ s/ / /g; #replace spaces with alt-255's
-	#		$noddies =~ s/ / /g; #replace spaces with alt-255's
-
-		for (my $i=0;$i<=scalar(@gdiguys)-1;$i=$i+5)
-		{
-			push (@gdi, "$gdiguys[$i] $gdiguys[$i+1] $gdiguys[$i+2] $gdiguys[$i+3] $gdiguys[$i+4]");
-		}
-		for (my $i=0;$i<=scalar(@noddies)-1;$i=$i+5)
-		{
-			push (@nod, "$noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3] $noddies[$i+4]");
-		}
-
-		foreach (@gdi)
-		{
-			if ( $main::currentMod eq "APB" )
-			{ brIRC::ircmsg ( "12Allies: $_", $args{'ircChannelCode'} ); }
-			else
-			{ brIRC::ircmsg ( "08GDI: $_", $args{'ircChannelCode'}); }
-		}
-		foreach (@nod)
-		{
-			if ( $main::currentMod eq "APB" )
-			{ brIRC::ircmsg ( "04Soviet: $_", $args{'ircChannelCode'} ); }
-			else
-			{ brIRC::ircmsg ( "04Nod: $_", $args{'ircChannelCode'} ); }
-		}
-		return;
-	}
-	or modules::display_error($@);
-
+    players_outputTeam(1, $args{'ircChannelCode'});
+    players_outputTeam(0, $args{'ircChannelCode'});
+  }
+  or modules::display_error($@);
 }
 
+# Worker function for the !players command
+sub players_outputTeam
+{
+  my $teamid      = shift;
+  my $ircChannel  = shift;
+  my $string      = "";
+  my $count       = 0;
 
+  my %teamplayers = playerData::getPlayersByTeam($teamid);
+  while ( my ( $id, $player ) = each ( %teamplayers ) )
+  {
+    $string .= " ".modules::padd_string(modules::parseModName($player->{'name'}, 1));
+
+    if ( ++$count >= 5 )
+    {
+      $string = brTeams::colourise($teamid, brIRC::bold(brTeams::get_name($teamid).":").$string);
+      brIRC::ircmsg($string, $ircChannel);
+      $count = 0;
+      $string = "";
+    }
+  }
+}
+
+# --------------------------------------------------------------------------------------------------
+
+# deprecated
 sub letmein
 {
 	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
@@ -3597,22 +3569,21 @@ sub vehiclelimit
 # Function for the !gameover command
 sub gameover
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		if ( $args{'arg'} eq "!gameover NOW" )
-		{
-			RenRem::RenRemCMD( "gameover" );
-			brIRC::ircmsg ( "GameOver CMD Sent.", "A" );
-		}
-		else
-		{
-			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: !gameover NOW     - CASE SENSITIVE to avoid accidental triggering.", $args{'ircChannelCode'} ); }
-			else { RenRem::RenRemCMD( "msg Usage: !gameover NOW     - CASE SENSITIVE to avoid accidental triggering." ); }
-		}
-	}
+  eval
+  {
+    if ( $args{'arg'} eq "!gameover NOW" )
+    {
+      RenRem::RenRemCMD( "gameover" );
+      brIRC::ircmsg ( "GameOver CMD Sent.", "A" );
+    }
+    else
+    {
+      if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: !gameover NOW     - CASE SENSITIVE to avoid accidental triggering.", $args{'ircChannelCode'} ); }
+      else { RenRem::RenRemCMD( "msg Usage: !gameover NOW     - CASE SENSITIVE to avoid accidental triggering." ); }
+    }
+  }
 }
 
 
@@ -3666,14 +3637,14 @@ sub kick
 # Function for the !fds command - sends commands directly to the server
 sub fds
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	if ( $args{arg1} )
-	{
-		$args{arg} =~ m/\!fds\s(.+)/i;
-		my $message = substr ( $1, 0, 228 );		# Limit length to prevent crashing the FDS
-		RenRem::RenRemCMD ( $message );
-	}
+  if ( $args{'arg1'} )
+  {
+    $args{'arg'} =~ m/\!fds\s(.+)/i;
+    my $message = substr ( $1, 0, 228 );    # Limit length to prevent crashing the FDS
+    RenRem::RenRemCMD ( $message );
+  }
 }
 
 
@@ -3830,9 +3801,7 @@ sub dumpLogs
 # Used to enable and disable voting, and can also be used to stop votes in progress
 sub voting
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
 	eval
 	{
@@ -3859,13 +3828,13 @@ sub voting
 				if ( $voteinprogress == 1 )
 				{
 					RenRem::RenRemCMD( "msg [BR] Stopping vote in progress." );
-					$kernel->post( "voteThread" => "cancel" );
+					$_[KERNEL]->post( "voteThread" => "cancel" );
 					$voteinprogress = 0;
 				}
 				elsif ( $teamsinprogress == 1 )
 				{
 					RenRem::RenRemCMD("msg [BR] Stopping team regulator..");
-					$kernel->post( "teams" => "cancel" );
+					$_[KERNEL]->post( "teams" => "cancel" );
 					$teamsinprogress = 0;
 				}
 		 		else
@@ -4104,7 +4073,7 @@ sub startVote
 		{
 			RenRem::RenRemCMD( "msg [BR] $args{nick} tried to vote-kick a server moderator or administator. They are now the target of the vote." );
 			$voteHeap{'kick_target'} = $args{'nick'};
-			$voteHeap{'kick_reason'} = "trying To VOTE-KICK a server moderator or server administator.";
+			$voteHeap{'kick_reason'} = "trying to VOTE-KICK a server moderator or server administator.";
 			$args{'nick'} = "BRenBot";
 		}
 		# Check a temp mod is not trying to vote-kick another temp mod
@@ -4178,7 +4147,7 @@ sub startVote
 			tick2 => \&endVote,
 			cancel => sub
 			{
-				$_[KERNEL]->alarm( tick => undef );
+        $_[KERNEL]->alarm( tick1 => undef );
 				$_[KERNEL]->alarm( tick2 => undef );
 				$_[KERNEL]->alias_remove( "voteThread" );
 				modules::console_output ( "Vote cancelled!" );
@@ -4314,373 +4283,6 @@ sub AlreadyVoted
 		return 1;
 	}
 	return 0;
-}
-
-
-
-
-
-###################################################
-####
-## Recommendation functions
-####
-###################################################
-
-# Function for the !recommand command - Recommend another player for any reason
-sub recommend
-{
-	my %args = %{$_[ ARG0 ]};
-
-	eval
-	{
-		# Prevent this command being used from IRC...
-		if ( $args{nicktype} == 1 )
-		{
-			brIRC::ircmsg ( "This command cannot be used from IRC.", $args{'ircChannelCode'} );
-			return;
-		}
-
-		# Check recommendations are enabled
-		if ( !modules::get_module( "recommend" ) )
-		{
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Recommendations have been disabled by the Administration." );
-			return;
-		}
-
-		# Check if this user is rec ignored
-		if ( modules::is_rec_ignored ( $args{'nick'} ) == 1 )
-		{
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Sorry, Recommendations have been disabled for you by the Administration." );
-			return;
-		}
-
-		# Check syntax
-		if ( ($args{arg} =~ /^\!\S+\s(.+?)\s(.+)/i) )
-		{
-			my $target = $1;
-			my $reason = $2;
-
-			my ( $result, %player ) = playerData::getPlayerData ( $target );
-			if ( $result == 1 )
-			{
-				if ( $player{'name'} eq $args{'nick'} )
-				{
-					modules::pagePlayer( $args{'nick'}, 'BRenBot', "You can\'t recommend yourself.");
-					return;
-				}
-
-				my $can_recommend = modules::can_recommend ( $args{'nick'}, $player{'name'}, 0 );
-				if ( $can_recommend == 1 )
-				{
-					modules::recommend_player( $player{'name'}, $args{'nick'}, $reason );
-				}
-				elsif ( $can_recommend == 2 )
-				{
-					modules::pagePlayer( $args{'nick'}, 'BRenBot', "You have reached your daily limits for this command." );
-				}
-				else
-				{
-					modules::pagePlayer( $args{'nick'}, 'BRenBot', "You have already recommended $player{'name'} today." );
-				}
-			}
-			else
-			{
-		 		modules::pagePlayer( $args{'nick'}, 'BRenBot', "Player $target was not found ingame, or is not unique." );
-			}
-		}
-
-		# Bad syntax
-		else
-		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Usage: $syntaxvalue" );
-			return;
-		}
-	}
-	or modules::display_error($@);
-}
-
-
-# Function for the !n00b command - n00b another player for any reason
-sub n00b
-{
-	my %args = %{$_[ ARG0 ]};
-
-	eval
-	{
-		# Prevent this command being used from IRC...
-		if ( $args{nicktype} == 1 )
-		{
-			brIRC::ircmsg ( "This command cannot be used from IRC.", $args{'ircChannelCode'} );
-			return;
-		}
-
-		# Check recommendations are enabled
-		if ( !modules::get_module( "recommend" ) )
-		{
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Recommendations have been disabled by the Administration." );
-			return;
-		}
-
-		# Check if this user is rec ignored
-		if ( modules::is_rec_ignored ( $args{'nick'} ) == 1 )
-		{
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Sorry, Recommendations have been disabled for you by the Administration." );
-			return;
-		}
-
-		# Check syntax
-		if ( ($args{arg} =~ /^\!\S+\s(\S+)\s(.+)/i) )
-		{
-			my $target = $1;
-			my $reason = $2;
-
-			my ( $result, %player ) = playerData::getPlayerData ( $target );
-			if ( $result == 1 )
-			{
-				if ( $player{'name'} eq $args{nick} )
-				{
-					modules::pagePlayer( $args{'nick'}, 'BRenBot', "n00bing yourself? Well, if your sure... n00b!." );
-				}
-
-				my $can_n00b = modules::can_recommend( $args{'nick'}, $player{'name'}, 1 );
-				if ( $can_n00b == 1 )
-				{
-					modules::n00b_player( $player{'name'}, $args{'nick'}, $reason );
-				}
-				elsif ( $can_n00b == 2)
-				{
-					modules::pagePlayer( $args{'nick'}, 'BRenBot', "You have reached your daily limits for this command.");
-				}
-				else
-				{
-					modules::pagePlayer( $args{'nick'}, 'BRenBot', "You have already n00bed $player{'name'} today.");
-				}
-			}
-			else
-			{
-		 		modules::pagePlayer( $args{'nick'}, 'BRenBot', "Player $target was not found ingame, or is not unique." );
-			}
-		}
-
-		# Bad syntax
-		else
-		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Usage: $syntaxvalue" );
-			return;
-		}
-	}
-	or modules::display_error($@);
-}
-
-
-# Function for the !recommendations command (!recs)
-sub recommendations
-{
-	my %args = %{$_[ ARG0 ]};
-
-	# Check they are not trying to use this command from IRC
-	if ( $args{'nicktype'} eq '1' )
-	{
-		brIRC::ircmsg ( "The !recommendations command can only be used from ingame.", $args{'ircChannelCode'} );
-		return;
-	}
-
-	if ( !modules::get_module( "recommend" ) )
-	{
-		RenRem::RenRemCMD( "msg [BR] Recommendations have been disabled by the Administration." );
-		return;
-	}
-
-	# Get recommendations and n00bs for $args{nick}
-	my $recommendations = modules::get_recommendation ( $args{'nick'} );
-	my $n00bs = modules::get_n00b ( $args{'nick'} );
-
-	modules::pagePlayer ( $args{'nick'}, "BRenBot", "You currently have ".($recommendations-$n00bs)." recommendations. ( $recommendations recs, $n00bs n00bs )" );
-}
-
-
-# Function for the !recallow command
-sub recallow
-{
-	my %args = %{$_[ ARG0 ]};
-
-	eval
-	{
-		if (!$args{arg1})
-		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
-			else { RenRem::RenRemCMD( "msg [BR] Usage: $syntaxvalue" ); }
-			return;
-		}
-
-		my ( $result, %player ) = playerData::getPlayerData( $args{'arg1'} );
-		if ( $result == 1 )
-		{
-			RenRem::RenRemCMD( "msg [BR] Recommendations have been enabled for $player{name}." );
-			modules::rec_allow( $player{'name'} );
-		}
-		else
-		{
-			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "$args{arg1} is not ingame, or the name is not unique.", $args{'ircChannelCode'} ); }
-			else { RenRem::RenRemCMD( "msg [BR] $args{arg1} is not ingame, or the name is not unique." ); }
-
-			# Write the rec-allow to the logs table
-			brdatabase::writeLog ( 3, "[MISC] $player{name} was rec allowed by $args{nick}." );
-		}
-	}	# End eval
-	or modules::display_error($@);
-}
-
-
-# Function for the !recignore command
-sub recignore
-{
-	my %args = %{$_[ ARG0 ]};
-
-	eval
-	{
-		if (!$args{arg1})
-		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
-			else { RenRem::RenRemCMD( "msg [BR] Usage: $syntaxvalue" ); }
-			return;
-		}
-
-		my ( $result, %player ) = playerData::getPlayerData( $args{'arg1'} );
-		if ( $result == 1 )
-		{
-			RenRem::RenRemCMD("msg [BR] Recommendations have been disabled for $player{name}.");
-			modules::rec_ignore( $player{'name'} );
-
-			# Write the rec-ignore to the logs table
-			brdatabase::writeLog ( 3, "[MISC] $player{name} was rec ignored by $args{nick}." );
-		}
-		else
-		{
-			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "$args{arg1} is not ingame, or the name is not unique.", $args{'ircChannelCode'} ); }
-			else { RenRem::RenRemCMD( "msg [BR] $args{arg1} is not ingame, or the name is not unique." ); }
-		}
-	}
-	or modules::display_error($@);
-}
-
-
-# Function for the !teamplayers / !shown00bs command
-my $tpLastUsed = 0;			# Global variable used to track last used time
-sub teamplayers
-{
-	my %args = %{$_[ ARG0 ]};
-
-	eval
-	{
-		# Any players ingame?
-		if ( serverStatus::getCurrentPlayers() == 0 ) {
-			brIRC::ircmsg ( "No Players", $args{'ircChannelCode'} );
-			return;
-		}
-
-
-		# Too recently used?
-		if ( time() - $tpLastUsed < 120 )
-		{
-			if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "The !teamplayers/!shown00bs commands can only be used once every 2 minutes!" ); }
-			else { RenRem::RenRemCMD ( "msg [BR] The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations." ); }
-			return;
-		}
-		else { $tpLastUsed = time(); }
-
-
-		# Create data arrays
-		my @gdiPlayers;
-		my @nodPlayers;
-
-
-		# Loop through each player
-		my %playerlist = playerData::getPlayerList();
-		while ( my ( $id, $player ) = each ( %playerlist ) )
-		{
-			# Get total recommendations / n00bs for this player
-			my $count;
-			if ( $args{'command'} eq "teamplayers" ) { $count = modules::get_recommendation ( $player->{'name'} ); }
-			else { $count = modules::get_n00b ( $player->{'name'} ); }
-
-			# If they have more than 0 put them in the appropriate list
-			if ( $player->{'side'} eq "NOD" || $player->{'side'} eq "Sov" )
-				{ push ( @nodPlayers, modules::parseModName ( $player->{'name'}, $args{'nicktype'} ) . " ($count)" ); }
-			else
-				{ push ( @gdiPlayers, modules::parseModName ( $player->{'name'}, $args{'nicktype'} ) . " ($count)" ); }
-		}
-
-
-		# Were there any players found?
-		if (scalar(@gdiPlayers) + scalar(@nodPlayers) == 0)
-		{
-			my $message;
-			if ( $args{command} eq "teamplayers" )
-				{ $message = "Nobody in the game has any recommendations"; }
-			else
-				{ $message = "Nobody in the game has been n00bed"; }
-
-			if ( $args{'nicktype'} == 1 )
-				{ brIRC::ircmsg ( $message, $args{'ircChannelCode'} ); }
-			else
-				{ RenRem::RenRemCMD( "msg [BR] $message" ); }
-
-			return;
-		}
-
-
-		# We have found results, so output the header lines
-		my $message;
-		if ( $args{command} eq "teamplayers" )
-			{ $message = "Teamplayers based on recommendations:"; }
-		else
-			{ $message = "n00bs based on in-game complaints:"; }
-
-		if ( $args{'nicktype'} == 1 )
-			{ brIRC::ircmsg ( $message, $args{'ircChannelCode'} ); }
-		else
-			{ RenRem::RenRemCMD( "msg [BR] $message" ); }
-
-
-		# Output GDI players, 5 per line
-		for ( my $i = 0; $i <= scalar(@gdiPlayers) - 1; $i = $i + 5 )
-		{
-			$message = $gdiPlayers[$i];
-			for ( my $j = 1; $j < 5 && $i+$j < scalar(@gdiPlayers) - 1; $j++ )
-			{
-				$message .= " " .  $gdiPlayers[$i+$j];
-			}
-
-			if ( $args{'nicktype'} == 1 )
-				{ brIRC::ircmsg ( "8GDI: $message", $args{'ircChannelCode'} ); }
-			else
-				{ RenRem::RenRemCMD( "msg [BR] GDI:  $message" ); }
-		}
-
-
-		# Output Nod players, 5 per line
-		for ( my $i = 0; $i <= scalar(@nodPlayers) - 1; $i = $i + 5 )
-		{
-			$message = $nodPlayers[$i];
-			for ( my $j = 1; $j < 5 && $i+$j < scalar(@nodPlayers) - 1; $j++ )
-			{
-				$message .= " " .  $nodPlayers[$i+$j];
-			}
-
-			if ( $args{'nicktype'} == 1 )
-				{ brIRC::ircmsg ( "4Nod: $message", $args{'ircChannelCode'} ); }
-			else
-				{ RenRem::RenRemCMD( "msg [BR] Nod:  $message" ); }
-		}
-	}
-	or modules::display_error($@);
 }
 
 
