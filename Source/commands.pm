@@ -3348,14 +3348,14 @@ sub players
       return;
     }
 
-    players_outputTeam(1, $args{'ircChannelCode'});
-    players_outputTeam(0, $args{'ircChannelCode'});
+    players_processTeam(1, $args{'ircChannelCode'});
+    players_processTeam(0, $args{'ircChannelCode'});
   }
   or modules::display_error($@);
 }
 
 # Worker function for the !players command
-sub players_outputTeam
+sub players_processTeam
 {
   my $teamid      = shift;
   my $ircChannel  = shift;
@@ -3369,12 +3369,23 @@ sub players_outputTeam
 
     if ( ++$count >= 5 )
     {
-      $string = brTeams::colourise($teamid, brIRC::bold(brTeams::get_name($teamid).":").$string);
-      brIRC::ircmsg($string, $ircChannel);
+      players_outputTeam($teamid, $string);
       $count = 0;
       $string = "";
     }
   }
+  
+  players_outputTeam($teamid, $string) if ( $string ne "" );
+}
+
+# Worker function for the !teamplayers command
+sub players_outputTeam
+{
+  my $teamid      = shift;
+  my $string      = shift;
+  
+  $string = brTeams::colourise($teamid, brIRC::bold(brTeams::get_name($teamid).":").$string);
+  brIRC::ircmsg($string, $ircChannel);
 }
 
 # --------------------------------------------------------------------------------------------------

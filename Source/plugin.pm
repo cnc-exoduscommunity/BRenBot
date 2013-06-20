@@ -683,6 +683,11 @@ sub isAdmin { return modules::isAdmin(@_); }
 sub isPlayerLoaded { return gamelog::isPlayerLoaded(@_); }
 
 
+# Takes a player name and returns it with any appropriate moderator symbols appended, based on their
+# moderator status and the bot configuration for decorating moderator names
+sub parseModName { return modules::parseModName(@_); }
+
+
 
 
 #########################
