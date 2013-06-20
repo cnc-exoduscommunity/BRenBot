@@ -17,73 +17,50 @@ my %playerData;
 # Used by the parse_player_list function in renlog
 sub updatePlayerData
 {
-	my $id = shift;			my $name = shift;
-	my $score = shift;		my $side = shift;
-	my $ping = shift;		my $ip = shift;
-	my $kbps = shift;		my $time = shift;
+  my $id = shift;         my $name = shift;
+  my $score = shift;      my $side = shift;
+  my $ping = shift;       my $ip = shift;
+  my $kbps = shift;       my $time = shift;
 
-	if ( exists ( $playerData{$id} ) )
-	{
-		if ( $playerData{$id}->{'name'} eq $name )
-		{
-			# If they have changed sides process teamchange plugin events
-			if ( $playerData{$id}->{'changedTeam'} && $playerData{$id}->{'changedTeam'} == 1 )
-			{
-				processTeamChangePlugins ( $name, $side, $playerData{$id}->{'side'} );
-				$playerData{$id}->{'changedTeam'} = 0;
-			}
+  if ( exists ( $playerData{$id} ) and ( $playerData{$id}->{'name'} eq $name ) )
+  {
+    # If they have changed sides process teamchange plugin events
+    if ( $playerData{$id}->{'changedTeam'} && $playerData{$id}->{'changedTeam'} == 1 )
+    {
+      processTeamChangePlugins ( $name, $side, $playerData{$id}->{'side'} );
+      $playerData{$id}->{'changedTeam'} = 0;
+    }
 
-			$playerData{$id}->{'score'} = $score;
-			$playerData{$id}->{'side'} = $side;
-			$playerData{$id}->{'ping'} = $ping;
-			$playerData{$id}->{'ip'} = $ip;
-			$playerData{$id}->{'kbps'} = $kbps;
-			$playerData{$id}->{'time'} = $time;
-			$playerData{$id}->{'lastUpdated'} = time();
-		}
-		else
-		{
-			# Names do not match, clear all data and make new hash
-			clearPlayerData ( $id );
+    $playerData{$id}->{'score'} = $score;
+    $playerData{$id}->{'side'} = $side;
+    $playerData{$id}->{'teamid'} = brTeams::get_id_from_name($side);
+    $playerData{$id}->{'ping'} = $ping;
+    $playerData{$id}->{'ip'} = $ip;
+    $playerData{$id}->{'kbps'} = $kbps;
+    $playerData{$id}->{'time'} = $time;
+    $playerData{$id}->{'lastUpdated'} = time();
+  }
+  
+  # A new player has joined the game!
+  clearPlayerData ( $id ) if ( exists($playerData{$id}) );
+  
+  $playerData{$id} = {
+    'id' => $id,
+    'name' => $name,
+    'score' => $score,
+    'side' => $side,
+    'teamid' => brTeams::get_id_from_name($side);
+    'ping' => $ping,
+    'ip' => $ip,
+    'kbps' => $kbps,
+    'time' => $time,
+    'lastUpdated' => time(),
+    'joinTime' => time()
+  };
 
-			$playerData{$id} = {
-				'id' => $id,
-				'name' => $name,
-				'score' => $score,
-				'side' => $side,
-				'ping' => $ping,
-				'ip' => $ip,
-				'kbps' => $kbps,
-				'time' => $time,
-				'lastUpdated' => time(),
-				'joinTime' => time()
-			};
-
-			renlog::check_banlist ( $name );
-			modules::check_kicks ( $name );
-			RenRem::RenRemCMD ( "version $id" );
-		}
-	}
-	else
-	{
-		# Add new data
-		$playerData{$id} = {
-			'id' => $id,
-			'name' => $name,
-			'score' => $score,
-			'side' => $side,
-			'ping' => $ping,
-			'ip' => $ip,
-			'kbps' => $kbps,
-			'time' => $time,
-			'lastUpdated' => time(),
-			'joinTime' => time()
-		};
-
-		renlog::check_banlist ( $name );
-		modules::check_kicks ( $name );
-		RenRem::RenRemCMD ( "version $id" );
-	}
+  renlog::check_banlist ( $name );
+  modules::check_kicks ( $name );
+  RenRem::RenRemCMD ( "version $id" );
 }
 
 
@@ -306,7 +283,25 @@ sub getKeyValue
 # Returns a hash of all player data
 sub getPlayerList
 {
-	return %playerData;
+  return %playerData;
+}
+
+
+# Returns a hash of all players on the specified team
+#
+# \param[in] $team
+#   ID or abbreviation of a team
+sub getPlayersByTeam
+{
+  my $teamid = brTeams::get_id_from_name(shift);
+  if ( $teamid != -1 )
+  {
+    my %teamplayers;
+    while ( my ( $id, $player ) = each ( %playerlist ) )
+    {
+      $teamplayers{$id} = $player if ( $player->{'teamid'} == $teamid );
+    }
+  }
 }
 
 
@@ -317,18 +312,18 @@ sub getPlayerList
 # Processes changeteam events for plugins
 sub processTeamChangePlugins
 {
-	my %args;
-	$args{nick} = shift;
-	$args{newteam} = shift;
-	$args{oldteam} = shift;
+  my %args;
+  $args{'nick'} = shift;
+  $args{'newteam'} = shift;
+  $args{'oldteam'} = shift;
 
-	my @plugins = plugin::get_plugin_event( "changeteam" );
-	foreach ( @plugins )
-	{
-		my $plugin = $_;
-		my $alias = "plugin_" . $plugin;
-		$poe_kernel->post( $alias => "changeteam" => \%args );
-	}
+  my @plugins = plugin::get_plugin_event( "changeteam" );
+  foreach ( @plugins )
+  {
+    my $plugin = $_;
+    my $alias = "plugin_" . $plugin;
+    $poe_kernel->post( $alias => "changeteam" => \%args );
+  }
 }
 
 1;
