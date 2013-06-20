@@ -301,8 +301,9 @@ sub teamplayers_processTeam
   {
     my $recs = ( $showNoobs == 1 ) ? get_n00b($player->{'name'}) : get_recommendation($player->{'name'});
   
-  
-    $string .= " ".modules::padd_string(modules::parseModName($player->{'name'}, 1));
+    $string .= "," if string ne "";
+    $string .= " ".modules::padd_string(modules::parseModName($player->{'name'}, $ircChannel));
+    $string .= " (" . $recs . ")";
 
     if ( ++$count >= 5 )
     {
