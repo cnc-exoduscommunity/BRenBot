@@ -815,6 +815,14 @@ sub ircpm { brIRC::ircpm(@_); }
 sub ircnotice { brIRC::ircnotice(@_); }
 
 
+# Format string as a bold IRC string
+sub irc_bold { brIRC::bold(@_); }
+
+
+# Format string as a colourised IRC string in the specified colour
+sub irc_colourise { brIRC::colourise(@_); }
+
+
 
 
 #########################

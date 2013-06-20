@@ -254,7 +254,7 @@ sub teamplayers
   if ( time() - $tpLastUsed < 120 )
   {
     if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "The !teamplayers/!shown00bs commands can only be used once every 2 minutes!" ); }
-    else { plugin::servermsg ( "The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations." ); }
+    else { plugin::serverMsg ( "The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations." ); }
     return;
   }
   else { $tpLastUsed = time(); }
@@ -267,7 +267,7 @@ sub teamplayers
     if ( $args{'nicktype'} == 1 )
       { plugin::ircmsg ( $message, $args{'ircChannelCode'} ); }
     else
-      { plugin::servermsg($message); }
+      { plugin::serverMsg($message); }
   }
 
   
@@ -283,7 +283,7 @@ sub teamplayers
     if ( $args{'nicktype'} == 1 )
       { plugin::ircmsg ( $message, $args{'ircChannelCode'} ); }
     else
-      { plugin::servermsg($message); }
+      { plugin::serverMsg($message); }
   }
 }
 
@@ -302,7 +302,7 @@ sub teamplayers_processTeam
     my $recs = ( $showNoobs == 1 ) ? get_n00b($player->{'name'}) : get_recommendation($player->{'name'});
   
     $string .= "," if string ne "";
-    $string .= " ".modules::padd_string(modules::parseModName($player->{'name'}, $ircChannel));
+    $string .= " ".modules::parseModName($player->{'name'}, $ircChannel);
     $string .= " (" . $recs . ")";
 
     if ( ++$count >= 5 )
@@ -324,9 +324,15 @@ sub teamplayers_outputTeam
   my $showNoobs   = shift;
   my $ircChannel  = shift;
   
-  
-  $string = brTeams::colourise($teamid, brIRC::bold(brTeams::get_name($teamid).":").$string);
-  brIRC::ircmsg($string, $ircChannel);
+  if ( defined($ircChannel )
+  {
+    $string = plugin::team_colourise($teamid, plugin::irc_bold(plugin::team_get_name($teamid).":").$string);
+    plugin::ircmsg($string, $ircChannel);
+  }
+  else
+  {
+    plugin::servermsg(plugin::team_get_name($teamid).":".$string);
+  }
 }
 
 
