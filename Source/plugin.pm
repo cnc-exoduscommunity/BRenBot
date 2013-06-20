@@ -872,6 +872,59 @@ sub display_plugin_error
 
 ###################################################
 ####
+## Team configuration query functions for plugins
+##
+## For all of these functions the team IDs are 0 (Nod), 1 (GDI) and 2 (Neutral/Other)
+####
+###################################################
+
+# Get the full name of a team given its ID or abbreviation
+#
+# \param[in] $team
+#   The ID or abbreviation of the team
+sub plugin::team_get_name { return brTeams::get_name(@_); }
+
+# Get the abbreviation for a team given its ID
+#
+# \param[in] $team
+#   The ID of the team
+sub plugin::team_get_abbreviation { return brTeams::get_abbreviation(@_); }
+
+# Get the IRC colour code for a team given its ID
+#
+# \param[in] $team
+#   The ID or abbreviation of the team
+sub plugin::team_get_colour { return brTeams::get_colour(@_); }
+
+# Colourise a string with the specified teams IRC colour
+#
+# \param[in] $team
+#   The ID or abbreviation of the team
+# \param[in] $string
+#   The string to colourise
+sub plugin::team_colourise { return brTeams::colourise(@_); }
+
+# Get the full name of a team in a colourised IRC string given its ID or abbreviation
+#
+# \param[in] $team
+#   The ID or abbreviation of the team
+sub plugin::team_get_colourised_name { return brTeams::get_colourised_name(@_); }
+
+# Get the abbreviation for a team in a colourised IRC string given its ID
+#
+# \param[in] $team
+#   The ID of the team
+sub plugin::team_get_colourised_abbreviation { return brTeams::get_colourised_abbreviation(@_); }
+
+
+
+
+
+
+
+
+###################################################
+####
 ## Deprecated API functions for plugins
 ####
 ###################################################

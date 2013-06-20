@@ -3,6 +3,8 @@
 # This module is dedicated to storing the settings for team names and colours and providing quick
 # methods for formatting text with this information
 
+use brIRC;
+
 # --------------------------------------------------------------------------------------------------
 
 # Create the data array with default values for use in Renegade
@@ -26,7 +28,7 @@ our %teams = {
 
 # --------------------------------------------------------------------------------------------------
 
-# Read the team configuration file if it exists...
+# Reads the team configuration file if it exists
 sub read_config
 {
   my $teamid = -1;
@@ -126,17 +128,19 @@ sub colourise
   my $colour  = get_colour(shift);
   my $message = shift;
   
-  return "$colour$message";
+  return brIRC::colourise($colour, $message);
 }
 
 # Get the name of the specified team in a colourised string
 sub get_colourised_name
 {
-  return colourise(get_name(shift));
+  my $team = shift;
+  return colourise($team, get_name($team));
 }
 
 # Format a string with the specified team colour
 sub get_colourised_abbreviation
 {
-  return colourise(get_name(shift));
+  my $team = shift;
+  return colourise($team, get_abbreviation($team));
 }

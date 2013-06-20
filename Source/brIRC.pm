@@ -823,5 +823,32 @@ sub getUserPermissions
 
 
 
+# --------------------------------------------------------------------------------------------------
+
+# Format the specified text with bold font
+#
+# \param[in] $message
+#   Message to be formatted
+sub bold
+{
+  return "".shift."";
+}
+
+# Format the specified text with the specified colour
+#
+# \param[in] $colour
+#   Colour to format the message, either specified as a single colour or a colour and background
+#   pair seperated by a comma
+# \param[in] $message
+#   Message to be formatted
+sub colourise
+{
+  my $colour = shift;
+  my $message = shift;
+
+  return "$colour$message";
+}
+
+
 # Return true
 1;
