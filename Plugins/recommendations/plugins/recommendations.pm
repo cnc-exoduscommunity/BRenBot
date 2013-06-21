@@ -38,6 +38,7 @@ our %additional_events =
 my $loaded_ok = 0;
 my $tpLastUsed = 0;   # Global variable used to track last used time for !teamplayers/!shown00bs
 my @joinmessages;
+my %autorec_cache;    # Tracks per-player data for auto recommendations
 
 
 
@@ -149,15 +150,169 @@ sub gameresult
       },
       show_joinmessage => sub
       {
-        if ( defined($mvp) )
+        if ( defined($mvp) && $config{'autorec_min_score'} > 0 )
           { recommend_player( $mvp, 'BRenBot', 'MVP on '.$args{'map'}.' with '.$mvp_score.' points' ); }
-        if ( defined($mostkills) )
+        if ( defined($mostkills) && $config{'autorec_min_kills'} > 0 )
           { recommend_player( $mostkills, 'BRenBot', 'Most Kills on '.$args{'map'}.' with '.$mostkills_kills.' frags' ); }
-        if ( defined($bestkd) )
+        if ( defined($bestkd) && $config{'autorec_min_kd'} > 0 )
           { recommend_player( $bestkd, 'BRenBot', 'Best K/D Ratio on '.$args{'map'}.' with '.$bestkd_kd ); }
       }
     }
   );
+}
+
+# Called when a new map has loaded
+sub mapload
+{
+  while ( my ( $player, $stats ) = each ( %autorec_cache ) )
+  {
+    while ( my ( $stat_name, $state_value ) = each ( %{$stats} ) )
+      { delete %autorec_cache{$player}{$stat_name}; }
+    delete %autorec_cache{$player};
+  }
+}
+
+
+
+
+# --------------------------------------------------------------------------------------------------
+##
+#### Gamelog hook events
+##
+# --------------------------------------------------------------------------------------------------
+
+# Building kill detected
+sub gamelog_building_killed
+{
+  return if ( $config{'autorec_two_buildings_killed'} <= 0 );
+  
+  my %args = %{$_[ ARG0 ]};
+  my $line = $args{'line'};
+
+  #KILLED;BUILDING;1500000045;CnC_GDI_Barracks;72;-87;0;-175;1500001168;CnC_Nod_Minigunner_0;67;-95;0;-145;Weapon_AutoRifle_Player_Nod
+  if ( $line =~ m/KILLED;BUILDING;\d+;([^;]+);-?\d+;-?\d+;-?\d+;-?\d+;(\d+);[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;/i )
+  {
+    my $building = plugin::translatePreset($1);
+    my $player = plugin::getPlayerFromObjectID($2);
+    if ( defined ( $player ) )
+    {
+      $autorec_cache{$player} = {} if (!exists($autorec_cache{$player}));
+      
+      if ( !defined($autorec_cache{$player}{'buildingKillA'}) )
+        { $autorec_cache{$player}{'buildingKillA'} => $building; }
+      
+      else
+      {
+        my $building_1 = $autorec_cache{$player}{'buildingKillA'};
+        my $building_2 = $building;
+        
+        if ( 1 != $args{'startup'} && !is_rec_ignored($player) )
+          { recommend_player($player, 'BRenBot', "Destroyed $building_1 and $building_2" ); }
+          
+        delete $autorec_cache{$player}{'buildingKillA'};
+      }
+    }
+  }
+}
+
+# Building repair detected
+sub gamelog_building_repair
+{
+  return if ( $config{'autorec_min_building_repair'} <= 0 );
+  
+  my %args = %{$_[ ARG0 ]};
+  my $line = $args{'line'};
+
+  #DAMAGED;BUILDING;1500000045;CnC_GDI_Barracks;72;-87;0;-175;1500001168;CnC_Nod_Minigunner_0;65;-104;0;-173;2.399994;150;147;0
+  if ( $line =~ m/DAMAGED;BUILDING;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(\d+);[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(-\d+\.\d+);\d+;\d+;\d+$/i )
+  {
+    my $repairAmount = $2
+    my $player = plugin::getPlayerFromObjectID($1);
+    if ( defined ( $player ) )
+    {
+      $autorec_cache{$player} = {} if (!exists($autorec_cache{$player}));
+      
+      if ( !defined($autorec_cache{$player}{'buildingRepairs'}) )
+        { $autorec_cache{$player}{'buildingRepairs'} => $2; }
+      
+      else
+        { $autorec_cache{$player}{'buildingRepairs'} += $2; }
+        
+      if ( $autorec_cache{$player}{'buildingRepairs'} >= $config{'autorec_min_building_repair'} )
+      {
+        if ( 1 != $args{'startup'} && !is_rec_ignored($player) )
+          { recommend_player($player, 'BRenBot', "Repairing the base" ); }
+          
+        $autorec_cache{$player}{'buildingRepairs'} -= $config{'autorec_min_building_repair'};
+      }
+    }
+  }
+}
+
+# Vehicle kill detected
+sub gamelog_vehicle_killed
+{
+  return if ( $config{'autorec_min_vehicle_kills'} <= 0 );
+  
+  my %args = %{$_[ ARG0 ]};
+  my $line = $args{'line'};
+
+  #KILLED;VEHICLE;1500000045;CnC_GDI_Humm-vee;72;-87;0;-175;1500001168;CnC_Nod_Minigunner_0;67;-95;0;-145;Weapon_AutoRifle_Player_Nod
+  if ( $line =~ m/KILLED;VEHICLE;\d+;([^;]+);-?\d+;-?\d+;-?\d+;-?\d+;(\d+);[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;/i )
+  {
+    my $player = plugin::getPlayerFromObjectID ( $2 );
+    if ( defined ( $player ) )
+    {
+      $autorec_cache{$player} = {} if (!exists($autorec_cache{$player}));
+      
+      if ( !defined($autorec_cache{$player}{'vehicleKills'}) )
+        { $autorec_cache{$player}{'vehicleKills'} => 1; }
+      
+      else
+        { $autorec_cache{$player}{'vehicleKills'} += 1; }
+        
+      if ( $autorec_cache{$player}{'vehicleKills'} >= $config{'autorec_min_vehicle_kills'} )
+      {
+        if ( 1 != $args{'startup'} && !is_rec_ignored($player) )
+          { recommend_player($player, 'BRenBot', 'Destroying '.$autorec_cache{$player}{'vehicleKills'}.' enemy vehicles'); }
+          
+        $autorec_cache{$player}{'vehicleKills'} -= $config{'autorec_min_vehicle_kills'};
+      }
+    }
+  }
+}
+
+# Vehicle repair detected
+sub gamelog_vehicle_repair
+{
+  return if ( $config{'autorec_min_vehicle_repair'} <= 0 );
+  
+  my %args = %{$_[ ARG0 ]};
+  my $line = $args{'line'};
+
+  #DAMAGED;VEHICLE;1500000930;CnC_GDI_Medium_Tank;-132;4;-2;142;1500000189;CnC_GDI_Engineer_0;-127;4;-3;-92;-2.000000;400;390;0
+  if ( $line =~ m/DAMAGED;VEHICLE;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(\d+);[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(-\d+\.\d+);\d+;\d+;\d+$/i )
+  {
+    my $player = plugin::getPlayerFromObjectID ( $1 );
+    if ( defined ( $player ) )
+    {
+      $autorec_cache{$player} = {} if (!exists($autorec_cache{$player}));
+      
+      if ( !defined($autorec_cache{$player}{'vehicleRepairs'}) )
+        { $autorec_cache{$player}{'vehicleRepairs'} => $2; }
+      
+      else
+        { $autorec_cache{$player}{'vehicleRepairs'} += $2; }
+        
+      if ( $autorec_cache{$player}{'vehicleRepairs'} >= $config{'autorec_min_vehicle_repair'} )
+      {
+        if ( 1 != $args{'startup'} && !is_rec_ignored($player) )
+          { recommend_player($player, 'BRenBot', "Repairing their teams vehicles" ); }
+          
+        $autorec_cache{$player}{'vehicleRepairs'} -= $config{'autorec_min_vehicle_repair'};
+      }
+    }
+  }
 }
 
 

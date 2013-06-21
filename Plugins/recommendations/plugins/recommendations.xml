@@ -19,13 +19,13 @@
     <cvar name="autorec_min_kd" value="3"/>
 
 
-    <!-- Automatically give players a recommendation if they kill more than this number of light
-    vehicles in a single match. Set to 0 to disable this automatic recommendation -->
-    <cvar name="autorec_min_light_vehicle_kills" value="8"/>
-
-    <!-- Automatically give players a recommendation if they kill more than this number of heavy
-    vehicles in a single match. Set to 0 to disable this automatic recommendation -->
-    <cvar name="autorec_min_heavy_vehicle_kills" value="5"/>
+    <!-- Automatically give players a recommendation if they kill two buildings. Set this to 0 to
+    disable this automatic recommendation -->
+    <cvar name="autorec_two_buildings_killed" value="1"/>
+    
+    <!-- Automatically give players a recommendation if they kill more than this number of vehicles
+    in a single match. Set to 0 to disable this automatic recommendation -->
+    <cvar name="autorec_min_vehicle_kills" value="6"/>
 
     <!-- Automatically give players a recommendation if they repair more than this amount of damage
     to the teams buildings in a single match. Set to 0 to disable this automatic recommendation -->
@@ -41,7 +41,18 @@
   <events>
     <event>command</event>
     <event>playerjoin</event>
+    <event>gameresults</event>
+    <event>mapload</event>
   </events>
+
+
+  <!-- Do not modify this hooks list or you may break the plugin -->
+  <gamelog_regex_hooks>
+    <hook event="gamelog_building_killed" regex="KILLED;BUILDING;"/>
+    <hook event="gamelog_building_repair" regex="DAMAGED;BUILDING;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(-\d+\.\d+);\d+;\d+;\d+"/>
+    <hook event="gamelog_vehicle_killed" regex="KILLED;VEHICLE;"/>
+    <hook event="gamelog_vehicle_repair" regex="DAMAGED;VEHICLE;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(-\d+\.\d+);\d+;\d+;\d+"/>
+  </gamelog_regex_hooks>
 
 
   <!-- Do not add or remove commands from this section, but feel free to modify the permission level

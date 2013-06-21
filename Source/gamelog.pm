@@ -22,8 +22,6 @@ my $gamelog_name;
 # Create hashes to hold preset names
 my %wreckages;
 my %vehicles;
-my %light_armored_vehicles;
-my %heavy_armored_vehicles;
 my %presets;
 my %weapons;
 
@@ -430,20 +428,6 @@ sub damaged
 				{
 					# Because the damage is negative, we take it OFF the building repair ( minus minus = positive )
 					playerData::setKeyValue ( $player{'id'}, "stats_buildingRepair", $player{'stats_buildingRepair'} - $object{'damage'} );
-
-					# $player{stats_buildingRepair} is the old value, as we have a copy
-					if ( $brconfig::gamelog_autorec_building_repair > 0 )
-					{
-						my $building_repair_before = $player{'stats_buildingRepair'} % $brconfig::gamelog_autorec_building_repair;
-						my $building_repair_after = ( $player{'stats_buildingRepair'} - $object{'damage'} ) % $brconfig::gamelog_autorec_building_repair;
-
-						# The before and after are whole numbers, NOT decimal numbers
-						# If the remainder is lower we passed the rec points again
-						if ( $building_repair_before > $building_repair_after )
-						{
-							auto_rec( $player{'name'}, "Defending the base" );
-						}
-					}
 				}
 				elsif ($object{type} eq "VEHICLE")
 				{
@@ -452,20 +436,6 @@ sub damaged
 					{
 						# Because the damage is negative, we take it OFF the vehicle repair ( minus minus = positive )
 						playerData::setKeyValue ( $player{'id'}, "stats_vehicleRepair", $player{'stats_vehicleRepair'} - $object{'damage'} );
-
-						# $player{stats_buildingRepair} is the old value, as we have a copy
-						if ( $brconfig::gamelog_autorec_vehicle_repair > 0 )
-						{
-							my $vehicle_repair_before = $player{'stats_vehicleRepair'} % $brconfig::gamelog_autorec_vehicle_repair;
-							my $vehicle_repair_after = ( $player{'stats_vehicleRepair'} - $object{'damage'} ) % $brconfig::gamelog_autorec_vehicle_repair;
-
-							# The before and after are whole numbers, NOT decimal numbers
-							# If the remainder is lower we passed the rec points again
-							if ( $vehicle_repair_before > $vehicle_repair_after )
-							{
-								auto_rec( $player{'name'}, "Good Tank Support" );
-							}
-						}
 					}
 				}
 			}
@@ -789,61 +759,12 @@ sub killed
 						&& $killed->{preset} !~ m/Ceiling_Gun/i
 					)
 					{
-						my $newBuildingKills = playerData::incrementKeyValue ( $killer->{'name'}, "stats_buildingKills" );
-
-						# If we have an odd number of buildings killed remember it for
-						# when they kill another building
-						if ( $newBuildingKills % 2 != 0 )		# Odd (first building)
-							{ playerData::setKeyValue ( $killer->{'name'}, "stats_buildingKills_buildingA", translatePreset ( $object{killed_preset} ) ); }
-
-						else
-						{
-							# If we have an even number of buildings killed then recommend then
-							my $building_1 = playerData::getKeyValue ( $killer->{'name'}, "stats_buildingKills_buildingA" );
-							my $building_2 = translatePreset ( $object{killed_preset} );
-							auto_rec( $killer->{'name'}, "Destroyed $building_1 and $building_2" );
-						}
+						playerData::incrementKeyValue ( $killer->{'name'}, "stats_buildingKills" );
 					}
 					elsif ( $killed->{type} eq "VEHICLE" && $killed->{drivers} > 0 )
 					{
 						# Increment number of vehicles killed
 						playerData::incrementKeyValue ( $killer->{'name'}, "stats_vehicleKills" );
-
-						# If this preset is defined as a light vehicle...
-						if ( exists $light_armored_vehicles{$object{killed_preset}} )
-						{
-							my $newLightVehicleKills = playerData::incrementKeyValue ( $killer->{'name'}, "stats_lightVehicleKills" );
-
-							if ( !defined ( $newLightVehicleKills ) )
-								{ return; }
-
-							if ( $brconfig::gamelog_autorec_light_vehicle_kills > 0 )
-							{
-								my $autorec = $newLightVehicleKills % $brconfig::gamelog_autorec_light_vehicle_kills;
-								if ( $autorec eq 0 && $brconfig::gamelog_autorec_light_vehicle_kills > 0 )
-								{
-									auto_rec( $killer->{'name'}, "Killed " . $brconfig::gamelog_autorec_light_vehicle_kills . " light armored vehicles" );
-								}
-							}
-						}
-
-						# If this preset is defined as a heavy vehicle...
-						if ( exists $heavy_armored_vehicles{$object{killed_preset}} )
-						{
-							my $newHeavyVehicleKills = playerData::incrementKeyValue ( $killer->{'name'}, "stats_heavyVehicleKills" );
-
-							if ( !defined ( $newHeavyVehicleKills ) )
-								{ return; }
-
-							if ( $brconfig::gamelog_autorec_heavy_vehicle_kills > 0 )
-							{
-								my $autorec = $newHeavyVehicleKills % $brconfig::gamelog_autorec_heavy_vehicle_kills;
-								if ( $autorec eq 0 && $brconfig::gamelog_autorec_heavy_vehicle_kills > 0 )
-								{
-									auto_rec( $killer->{'name'}, "Killed " . $brconfig::gamelog_autorec_heavy_vehicle_kills . " heavy armored vehicles" );
-								}
-							}
-						}
 					}
 				}
 			}
@@ -1112,24 +1033,22 @@ sub clear
 	{ delete $curplayers{$player}; }
 
 
-	# Clear stats for all players
-	my %playerlist = playerData::getPlayerList();
-	while ( my ( $id, $player ) = each ( %playerlist ) )
-	{
-		playerData::deleteKeyValue ( $id, "stats_kills" );
-		playerData::deleteKeyValue ( $id, "stats_deaths" );
-		playerData::deleteKeyValue ( $id, "stats_buildingKills" );
-		playerData::deleteKeyValue ( $id, "stats_buildingKills_buildingA" );
-		playerData::deleteKeyValue ( $id, "stats_buildingRepair" );
-		playerData::deleteKeyValue ( $id, "stats_vehicleKills" );
-		playerData::deleteKeyValue ( $id, "stats_lightVehicleKills" );
-		playerData::deleteKeyValue ( $id, "stats_heavyVehicleKills" );
-		playerData::deleteKeyValue ( $id, "stats_vehicleRepair" );
-	}
+  # Clear stats for all players
+  my %playerlist = playerData::getPlayerList();
+  while ( my ( $id, $player ) = each ( %playerlist ) )
+  {
+    playerData::deleteKeyValue ( $id, "stats_kills" );
+    playerData::deleteKeyValue ( $id, "stats_deaths" );
+    playerData::deleteKeyValue ( $id, "stats_buildingKills" );
+    playerData::deleteKeyValue ( $id, "stats_buildingKills_buildingA" );
+    playerData::deleteKeyValue ( $id, "stats_buildingRepair" );
+    playerData::deleteKeyValue ( $id, "stats_vehicleKills" );
+    playerData::deleteKeyValue ( $id, "stats_vehicleRepair" );
+  }
 
-	# Clear last purchases
-	$last_purchase_nod = "";
-	$last_purchase_gdi = "";
+  # Clear last purchases
+  $last_purchase_nod = "";
+  $last_purchase_gdi = "";
 }
 
 
@@ -1396,27 +1315,6 @@ sub show_stats
 	or modules::display_error($@);
 }
 
-sub auto_rec
-{
-	my $name = shift;
-	my $comment = shift;
-
-	return if ( $startup == 1 );
-
-	if ( modules::get_module( "autorecs" ) )
-	{
-		# Check they are not rec ignored
-		if ( modules::is_rec_ignored( $name ) )
-		{
-			RenRem::RenRemCMD( "msg [BR] $name was unable to recieve their recommendation for $comment because they have been added to the recignore list by an administrator or moderator." );
-			return;
-		}
-
-		modules::recommend_player( $name, "BRenBot", $comment );
-		bhs::playsndp( "bonus_complete.wav", $name );
-	}
-}
-
 sub vehicle_purchase_renlog
 {
 	my $playername = shift;
@@ -1492,8 +1390,6 @@ sub loadPresets
 	%presets = ();
 	%weapons = ();
 	%vehicles = ();
-	%light_armored_vehicles = ();
-	%heavy_armored_vehicles = ();
 	%wreckages = ();
 
 	eval
@@ -1516,8 +1412,6 @@ sub loadPresets
 							if ( $currentSection eq "PRESETS" ) { $presets{$1} = $2; }
 							elsif ( $currentSection eq "WEAPONS" ) { $weapons{$1} = $2; }
 							elsif ( $currentSection eq "VEHICLES" ) { $vehicles{$1} = $2; }
-							elsif ( $currentSection eq "LIGHT_VEHICLES" ) { $light_armored_vehicles{$1} = $2; }
-							elsif ( $currentSection eq "HEAVY_VEHICLES" ) { $heavy_armored_vehicles{$1} = $2; }
 							elsif ( $currentSection eq "WREAKAGES" ) { $wreckages{$1} = $2; }
 						}
 					}
