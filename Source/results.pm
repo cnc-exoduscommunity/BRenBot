@@ -11,12 +11,12 @@ our $mostkills;
 our $mostdeaths;
 our $mostkd;
 
-sub DisplayGameResults
+sub ProcessGameResults
 {
-  	my $kernel = $_[KERNEL];
+  my $kernel = $_[KERNEL];
 
-	my $map = serverStatus::getLastMap();
-	$map =~ s/\.mix//g;
+  my $map = serverStatus::getLastMap();
+  $map =~ s/\.mix//g;
 
 	# Instead of messing around sorting arrays, just store the
 	# results in these variables
@@ -39,6 +39,8 @@ sub DisplayGameResults
 
 		if ( open ( LOGFILE, $file ) )
 		{
+      modules::console_output ( "Processing game results from $file..." );
+      
 			while ( <LOGFILE> )
 			{							#take one input line at a time
 			  chomp;
@@ -95,19 +97,23 @@ sub DisplayGameResults
 					# Check for best score / most kills / best KD
 					if ( $hash{score} > $bestScore )
 					{
-						$bestScore = $hash{'score'};	$bestScoreName = $hash{'name'};
+						$bestScore = $hash{'score'};
+            $bestScoreName = $hash{'name'};
 					}
 					if ( $hash{kills} > $bestKills )
 					{
-						$bestKills = $hash{'kills'};	$bestKillsName = $hash{'name'};
+						$bestKills = $hash{'kills'};
+            $bestKillsName = $hash{'name'};
 					}
 					if ( $hash{kdratio} > $bestKD )
 					{
-						$bestKD = $hash{'kdratio'};		$bestKDName = $hash{'name'};
+						$bestKD = $hash{'kdratio'};
+            $bestKDName = $hash{'name'};
 					}
 					if ( $hash{kdratio} < $worstDeaths )
 					{
-						$worstDeaths = $hash{'death'};	$worstDeathsName = $hash{'name'};
+						$worstDeaths = $hash{'death'};
+            $worstDeathsName = $hash{'name'};
 					}
 				}
 			}	# End file read while loop
@@ -115,78 +121,26 @@ sub DisplayGameResults
 			close LOGFILE;
 
 
-			# Trigger plugin gameresult event
-			my @plugins = plugin::get_plugin_event( "gameresult" );
-			my %args;
-			$args{gameresults} = \@results;
-			foreach ( @plugins )
-			{
-				my $plugin = $_;
-				my $alias = "plugin_" . $plugin;
-
-				$kernel->post( $alias => "gameresult" => \%args );
-			}
+      # Update the autoannounce cookies
+      $mostkills  = ( $bestKills == 0 )   ? '' : "$bestKillsName has the most kills during the last map with $bestKills frags";
+      $mostdeaths = ( $worstDeaths == 0 ) ? '' : "$worstDeathsName died the most during the last map with $worstDeaths deaths";
+      $mostkd     = ( $bestKD == 0 )      ? '' : "$bestKDName had the best kills to deaths ratio during the last map with $bestKD";
 
 
-			# Create session to show results in a 45 seconds time
-			POE::Session->create
-			( inline_states =>
-				{
-					_start => sub
-					{
-						$_[HEAP]->{next_alarm_time} = int( time() ) + 45;
-						$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
-					},
-					tick => sub
-					{
-						modules::console_output ( "Processing game results" );
+      # Trigger plugin gameresult event
+      my @plugins = plugin::get_plugin_event( "gameresult" );
+      my %args;
+      $args{'map'} = $map;
+      $args{'gameresults'} = \@results;
+      foreach ( @plugins )
+      {
+        my $plugin = $_;
+        my $alias = "plugin_" . $plugin;
 
-						# MVP recommendation
-						if ( $bestScore >= $brconfig::config_autorec_minscore )
-						{
-							modules::recommend_player( $bestScoreName, "BRenBot", "MVP on $map with $bestScore points" );
-							bhs::playsndp( "bonus_complete.wav", $bestScoreName );
-						}
-
-						# Most Kills recommendation
-						if ( $bestKills >= $brconfig::config_autorec_minkills )
-						{
-							modules::recommend_player( $bestKillsName, "BRenBot", "Most Kills on $map with $bestKills frags" );
-							bhs::playsndp( "bonus_complete.wav", $bestKillsName );
-						}
-
-						# Best K/D ratio recommendation
-						if ( $bestKD >= $brconfig::config_autorec_minkd )
-						{
-							modules::recommend_player( $bestKDName, "BRenBot", "Best K/D Ratio on $map with $bestKD" );
-							bhs::playsndp( "bonus_complete.wav", $bestKDName );
-						}
-
-						# Most kills lastgame autoannounce cookie
-						$mostkills= "";
-						if ( $bestKills > 0 )
-						{
-							$mostkills = "Most KILLS last game was $bestKillsName with $bestKills frags";
-						}
-
-						# Most deaths lastgame autoannounce cookie
-						$mostdeaths= "";
-						if ( $worstDeaths > 0 )
-						{
-							$mostdeaths = "Most DEATHS last game was $worstDeathsName with $worstDeaths deaths";
-						}
-
-						# Best KD lastgame autoannounce cookie
-						$mostkd= "";
-						if ( $bestKD > 0 )
-						{
-							$mostkd = "The highest Kill/Death ratio last game was $bestKDName with $bestKD";
-						}
-					} # end of tick
-				} # end of inline states
-			);
-		}
-	}
+        $kernel->post( $alias => "gameresult" => \%args );
+      }
+    }
+  }
 }	# End sub DisplayGameResults
 
 

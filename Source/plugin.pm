@@ -938,6 +938,37 @@ sub plugin::team_get_colourised_abbreviation { return brTeams::get_colourised_ab
 
 ###################################################
 ####
+## Sound effects
+####
+###################################################
+
+# Plays a 2D sound effect for the specified player
+sub play_sound_for_player
+{
+  my $player = shift;
+  my $sound = shift;
+  
+  return bhs::playsndp($sound, $player);
+}
+
+# Plays a 2D sound effect for the specified team, by ID, name or abbreviation
+sub play_sound_for_team
+{
+  my $team = shift;
+  my $sound = shift;
+  
+  return bhs::playsndp_team($sound, $team);
+}
+
+
+
+
+
+
+
+
+###################################################
+####
 ## Deprecated API functions for plugins
 ####
 ###################################################

@@ -102,6 +102,64 @@ sub command
   $_[KERNEL]->yield ( $args{'command'} => \%args );
 }
 
+# Gameresult event - Triggers once BRenBot has read the results##.txt file at the end of the map
+sub gameresult
+{
+  my %args = %{$_[ ARG0 ]};
+  my @results = @{$args{'gameresults'}};
+  
+  # Data storage...
+  my $mvp = undef;
+  my $mvp_score = $config{'autorec_min_score'}-1;
+  my $mostkills = undef;
+  my $mostkills_kills = $config{'autorec_min_kills'}-1;
+  my $bestkd = undef;
+  my $bestkd_kd = $config{'autorec_min_kd'}-0.01;
+
+  # Process the results array
+  foreach ( @results )
+  {
+    if ( $_->{'score'} > $mvp_score )
+    {
+      $mvp = $_->{'name'};
+      $mvp_score = $_->{'score'};
+    }
+    
+    if ( $_->{'kills'} > $mostkills_kills )
+    {
+      $mostkills = $_->{'name'};
+      $mostkills_kills = $_->{'score'};
+    }
+    
+    if ( $_->{'kdratio'} > $bestkd_kd )
+    {
+      $bestkd = $_->{'name'};
+      $bestkd_kd = $_->{'kdratio'};
+    }
+  }
+  
+  # Grant recommendations in 45 seconds time (giving the next map time to load)
+  POE::Session->create
+  (
+    inline_states =>
+    {
+      _start => sub
+      {
+        $_[KERNEL]->delay('grant_recommendations' => 45);
+      },
+      show_joinmessage => sub
+      {
+        if ( defined($mvp) )
+          { recommend_player( $mvp, 'BRenBot', 'MVP on '.$args{'map'}.' with '.$mvp_score.' points' ); }
+        if ( defined($mostkills) )
+          { recommend_player( $mostkills, 'BRenBot', 'Most Kills on '.$args{'map'}.' with '.$mostkills_kills.' frags' ); }
+        if ( defined($bestkd) )
+          { recommend_player( $bestkd, 'BRenBot', 'Best K/D Ratio on '.$args{'map'}.' with '.$bestkd_kd ); }
+      }
+    }
+  );
+}
+
 
 
 
@@ -371,6 +429,7 @@ sub recommend_player
 
   # Announce recommendation
   plugin::servermsg ( $name.' has been recommended by '.$recommender.' for: '.$reason );
+  plugin::play_sound_for_player ( $name, 'bonus_complete.wav' );
 
   # Does a record exist for this player?
   my @recData = plugin::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );

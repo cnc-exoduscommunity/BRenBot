@@ -151,58 +151,29 @@ sub playsnda
 
 sub playsndp
 {
-	my $filename = shift;
-	my $name = shift;
+  my $filename  = shift;
+  my $player    = shift;
 
-	if (modules::get_module("bhs") )
-	{
-		my ($result, %player) = playerData::getPlayerData($name);
-		if ($result == 1)
-		{
-	   		if ( $player{'scriptsVersion'} >= 1.9)
-	   		{
-	   			RenRem::RenRemCMD("sndp $player{id} $filename");
-	   		}
-		}
-	}
+  if (modules::get_module("bhs") )
+  {
+    my ($result, %player) = playerData::getPlayerData($player);
+    if ($result == 1 && $player{'scriptsVersion'} >= 1.9)
+      { RenRem::RenRemCMD("sndp $player{id} $filename"); }
+  }
 }
 
 
 sub playsndp_team
 {
-	my $filename = shift;
-	my $team = shift;
-
-
-	if ($team eq "GDI" || $team eq "All")
-	{
-		my %playerData = playerData::getPlayerList();
-		while ( my ( $id, $player ) = each ( %playerData ) )
-		{
-			if ( $player->{'side'} eq "GDI" || $player->{'side'} eq "All" )
-			{
-	   			if ( $player->{'scriptsVersion'} >= 1.9 )
-	   			{
-					RenRem::RenRemCMD( "sndp $player->{id} $filename" );
-				}
-			}
-		}
-	}
-
-	elsif ($team eq "NOD" || $team eq "Sov")
-	{
-		my %playerData = playerData::getPlayerList();
-		while ( my ( $id, $player ) = each ( %playerData ) )
-		{
-			if ( $player->{'side'} eq "NOD" || $player->{'side'} eq "Sov" )
-			{
-	   			if ( $player->{'scriptsVersion'} >= 1.9 )
-	   			{
-					RenRem::RenRemCMD( "sndp $player->{id} $filename" );
-				}
-			}
-		}
-	}
+  my $filename  = shift;
+  my $teamid    = brTeams::get_id_from_name(shift);
+  
+  my %playerData = playerData::getPlayerList();
+  while ( my ( $id, $player ) = each ( %playerData ) )
+  {
+    if ( $player{'teamid'} == $teamid && $player->{'scriptsVersion'} >= 1.9 )
+      { RenRem::RenRemCMD( "sndp $player->{id} $filename" ); }
+  }
 }
 
 

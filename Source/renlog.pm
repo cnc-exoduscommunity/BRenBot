@@ -890,20 +890,17 @@ sub ParseLogInput
 			$brconfig::config_force_bhs_dll_map = 0;
 
 			# Schedule game results to run in 1 second
-			if ( modules::get_module( "gameresults" ) )
-			{
-				POE::Session->create
-				( inline_states =>
-					{
-						_start => sub
-						{
-							$_[HEAP]->{next_alarm_time} = int( time() ) + 1;
-							$_[KERNEL]->alarm( do_results => $_[HEAP]->{next_alarm_time} );
-						},
-						do_results => \&results::DisplayGameResults
-					}
-				);
-			}
+      POE::Session->create
+      ( inline_states =>
+        {
+          _start => sub
+          {
+            $_[HEAP]->{next_alarm_time} = int( time() ) + 1;
+            $_[KERNEL]->alarm( do_results => $_[HEAP]->{next_alarm_time} );
+          },
+          do_results => \&results::ProcessGameResults
+        }
+      );
 
 			# Issue a mapnum command to ensure the map number is updated
 			RenRem::RenRemCMD ( "mapnum" );
