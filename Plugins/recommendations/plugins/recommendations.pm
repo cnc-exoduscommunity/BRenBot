@@ -36,6 +36,8 @@ our %additional_events =
 );
 
 my $loaded_ok = 0;
+my $tpLastUsed = 0;   # Global variable used to track last used time for !teamplayers/!shown00bs
+my @joinmessages;
 
 
 
@@ -52,6 +54,9 @@ sub start()
 
   # Set our current version in the globals table
   plugin::set_global ( "version_plugin_recommendations", $pluginVersion );
+  
+  read_recs();
+  
   return ($loaded_ok = 1);
 }
 
@@ -73,7 +78,20 @@ sub playerjoin
   return if ($loaded_ok == 0);
 
   my %args = %{@_[ ARG0 ]};
-  show_recommendations($args{'nick'});
+  
+  # Show join message after 5 seconds
+  POE::Session->create
+  (
+    inline_states =>
+    {
+      _start => sub
+      {
+        $_[HEAP]->{'playername'} = $args{'nick'};
+        $_[KERNEL]->delay('show_joinmessage' => 5);
+      },
+      show_joinmessage => \&show_joinmessage
+    }
+  );
 }
 
 sub command
@@ -120,7 +138,7 @@ sub recommend
     my $target = $1;
     my $reason = $2;
 
-    my ( $result, %player ) = playerData::getPlayerData ( $target );
+    my ( $result, %player ) = plugin::getPlayerData ( $target );
     if ( $result == 1 )
     {
       if ( $player{'name'} eq $args{'nick'} and $isNoob == 0 )
@@ -129,10 +147,10 @@ sub recommend
         return;
       }
 
-      my $can_recommend = modules::can_recommend ( $args{'nick'}, $player{'name'}, $isNoob );
+      my $can_recommend = can_recommend ( $args{'nick'}, $player{'name'}, $isNoob );
       if ( $can_recommend == 1 )
       {
-        plugin::recommend_player( $player{'name'}, $args{'nick'}, $reason );
+        recommend_player( $player{'name'}, $args{'nick'}, $reason );
       }
       elsif ( $can_recommend == 2 )
       {
@@ -187,7 +205,7 @@ sub recignore
     return;
   }
 
-  my ( $result, %player ) = playerData::getPlayerData( $args{'arg1'} );
+  my ( $result, %player ) = plugin::getPlayerData( $args{'arg1'} );
   if ( $result == 1 )
   {
     plugin::serverMsg( "Recommendations have been disabled for $player{name}.");
@@ -216,7 +234,7 @@ sub recallow
     return;
   }
 
-  my ( $result, %player ) = playerData::getPlayerData( $args{'arg1'} );
+  my ( $result, %player ) = plugin::getPlayerData( $args{'arg1'} );
   if ( $result == 1 )
   {
     plugin::serverMsg( "Recommendations have been enabled for ".$player{'name'} );
@@ -234,8 +252,8 @@ sub recallow
 }
 
 
-# Function for the !teamplayers / !shown00bs command
-my $tpLastUsed = 0;   # Global variable used to track last used time
+# !teamplayers / !shown00bs commands, these commands list the total recommendations or n00bs for all
+# players currently in the server
 sub teamplayers
 {
   my %args = %{$_[ ARG0 ]};
@@ -245,7 +263,7 @@ sub teamplayers
   my $playerCount = (plugin::getGameStatus())[6];
   if ( $playerCount == 0 )
   {
-    brIRC::ircmsg ( "There are no players in the server" $args{'ircChannelCode'} );
+    plugin::ircmsg ( "There are no players in the server" $args{'ircChannelCode'} );
     return;
   }
 
@@ -253,7 +271,7 @@ sub teamplayers
   # Too recently used?
   if ( time() - $tpLastUsed < 120 )
   {
-    if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "The !teamplayers/!shown00bs commands can only be used once every 2 minutes!" ); }
+    if ( $args{'nicktype'} == 1 ) { plugin::ircmsg ( "The !teamplayers/!shown00bs commands can only be used once every 2 minutes!" ); }
     else { plugin::serverMsg ( "The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations." ); }
     return;
   }
@@ -296,13 +314,13 @@ sub teamplayers_processTeam
   my $string      = "";
   my $count       = 0;
 
-  my %teamplayers = playerData::getPlayersByTeam($teamid);
+  my %teamplayers = plugin::getPlayersByTeam($teamid);
   while ( my ( $id, $player ) = each ( %teamplayers ) )
   {
     my $recs = ( $showNoobs == 1 ) ? get_n00b($player->{'name'}) : get_recommendation($player->{'name'});
   
     $string .= "," if string ne "";
-    $string .= " ".modules::parseModName($player->{'name'}, $ircChannel);
+    $string .= " ".plugin::parseModName($player->{'name'}, $ircChannel);
     $string .= " (" . $recs . ")";
 
     if ( ++$count >= 5 )
@@ -340,18 +358,225 @@ sub teamplayers_outputTeam
 
 # --------------------------------------------------------------------------------------------------
 ##
+#### Data lookup & storage functions
+##
+# --------------------------------------------------------------------------------------------------
+
+# Adds a recommentation record for a player
+sub recommend_player
+{
+  my $name        = shift;        $name =~ s/'/''/g;
+  my $recommender = shift;        $recommender =~ s/'/''/g;
+  my $reason      = shift;        $reason =~ s/'/''/g;
+
+  # Announce recommendation
+  plugin::servermsg ( $name.' has been recommended by '.$recommender.' for: '.$reason );
+
+  # Does a record exist for this player?
+  my @recData = plugin::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );
+  if ( scalar(@recData) > 0 )
+    # Record exists, update it
+    { plugin::execute_query ( "UPDATE recommendations SET recommendations = recommendations + 1 WHERE LOWER(name) = '".lc($name)."'", 1 ); }
+  else
+    # Record does not exist, insert as new record
+    { plugin::execute_query ( "INSERT INTO recommendations ( name, recommendations ) VALUES ( '$name', 1 )", 1 ); }
+
+  # Record the recommendation in the recent history
+  plugin::execute_query ( "INSERT INTO recommendations_recent_history ( timestamp, recommender, recommendee, isN00b, reason ) VALUES ( ".time().", '$recommender', '$name', 0, '$reason' )" );
+}
+
+# Gets the current recommendation count for a player
+sub get_recommendation
+{
+  my $name        = lc(shift);    $name =~ s/'/''/g;
+
+  my @recData = plugin::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '$name'" );
+  if ( scalar(@recData) > 0 )
+    { return $recData[0]->{'recommendations'}; }
+  return 0;
+}
+
+# Adds a n00b record for a player
+sub n00b_player
+{
+  my $name        = shift;        $name =~ s/'/''/g;
+  my $n00ber      = shift;        $n00ber =~ s/'/''/g;
+  my $reason      = shift;        $reason =~ s/'/''/g;
+
+  # Announce recommendation
+  plugin::servermsg ( $name.' has been marked a n00b by '.$n00ber.' for: '.$reason );
+
+  # Does a record exist for this player?
+  my @recData = plugin::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );
+  if ( scalar(@recData) > 0 )
+    # Record exists, update it
+    { plugin::execute_query ( "UPDATE recommendations SET n00bs = n00bs + 1 WHERE LOWER(name) = '".lc($name)."'", 1 ); }
+  else
+    # Record does not exist, insert as new record
+    { plugin::execute_query ( "INSERT INTO recommendations ( name, n00bs ) VALUES ( '$name', 1 )", 1 ); }
+
+  # Record the n00bing in the recent history
+  plugin::execute_query ( "INSERT INTO recommendations_recent_history ( timestamp, recommender, recommendee, isN00b, reason ) VALUES ( ".time().", '$n00ber', '$name', 1, '$reason' )" );
+}
+
+# Gets the current recommendation count for a player
+sub get_n00b
+{
+  my $name        = lc(shift);    $name =~ s/'/''/g;
+
+  my @recData = plugin::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '$name'" );
+  if ( scalar(@recData) > 0 )
+    { return $recData[0]->{'n00bs'}; }
+  return 0;
+}
+
+# Marks a player as rec ignored, so they cannot recieve or give recommendations
+sub rec_ignore
+{
+  my $name        = lc(shift);    $name =~ s/'/''/g;
+  plugin::execute_query( "INSERT IGNORE INTO recommendations_ignored_users (name) VALUES ( '$name' )", 1 );
+}
+
+# Checks if a specific player is marked as rec ignored
+sub is_rec_ignored
+{
+  my $name        = lc(shift);    $name =~ s/'/''/g;
+
+  my @array = plugin::execute_query( "SELECT * FROM recommendations_ignored_users WHERE LOWER(name) = '$name'" );
+  return (scalar(@array) >= 1) ? 1 : 0;
+}
+
+# Unmarks a player as rec ignored, so they can give and recieve recommendations again
+sub rec_allow
+{
+  my $name        = lc(shift);    $name =~ s/'/''/g;
+  plugin::execute_query( "DELETE FROM recommendations_ignored_users WHERE LOWER(name) = '$name'", 1 );
+}
+
+# Checks whether recommender can recommend (or n00b if isN00b = 1) recommendee at this time.
+#
+# \param[in] $recommender
+# \param[in] $recommendee
+# \param[in] $isNoob
+#   Is the recommender trying to mark the recommendee as a n00b?
+#
+# \return
+#   1 if the recommender can recommend (or n00b) the recommendee, 0 if they have already recommended
+#   (or n00bed) recomendee today or 2 if they have exceeded their daily recommendations quota
+sub can_recommend
+{
+  my $recommender = lc(shift);    $recommender =~ s/'/''/g;
+  my $recommendee = lc(shift);    $recommendee =~ s/'/''/g;
+  my $isNoob      = shift;
+
+  # Wipe records older than 1 week
+  my $cutoff = time() - 604800;
+  plugin::execute_query ( "DELETE FROM recommendations_recent_history WHERE timestamp < $cutoff", 1 );
+
+  # We are only interested in activity in the last 24 hours
+  $cutoff = time() - 86400;
+
+  # Check to see if recommender has recommended (or n00bed) recommendee since the cutoff point
+  my @result = plugin::execute_query ( "SELECT COUNT(*) AS count FROM recommendations_recent_history WHERE LOWER(recommender) = '$recommender' AND LOWER(recommendee) = '$recommendee' AND isN00b = $isNoob AND timestamp >= $cutoff" );
+  if ( $result[0]->{'count'} > 0 ) { return 0; }
+
+  # Check to see if recommender has exceeded their recommendations & n00bs quota
+  @result = plugin::execute_query ( "SELECT COUNT(*) AS count FROM recommendations_recent_history WHERE LOWER(recommender) = '$recommender' AND timestamp >= $cutoff" );
+  if ( $result[0]->{'count'} >= 5 ) { return 2; }
+
+  # No problems found, OK to recommend / n00b
+  return 1;
+}
+
+
+
+
+# --------------------------------------------------------------------------------------------------
+##
 #### Utility functions
 ##
 # --------------------------------------------------------------------------------------------------
 
+# Reports a syntax error to the user when using a !command with the wrong parameters
 sub report_syntax_error
 {
   my(%args) = @_;
   
   my $syntaxvalue = $args{'settings'}->{'syntax'}->{'value'};
 
-  if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
+  if ( $args{'nicktype'} == 1 ) { plugin::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
   else { plugin::pagePlayer( $args{'nick'}, 'BRenBot', "Usage: $syntaxvalue" ); }
+}
+
+# Reads the recommendation based join message strings from the configuration file
+sub read_recs
+{
+  open ( FILE, "<plugins/recommendations.cfg" ) or return;
+  while ( <FILE> )
+  {
+    chomp $_;
+    if ( $_ =~ /^\[(-?\d+);(-?\d+)\](.+)/ )
+    {
+      my $min = ( $1 < $2 ) ? $1 : $2;
+      my $max = ( $1 < $2 ) ? $2 : $1;
+
+      # Remove line breaks here instead of later on, and trim whitespace
+      my $message = $3;
+      $message =~ s/[\n\r]//g;
+      chomp $message;
+
+      my %hash = (
+        'min' => $min,
+        'max' => $max,
+        'message' => $message
+      );
+
+      push (@joinmessages, \%hash);
+    }
+  }
+  close ( FILE );
+}
+
+# Shows a formatted join message for a player based on their total recommendations
+sub show_joinmessage
+{
+  my ( $result, %player ) = plugin::getPlayerData( $_[HEAP]->{'playername'} );
+  if ( $result == 1 )
+  {
+    my $recommendations = get_recommendation($player->{'name'})-get_n00b($player->{'name'});
+    
+    if ( 0 == $recommendations )
+    {
+      plugin::servermsg ( $player->{'name'} .' does not have any recommendations yet' );
+      return;
+    }
+
+    my $team = plugin::team_team_name($player->{'teamid'});
+    my $otherteam = plugin::team_get_name(($player->{'teamid'}==0)?1:0);
+    
+    my $maxrecs = scalar(@joinmessages);
+    my $line = "%nick has %rec recommendations.";
+
+    # If loopCount goes above 25 bail out and use default setting
+    srand();
+    for ( $i = 0; $i < 25; $i++ )
+    {
+      my %hash = %{$joinmessages[int(rand($maxrecs))]};
+      if ( ($recommendations >= $hash{'min'}) && ($recommendations <= $hash{'max'}) )
+      {
+        $line = $hash{'message'};
+        last;
+      }
+    }
+    
+    # Format message
+    $line =~ s/\%nick/$player->{'name'}/ig;
+    $line =~ s/\%rec/$recommendations/ig;
+    $line =~ s/\%team/$team/ig;
+    $line =~ s/\%otherteam/$otherteam/ig;
+    
+    plugin::servermsg ( $line );
+  }
 }
 
 
