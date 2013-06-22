@@ -49,12 +49,12 @@ my %autorec_cache;    # Tracks per-player data for auto recommendations
 ##
 # --------------------------------------------------------------------------------------------------
 
-sub start()
+sub start
 {
   return ($loaded_ok = 0) if ( db_update() != 1 );
 
   # Set our current version in the globals table
-  plugin::set_global ( "version_plugin_recommendations", $pluginVersion );
+  plugin::set_global ( "version_plugin_recommendations", $currentVersion );
   
   read_recs();
   
@@ -78,7 +78,7 @@ sub playerjoin
 {
   return if ($loaded_ok == 0);
 
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   
   # Show join message after 5 seconds
   POE::Session->create
@@ -99,14 +99,14 @@ sub command
 {
   return if ($loaded_ok == 0);
 
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   $_[KERNEL]->yield ( $args{'command'} => \%args );
 }
 
 # Gameresult event - Triggers once BRenBot has read the results##.txt file at the end of the map
 sub gameresult
 {
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   my @results = @{$args{'gameresults'}};
   
   # Data storage...
@@ -166,9 +166,9 @@ sub mapload
 {
   while ( my ( $player, $stats ) = each ( %autorec_cache ) )
   {
-    while ( my ( $stat_name, $state_value ) = each ( %{$stats} ) )
-      { delete %autorec_cache{$player}{$stat_name}; }
-    delete %autorec_cache{$player};
+    while ( my ( $stat_name, $stat_value ) = each ( %{$stats} ) )
+      { delete $autorec_cache{$player}{$stat_name}; }
+    delete $autorec_cache{$player};
   }
 }
 
@@ -186,7 +186,7 @@ sub gamelog_building_killed
 {
   return if ( $config{'autorec_two_buildings_killed'} <= 0 );
   
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   my $line = $args{'line'};
 
   #KILLED;BUILDING;1500000045;CnC_GDI_Barracks;72;-87;0;-175;1500001168;CnC_Nod_Minigunner_0;67;-95;0;-145;Weapon_AutoRifle_Player_Nod
@@ -199,7 +199,7 @@ sub gamelog_building_killed
       $autorec_cache{$player} = {} if (!exists($autorec_cache{$player}));
       
       if ( !defined($autorec_cache{$player}{'buildingKillA'}) )
-        { $autorec_cache{$player}{'buildingKillA'} => $building; }
+        { $autorec_cache{$player}{'buildingKillA'} = $building; }
       
       else
       {
@@ -220,20 +220,20 @@ sub gamelog_building_repair
 {
   return if ( $config{'autorec_min_building_repair'} <= 0 );
   
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   my $line = $args{'line'};
 
   #DAMAGED;BUILDING;1500000045;CnC_GDI_Barracks;72;-87;0;-175;1500001168;CnC_Nod_Minigunner_0;65;-104;0;-173;2.399994;150;147;0
   if ( $line =~ m/DAMAGED;BUILDING;\d+;[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(\d+);[^;]+;-?\d+;-?\d+;-?\d+;-?\d+;(-\d+\.\d+);\d+;\d+;\d+$/i )
   {
-    my $repairAmount = $2
+    my $repairAmount = $2;
     my $player = plugin::getPlayerFromObjectID($1);
     if ( defined ( $player ) )
     {
       $autorec_cache{$player} = {} if (!exists($autorec_cache{$player}));
       
       if ( !defined($autorec_cache{$player}{'buildingRepairs'}) )
-        { $autorec_cache{$player}{'buildingRepairs'} => $2; }
+        { $autorec_cache{$player}{'buildingRepairs'} = $2; }
       
       else
         { $autorec_cache{$player}{'buildingRepairs'} += $2; }
@@ -254,7 +254,7 @@ sub gamelog_vehicle_killed
 {
   return if ( $config{'autorec_min_vehicle_kills'} <= 0 );
   
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   my $line = $args{'line'};
 
   #KILLED;VEHICLE;1500000045;CnC_GDI_Humm-vee;72;-87;0;-175;1500001168;CnC_Nod_Minigunner_0;67;-95;0;-145;Weapon_AutoRifle_Player_Nod
@@ -266,7 +266,7 @@ sub gamelog_vehicle_killed
       $autorec_cache{$player} = {} if (!exists($autorec_cache{$player}));
       
       if ( !defined($autorec_cache{$player}{'vehicleKills'}) )
-        { $autorec_cache{$player}{'vehicleKills'} => 1; }
+        { $autorec_cache{$player}{'vehicleKills'} = 1; }
       
       else
         { $autorec_cache{$player}{'vehicleKills'} += 1; }
@@ -287,7 +287,7 @@ sub gamelog_vehicle_repair
 {
   return if ( $config{'autorec_min_vehicle_repair'} <= 0 );
   
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   my $line = $args{'line'};
 
   #DAMAGED;VEHICLE;1500000930;CnC_GDI_Medium_Tank;-132;4;-2;142;1500000189;CnC_GDI_Engineer_0;-127;4;-3;-92;-2.000000;400;390;0
@@ -299,7 +299,7 @@ sub gamelog_vehicle_repair
       $autorec_cache{$player} = {} if (!exists($autorec_cache{$player}));
       
       if ( !defined($autorec_cache{$player}{'vehicleRepairs'}) )
-        { $autorec_cache{$player}{'vehicleRepairs'} => $2; }
+        { $autorec_cache{$player}{'vehicleRepairs'} = $2; }
       
       else
         { $autorec_cache{$player}{'vehicleRepairs'} += $2; }
@@ -328,7 +328,7 @@ sub gamelog_vehicle_repair
 # good teamwork... or any other reason they like really.
 sub recommend
 {
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   my $isNoob = ($args{'command'} eq "n00b") ? 1 : 0;
 
   # Only available for use ingame
@@ -389,7 +389,7 @@ sub recommend
 # recommendations score
 sub recommendations
 {
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   # Only available for use ingame
   if ( $args{'nicktype'} == 1 )
@@ -410,7 +410,7 @@ sub recommendations
 # prevents them from giving or receiving recommendations
 sub recignore
 {
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   if (!$args{'arg1'})
   {
@@ -439,7 +439,7 @@ sub recignore
 # !recallow command, used by moderators to un-ignore players for the recommendations system
 sub recallow
 {
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   if (!$args{'arg1'})
   {
@@ -469,14 +469,14 @@ sub recallow
 # players currently in the server
 sub teamplayers
 {
-  my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   my $showNoobs = ($args{'command'} eq "shown00bs") ? 1 : 0;
   
   # Check if there are any players in the server
   my $playerCount = (plugin::getGameStatus())[6];
   if ( $playerCount == 0 )
   {
-    plugin::ircmsg ( "There are no players in the server" $args{'ircChannelCode'} );
+    plugin::ircmsg ( "There are no players in the server", $args{'ircChannelCode'} );
     return;
   }
 
@@ -532,7 +532,7 @@ sub teamplayers_processTeam
   {
     my $recs = ( $showNoobs == 1 ) ? get_n00b($player->{'name'}) : get_recommendation($player->{'name'});
   
-    $string .= "," if string ne "";
+    $string .= "," if ($string ne "");
     $string .= " ".plugin::parseModName($player->{'name'}, $ircChannel);
     $string .= " (" . $recs . ")";
 
@@ -555,7 +555,7 @@ sub teamplayers_outputTeam
   my $showNoobs   = shift;
   my $ircChannel  = shift;
   
-  if ( defined($ircChannel )
+  if ( defined($ircChannel) )
   {
     $string = plugin::team_colourise($teamid, plugin::irc_bold(plugin::team_get_name($teamid).":").$string);
     plugin::ircmsg($string, $ircChannel);
@@ -807,7 +807,7 @@ sub db_update
   # Note: BRenBot will update the database all the way up to the format that was used up to 1.54.13
   #       automatically for us, so we don't need to worry about it being any older than that
 
-  $db_version = plugin::get_global ( "version_plugin_recommendations" );
+  my $db_version = plugin::get_global ( "version_plugin_recommendations" );
   if ( defined($db_version) and $db_version > $currentVersion )
   {
     plugin::console_output("[Recommendations] The database has been modified by a newer version of"
@@ -816,11 +816,11 @@ sub db_update
   }
 
   # Current table definitions
-  my %tables = {
+  my %tables = (
     recommendations => "CREATE TABLE recommendations ( name TEXT PRIMARY KEY, recommendations INTEGER DEFAULT 0, n00bs INTEGER DEFAULT 0  )",
     recommendations_ignored_users => "CREATE TABLE recommendations_ignored_users ( name TEXT PRIMARY KEY )",
     recommendations_recent_history => "CREATE TABLE recommendations_recent_history ( timestamp INTEGER, recommender TEXT, recommendee TEXT, isN00b INTEGER, reason TEXT )"
-  };
+  );
 
   # Check which tables already exist...
   my @db_tables = plugin::execute_query( "SELECT name FROM sqlite_master" );
@@ -828,7 +828,7 @@ sub db_update
     { delete $tables{$_->{'name'}}; }
 
   # Create any missing tables
-  while ( (my $table, my $definition) = each %tables )
+  while ( my($table,$definition) = each %tables )
   {
     plugin::console_output("[Recommendations] Creating missing table " . $table);
     plugin::execute_query( $definition, 1 );
