@@ -4698,11 +4698,11 @@ sub plugins
   my %plugins = plugin::find_plugins();
 
   my @pluginStrings;
-  while ( my($plugin, $state) = each(%plugins))
+  while ( my($plugin, $data) = each(%plugins))
   {
-    my $pluginString = ( $state == 1 )
+    my $pluginString = ( $data->{'state'} == 1 )
       ? '09' . $plugin . ''
-      : ( $state == 2 )
+      : ( $data->{'state'} == 2 )
         ? '07' . $plugin . ''
         : '04' . $plugin . '';
     push ( @pluginStrings, $pluginString );

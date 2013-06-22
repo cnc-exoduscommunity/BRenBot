@@ -102,7 +102,7 @@ sub set_state
 
   if ( exists ($plugins{$plugin_name}) )
   {
-    $plugins{$plugin_name} = $plugin_state;
+    $plugins{$plugin_name}{'state'} = $plugin_state;
 
     # \todo Save the new enabled/disabled state to database...
   }
@@ -182,6 +182,7 @@ sub load_plugin
   if ($@)
   {
     modules::console_output ( "Failed!\n\tError loading $plugin_name.pm: $@", 3 );
+    unimport_plugin($plugin_name);
     set_state ( $plugin_name, 2 );
     return 2;
   }
@@ -199,6 +200,7 @@ sub load_plugin
   if ($@)
   {
     modules::console_output ( "Failed!\n\tError loading additional events: $@", 3 );
+    unimport_plugin($plugin_name);
     set_state ( $plugin_name, 2 );
     return 2;
   }
@@ -329,12 +331,10 @@ sub unload_plugin
       _start        => sub { $_[KERNEL]->delay('unload_plugin' => 5); },
       unload_plugin => sub
       {
-        eval "no $plugin_name;
-              Class::Unload->unload('$plugin_name');
-              delete \$INC{'$plugin_name.pm'};";
-        if ($@)
+        my $error = unimport_plugin($plugin_name);
+        if ($error)
         {
-          modules::console_output ( "[PLUGIN] Failed to unload $plugin_name.pm: $@" );
+          modules::console_output ( "[PLUGIN] Failed to unload $plugin_name.pm: $error" );
           set_state ( $plugin_name, 2 );
         }
 
@@ -345,6 +345,22 @@ sub unload_plugin
       },
     }
   );
+}
+
+# --------------------------------------------------------------------------------------------------
+
+#** function private unimport_plugin ( $$plugin_name )
+# \brief Attempts to unimport all namespaces from the specified plugin, used to tidy up after a
+#        failed plugin load or when unloading a plugin
+#*
+sub unimport_plugin
+{
+  my $plugin_name = shift;
+  
+  eval "no $plugin_name;
+        Class::Unload->unload('$plugin_name');
+        delete \$INC{'$plugin_name.pm'};";
+  return $@;
 }
 
 # --------------------------------------------------------------------------------------------------
