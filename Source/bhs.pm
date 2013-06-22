@@ -168,10 +168,10 @@ sub playsndp_team
   my $filename  = shift;
   my $teamid    = brTeams::get_id_from_name(shift);
   
-  my %playerData = playerData::getPlayerList();
-  while ( my ( $id, $player ) = each ( %playerData ) )
+  my %playerlist = playerData::getPlayerList();
+  while ( my ( $id, $player ) = each ( %playerlist ) )
   {
-    if ( $player{'teamid'} == $teamid && $player->{'scriptsVersion'} >= 1.9 )
+    if ( $player->{'teamid'} == $teamid && $player->{'scriptsVersion'} >= 1.9 )
       { RenRem::RenRemCMD( "sndp $player->{id} $filename" ); }
   }
 }

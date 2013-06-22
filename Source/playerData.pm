@@ -17,12 +17,27 @@ my %playerData;
 # Used by the parse_player_list function in renlog
 sub updatePlayerData
 {
-  my $id = shift;         my $name = shift;
-  my $score = shift;      my $side = shift;
-  my $ping = shift;       my $ip = shift;
-  my $kbps = shift;       my $time = shift;
+  my $id    = shift;      my $name  = shift;
+  my $score = shift;      my $side  = shift;
+  my $ping  = shift;      my $ip    = shift;
+  my $kbps  = shift;      my $time  = shift;
 
-  if ( exists ( $playerData{$id} ) and ( $playerData{$id}->{'name'} eq $name ) )
+  if ( !exists ( $playerData{$id} ) or ( $playerData{$id}->{'name'} ne $name ) )
+  {
+    # A new player has joined the game, clear any existing stale data... (shouldn't ever trigger...)
+    clearPlayerData ( $id ) if ( exists($playerData{$id}) );
+    
+    $playerData{$id} = {
+      'id'          => $id,
+      'name'        => $name,
+      'joinTime'    => time()
+    };
+
+    renlog::check_banlist ( $name );
+    modules::check_kicks ( $name );
+    RenRem::RenRemCMD ( "version $id" );
+  }
+  else
   {
     # If they have changed sides process teamchange plugin events
     if ( $playerData{$id}->{'changedTeam'} && $playerData{$id}->{'changedTeam'} == 1 )
@@ -30,37 +45,21 @@ sub updatePlayerData
       processTeamChangePlugins ( $name, $side, $playerData{$id}->{'side'} );
       $playerData{$id}->{'changedTeam'} = 0;
     }
-
-    $playerData{$id}->{'score'} = $score;
-    $playerData{$id}->{'side'} = $side;
-    $playerData{$id}->{'teamid'} = brTeams::get_id_from_name($side);
-    $playerData{$id}->{'ping'} = $ping;
-    $playerData{$id}->{'ip'} = $ip;
-    $playerData{$id}->{'kbps'} = $kbps;
-    $playerData{$id}->{'time'} = $time;
-    $playerData{$id}->{'lastUpdated'} = time();
   }
   
-  # A new player has joined the game!
-  clearPlayerData ( $id ) if ( exists($playerData{$id}) );
-  
+  # Update the player data array
   $playerData{$id} = {
-    'id' => $id,
-    'name' => $name,
-    'score' => $score,
-    'side' => $side,
-    'teamid' => brTeams::get_id_from_name($side);
-    'ping' => $ping,
-    'ip' => $ip,
-    'kbps' => $kbps,
-    'time' => $time,
-    'lastUpdated' => time(),
-    'joinTime' => time()
+    'id'          => $id,
+    'name'        => $name,
+    'score'       => $score,
+    'side'        => $side,
+    'teamid'      => brTeams::get_id_from_name($side),
+    'ping'        => $ping,
+    'ip'          => $ip,
+    'kbps'        => $kbps,
+    'time'        => $time,
+    'lastUpdated' => time()
   };
-
-  renlog::check_banlist ( $name );
-  modules::check_kicks ( $name );
-  RenRem::RenRemCMD ( "version $id" );
 }
 
 
@@ -104,12 +103,12 @@ sub clearPlayerData
 # If the FDS crashes this is called to clear all player data
 sub clearAllData
 {
-	foreach my $playerID ( keys %playerData )
-	{
-		foreach my $k ( keys %{$playerData{$playerID}} )
-		{ delete $playerData{$playerID}->{$k}; }
-		delete $playerData{$playerID};
-	}
+  foreach my $playerID ( keys %playerData )
+  {
+    foreach my $k ( keys %{$playerData{$playerID}} )
+    { delete $playerData{$playerID}->{$k}; }
+    delete $playerData{$playerID};
+  }
 }
 
 
@@ -238,45 +237,45 @@ sub deleteKeyValue
 # Returns a hash of all information for a specific player
 sub getPlayerData
 {
-	my $playerID = shift;
-	my $exactMatchOnly = shift;
+  my $playerID = shift;
+  my $exactMatchOnly = shift;
 
-	if ( $playerID !~ m/^\d\d?$/ )
-	{
-		my $result;
-		( $result, $playerID ) = playerNameToID ( $playerID, $exactMatchOnly );
-		if ( $result != 1 )
-			{ return $result, (); }
-	}
+  if ( $playerID !~ m/^\d\d?$/ )
+  {
+    my $result;
+    ( $result, $playerID ) = playerNameToID ( $playerID, $exactMatchOnly );
+    if ( $result != 1 )
+      { return $result, (); }
+  }
 
-	if ( exists ( $playerData{$playerID} ) )
-	{
-		return 1, %{$playerData{$playerID}};
-	}
+  if ( exists ( $playerData{$playerID} ) )
+  {
+    return 1, %{$playerData{$playerID}};
+  }
 
-	return 0, ();
+  return 0, ();
 }
 
 
 # Returns the value of the specified key, or undef if it does not exist
 sub getKeyValue
 {
-	my $playerID = shift;
-	my $keyName = shift;
+  my $playerID = shift;
+  my $keyName = shift;
 
-	if ( $playerID !~ m/^\d\d?$/ )
-	{
-		my $result;
-		($result, $playerID) = playerNameToID ( $playerID );
-		return undef if ( $result != 1 );
-	}
+  if ( $playerID !~ m/^\d\d?$/ )
+  {
+    my $result;
+    ($result, $playerID) = playerNameToID ( $playerID );
+    return undef if ( $result != 1 );
+  }
 
-	if ( exists ( $playerData{$playerID} ) )
-	{
-		if ( defined ( $playerData{$playerID}->{$keyName} ) )
-			{ return $playerData{$playerID}->{$keyName}; }
-	}
-	return undef;
+  if ( exists ( $playerData{$playerID} ) )
+  {
+    if ( defined ( $playerData{$playerID}->{$keyName} ) )
+      { return $playerData{$playerID}->{$keyName}; }
+  }
+  return undef;
 }
 
 
@@ -297,16 +296,12 @@ sub getPlayersByTeam
   if ( $teamid != -1 )
   {
     my %teamplayers;
-    while ( my ( $id, $player ) = each ( %playerlist ) )
+    while ( my ( $id, $player ) = each ( %playerData ) )
     {
       $teamplayers{$id} = $player if ( $player->{'teamid'} == $teamid );
     }
   }
 }
-
-
-
-
 
 
 # Processes changeteam events for plugins

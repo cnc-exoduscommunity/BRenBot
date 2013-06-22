@@ -13,13 +13,14 @@ use modules;
 use RenRem;
 
 
+my %plugins;                # List of all known plugins and their current states
 our %commands;              # Hash of commands and aliases in all plugins
 
 our %plugin_events_old;
 our %plugin_config;
 our %plugin_gamelog_regexes;
 our %plugin_renlog_regexes;
-our @plugins;               # List of all plugins
+our @loaded_plugins;        # List of all loaded plugins
 our @gamelogRegexPlugins;   # List of plugins which have gamelog hooks setup
 our @renlogRegexPlugins;    # List of plugins which have renlog hooks setup
 
@@ -27,56 +28,61 @@ our %core_function_overrides;
 
 # --------------------------------------------------------------------------------------------------
 
-sub get_plugins
+#** \function find_plugins()
+# \brief Checks for new plugins in the plugins directory
+#*
+sub find_plugins
 {
-  # \todo Update list of plugins in database - find_plugins or similar will do this when updated
+  my @deleted_plugins = keys %plugins;
+  
+  return unless(opendir(DATADIR, "plugins/"));
 
-  # Temporary implementation
-  unless(opendir(DATADIR, "plugins/"))
-    { return; }
-
-  use lib getcwd.'/plugins';
-
-  my %plugin_states = ();
-  my @plugin_files;
-  @plugin_files = grep(/\.pm$/i,readdir(DATADIR));
-
+  # Check plugins list in the plugins directory
+  my @plugin_files = grep(/\.pm$/i,readdir(DATADIR));
   foreach (@plugin_files)
   {
-    my $plugin = $_;
-    $plugin =~ s/\.pm$//g;
-    $plugin_states{$plugin} = get_state($plugin);
-  }
+    my $plugin_name = $_;
+    $plugin_name =~ s/\.pm$//g;
+    if ( !exists($plugins{$plugin_name}) )
+    {
+      $plugins{$plugin_name} = {
+        'name'    => $plugin_name,
+        'state'   => 0
+      };
+    }
 
+    my ($idx) = grep { $deleted_plugins[$_] eq $plugin_name } 0..$#deleted_plugins;
+    splice(@deleted_plugins,$idx,1) if defined($idx);
+  }
+  
   closedir(DATADIR);
 
-  return %plugin_states;
+  # Remove any plugins that we didn't find (unless they are in the "loaded" state)
+  foreach ( @deleted_plugins )
+    { delete $plugins{$_} if (get_state($_) != 1); }
+
+  return %plugins;
 }
 
 # --------------------------------------------------------------------------------------------------
 
+#** \function public init()
+# \brief Called when BRenBot is ready for the plugins subsystem to initialise, loads a list of known
+#        plugins and loads them as appropriate
+#
 # \todo This should check the database to see which plugins are enabled
 # \todo Config item - autoload new plugins (those not already known about - should this be done in find_plugins?)
-sub load_all_plugins
+sub init
 {
-  # \todo Update list of plugins in database - find_plugins or similar will do this when updated
-
-  unless(opendir(DATADIR, "plugins/"))
-    { return; }
-
+  find_plugins();
   use lib getcwd.'/plugins';
 
-  my @plugin_files;
-  @plugin_files = grep(/\.pm$/i,readdir(DATADIR));
-
-  foreach (@plugin_files)
+  while ( my($plugin,$data) = each(%plugins) )
   {
-    my $plugin = $_;
-    $plugin =~ s/\.pm$//g;
-    load_plugin ( $plugin );
-  }
+    # \todo Get initial state for plugin from database
 
-  closedir(DATADIR);
+    load_plugin($plugin);
+  }
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -92,8 +98,14 @@ sub load_all_plugins
 sub set_state
 {
   my $plugin_name = shift;
+  my $plugin_state = shift;
 
-  # \todo Finish this function
+  if ( exists ($plugins{$plugin_name}) )
+  {
+    $plugins{$plugin_name} = $plugin_state;
+
+    # \todo Save the new enabled/disabled state to database...
+  }
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -110,14 +122,10 @@ sub get_state
 {
   my $plugin_name = shift;
 
-  # \todo Finish this function
+  if ( defined($plugins{$plugin_name}) )
+    { return $plugins{$plugin_name}{'state'}; }
 
-  # Temporary until database code is added
-  my ($size,$idx) = (scalar(@plugins),0);
-  ++$idx until $idx >= $size or $plugins[$idx] eq $plugin_name;
-  return 1 if ( $idx < $size );
-
-  return 0;
+  return -1;
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -134,8 +142,13 @@ sub load_plugin
 {
   my $plugin_name = shift;
   my $plugin_state = get_state($plugin_name);
-
-  # \todo Update list of plugins in database - find_plugins or similar will do this when updated
+  
+  # If the plugin state was not found try checking the plugin directory to see if it was added...
+  if ( $plugin_state == -1 )
+  {
+    find_plugins();
+    return -1 if (($plugin_state = get_state($plugin_name)) == -1);
+  }
 
   # If the plugin was not found or is already loaded return relevant result code
   if ( $plugin_state == -1 )
@@ -229,7 +242,14 @@ sub load_plugin
                        { push(@{$_[HEAP]->{\'child_sessions\'}},$_[ARG1]); }
                    },'."\n";
       $poe .=     $additional_events;
-      $poe .= "    plugin_start => sub { plugin_event('".$plugin_name."','start',\@_); }, \n";
+      $poe .= "    plugin_start => sub {
+                     my \$result = plugin_event('".$plugin_name."','start',\@_);
+                     if ( defined(\$result) and \$result == 0 )
+                     {
+                       set_state('".$plugin_name."',2);
+                       unload_plugin('".$plugin_name."');
+                     }
+                   }, \n";
       $poe .= "    command => sub { plugin_event('".$plugin_name."','command',\@_); }, \n";
       $poe .= "    text => sub { plugin_event('".$plugin_name."','text',\@_); }, \n";
       $poe .= "    playerjoin => sub { plugin_event('".$plugin_name."','playerjoin',\@_); }, \n";
@@ -255,7 +275,7 @@ sub load_plugin
 
   # Plugin completely loaded, add it to the list of plugins
   # \todo once we finish the state get/set functions (database backed), do we need to keep this list?
-  push (@plugins, $plugin_name);
+  push (@loaded_plugins, $plugin_name);
 
   # Return success
   set_state ( $plugin_name, 1 );
@@ -297,9 +317,9 @@ sub unload_plugin
   delete $plugin_gamelog_regexes{$plugin_name};
   delete $plugin_renlog_regexes{$plugin_name};
 
-  my ($size,$idx) = (scalar(@plugins), 0);
-  ++$idx until $idx >= $size or $plugins[$idx] eq $plugin_name;
-  splice (@plugins,$idx,1) if ( $idx < $size );
+  my ($size,$idx) = (scalar(@loaded_plugins), 0);
+  ++$idx until $idx >= $size or $loaded_plugins[$idx] eq $plugin_name;
+  splice (@loaded_plugins,$idx,1) if ( $idx < $size );
 
   # Unimport plugin package in 5 seconds - this gives the plugin chance to shut down cleanly
   POE::Session->create
@@ -387,7 +407,6 @@ sub plugin_shutdown
     my $session = pop(@{$heap->{'child_sessions'}});
     $kernel->detach_child($session);
   }
-
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -409,9 +428,15 @@ sub plugin_event
   my $plugin_event = shift;
 
   # Execute the event using the remaining arguments
-  eval $plugin_name.'::'.$plugin_event.'(@_);';
+  my $result = undef;
+  eval '$result = '.$plugin_name.'::'.$plugin_event.'(@_);';
   if ( $@ )
-    { modules::console_output ( '[PLUGIN] Plugin '.$plugin_name.'::'.$plugin_event.' failed: '.$@ ); }
+  {
+    modules::console_output ( '[PLUGIN] Plugin '.$plugin_name.'::'.$plugin_event.' failed: '.$@ );
+    return 0;
+  }
+
+  return $result;
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -422,7 +447,7 @@ sub get_plugin_event
   my $event = shift;
   my @found_plugins;
 
-  foreach (@plugins)
+  foreach (@loaded_plugins)
   {
     my $plugin = $_;
     my @events = @{$plugin_events_old{$plugin}};
@@ -530,7 +555,7 @@ sub call_core_override
       @_);
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -760,8 +785,7 @@ sub get_global { return brdatabase::get_global(@_); }
 sub write_to_log
 {
   # Prevent use of codes below 10
-  if ( $_[0] !~ m/^\d+$/ || $_[0] < 10 )
-    return;
+  return if ( $_[0] !~ m/^\d+$/ || $_[0] < 10 );
   brdatabase::writeLog(@_);
 }
 
@@ -947,7 +971,7 @@ sub play_sound_for_player
 {
   my $player = shift;
   my $sound = shift;
-  
+
   return bhs::playsndp($sound, $player);
 }
 
@@ -956,7 +980,7 @@ sub play_sound_for_team
 {
   my $team = shift;
   my $sound = shift;
-  
+
   return bhs::playsndp_team($sound, $team);
 }
 

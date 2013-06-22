@@ -128,22 +128,21 @@ our @installed_maps;
 # Loads all config data
 sub init
 {
-	ReadConfig();
-	read_server_configuration();
-	read_ssgm_settings();
-	ReadAutoAnnounce();
-	ReadMessages();
-	readMods();
-	readServerSettings();
-	GetAvailableMaps();
+  ReadConfig();
+  read_server_configuration();
+  read_ssgm_settings();
+  ReadAutoAnnounce();
+  ReadMessages();
+  readMods();
+  readServerSettings();
+  GetAvailableMaps();
 
-	modules::read_recs();
-	#gamelog::loadAreaData();
-	gamelog::loadPresets();
+  #gamelog::loadAreaData();
+  gamelog::loadPresets();
 
-	modules::loadMapSettings();
+  modules::loadMapSettings();
 
-	checkBrenbotDll();
+  checkBrenbotDll();
 }
 
 

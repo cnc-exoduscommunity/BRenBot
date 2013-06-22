@@ -3369,7 +3369,7 @@ sub players_processTeam
 
     if ( ++$count >= 5 )
     {
-      players_outputTeam($teamid, $string);
+      players_outputTeam($teamid, $ircChannel, $string);
       $count = 0;
       $string = "";
     }
@@ -3382,6 +3382,7 @@ sub players_processTeam
 sub players_outputTeam
 {
   my $teamid      = shift;
+  my $ircChannel  = shift;
   my $string      = shift;
   
   $string = brTeams::colourise($teamid, brIRC::bold(brTeams::get_name($teamid).":").$string);
@@ -4694,7 +4695,7 @@ sub plugins
 
   brIRC::ircnotice ( $nick, "1Current plugin states;" );
 
-  my %plugins = plugin::get_plugins();
+  my %plugins = plugin::find_plugins();
 
   my @pluginStrings;
   while ( my($plugin, $state) = each(%plugins))
