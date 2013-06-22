@@ -30,25 +30,25 @@ our %config;
 our %additional_events =
 (
   # other functions
-  "greetPlayer" => "greetPlayer",
-  "greetPlayerBadName" => "greetPlayerBadName",
-  "checkOldWarnings" => "checkOldWarnings",
+  "greetPlayer"         => "greetPlayer",
+  "greetPlayerBadName"  => "greetPlayerBadName",
+  "checkOldWarnings"    => "checkOldWarnings",
 
   # !command functions
-  "showWarnings" => "showWarnings",
-  "showAllWarnings" => "showAllWarnings",
-  "warnings" => "warnings",
-  "warnPlayer" => "warnPlayer",
-  "words" => "words",
-  "resetWarnings" => "resetWarnings",
-  "warning_stats" => "warning_stats",
-  "autoWarnings" => "autoWarnings",
-  "flushStats" => "flushStats",
-  "mostWarnedWords" => "mostWarnedWords",
-  "reloadWords" => "reloadWords",
-  "add_autoKB" => "add_autoKB",
-  "remove_autoKB" => "remove_autoKB",
-  "list_autoKB" => "list_autoKB"
+  "showWarnings"        => "showWarnings",
+  "showAllWarnings"     => "showAllWarnings",
+  "warnings"            => "warnings",
+  "warnPlayer"          => "warnPlayer",
+  "words"               => "words",
+  "resetWarnings"       => "resetWarnings",
+  "warning_stats"       => "warning_stats",
+  "autoWarnings"        => "autoWarnings",
+  "flushStats"          => "flushStats",
+  "mostWarnedWords"     => "mostWarnedWords",
+  "reloadWords"         => "reloadWords",
+  "add_autoKB"          => "add_autoKB",
+  "remove_autoKB"       => "remove_autoKB",
+  "list_autoKB"         => "list_autoKB"
 );
 
 my %autowarnWords;         # Hash to hold autowarnWords
@@ -63,7 +63,7 @@ my %autoKB;
 # Function for displaying all current warnings for players in the server
 sub showWarnings
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my %warnings = getAllWarnings();
   my ($warningList, $playerRef);
@@ -90,7 +90,7 @@ sub showWarnings
 # Function for all current warnings for players in and out of the server, and irc users
 sub showAllWarnings
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my $warningList;
   my %warnings = getAllWarnings();
@@ -110,7 +110,7 @@ sub showAllWarnings
 # Function for all current warnings for a specific person
 sub warnings
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my $queryName = ( $args{arg1} ) ? $args{arg1} : $args{nick};
   my $warnings = getWarnings ( $queryName );
@@ -131,7 +131,7 @@ sub warnings
 # Function for warning a player
 sub warnPlayer
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   if ( $args{arg} =~ m/\S+\s\S+\s(.+)/ )
   {
@@ -149,14 +149,14 @@ sub warnPlayer
 # Function for displaying the list of autowarnWords
 sub words
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
   plugin::ircmsg ( "The following words and/or phrases are disallowed: $autowarnWordsList", $args{'ircChannelCode'} );
 }
 
 # Function for resetting a players warnings
 sub resetWarnings
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   if ( $args{arg1} )
   {
@@ -183,7 +183,7 @@ sub resetWarnings
 # Function for showing todays stats
 sub warning_stats
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my ( $timeFrame, $warnings, $autoWarnings, $qkicks, $kicks, $bans, $ircKicks );
   if ( $args{arg1} eq "month" )
@@ -209,7 +209,7 @@ sub warning_stats
 # Function for displaying, and changing status of automatic warnings.
 sub autoWarnings
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my $startStatus = ( $config{autoWarnings} == 1 ) ? "enabled" : "disabled";
   if ( ( $args{arg1} ne "on" ) && ( $args{arg1} ne "off" ) )
@@ -257,7 +257,7 @@ sub autoWarnings
 # Function for flushing out the statistics in the database
 sub flushStats
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   DBflushStats();
 
@@ -267,7 +267,7 @@ sub flushStats
 # Function for getting the 5 most frequent words the autowarnings system has warned people for
 sub mostWarnedWords
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my $words = DBgetFrequentWords(5);
 
@@ -278,7 +278,7 @@ sub mostWarnedWords
 # Function for reloading the warnings_words.cfg file
 sub reloadWords
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my $result = loadautowarnWords();
   
@@ -289,7 +289,7 @@ sub reloadWords
 # Function for adding users to the auto KB list
 sub add_autoKB
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my $message;
 
@@ -315,7 +315,7 @@ sub add_autoKB
 # Function for removing users from the auto KB list
 sub remove_autoKB
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my $name = $args{arg1};				$name =~ s/"/\'/;
   my $message;
@@ -339,7 +339,7 @@ sub remove_autoKB
 # Function for listing users on the auto KB list
 sub list_autoKB
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my $autoKBlist;
 
@@ -359,8 +359,6 @@ sub list_autoKB
 
 sub start
 {
-  my %args = %{@_[ ARG0 ]};
-
   # Set our current version in the globals table
   plugin::set_global ( "version_plugin_brwarnings", $currentVersion );
 
@@ -440,28 +438,25 @@ sub start
 
   # Run a check for old warnings to expire, which will also handle
   # scheduling future checks
-  $_[KERNEL]->yield( "checkOldWarnings" => \%args );
+  $_[KERNEL]->yield( "checkOldWarnings" );
 }
 
 sub showConfigError
 {
-  my error = shift;
+  my $error = shift;
   plugin::console_output("[Warnings] Config Error: $error");
 }
 
+# Called when this plugin is unloaded
 sub stop
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-
-	# Comamnds to run when BRenBot quits
-	$dbc->disconnect;
-
+  $dbc->disconnect;
 }
 
 sub command
 {
   # trigger on !commands
-  my $kernel = @_[KERNEL];
+  my $kernel = $_[KERNEL];
   my %args = %{$args};
 
   # each command from IRC/ingame comes here first. have to trigger the approriate functions from here
@@ -527,8 +522,7 @@ sub command
 sub text
 {
 	# trigger on any text ingame or irc
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+	my %args = %{$_[ARG0]};
 
 	if ( ( $config{autoWarnings} && ( $args{messagetype} eq "public" || $args{messagetype} eq "team" ) ) || ( $args{messagetype} eq "irc_public" && $config{IRCautoWarnings} ) )
 	{
@@ -582,8 +576,7 @@ sub text
 sub playerjoin
 {
 	# triggers on players joining
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+	my %args = %{$_[ARG0]};
 
 	# Check them against the autoKB list
 	if ( $autoKB{lc($args{nick})} )
@@ -633,7 +626,7 @@ sub playerjoin
 # Function for greeting players when they join the server, if enabled
 sub greetPlayer
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my ( $result, %player ) = plugin::getPlayerData ( $args{nick} );
   if ( $result == 1 )
@@ -652,7 +645,7 @@ sub greetPlayer
 # Function for qkicking people with disallowed usernames
 sub greetPlayerBadName
 {
-  my %args = %{@_[ ARG0 ]};
+  my %args = %{$_[ARG0]};
 
   my ( $result, %player ) = plugin::getPlayerData ( $args{nick} );
   if ( $result == 1 ) { plugin::call_command( "BRenBot", "qkick $player{'name'} a disallowed word in their username." ); }
@@ -824,7 +817,7 @@ sub loadautowarnWords
 # Generates a searching string for disallowed words
 sub generateSearchString
 {
-	my $string = @_[0];
+	my $string = $_[0];
 	my $uniqueMode = 0;
 	my $searchString;
 
@@ -878,7 +871,7 @@ sub load_autoKB_list
 	$query->execute;
 
 	my @row = $query->fetchrow_array;
-	while ( defined(@row[0]) )
+	while ( defined($row[0]) )
 	{
 		$autoKB{lc($row[0])} = 1;
 		@row = $query->fetchrow_array;
@@ -889,10 +882,6 @@ sub load_autoKB_list
 # Function for checking if we need to run reduceOldWarnings
 sub checkOldWarnings
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-
 	if ( ( $config{expire_time} != -1 ) || ( $config{irc_expire_time} != -1 ) )
 	{
 		# At least one of the two is enabled, so run the reduce warnings process
@@ -900,8 +889,7 @@ sub checkOldWarnings
 		if ( $result ) { plugin::console_output("[Warnings] $result warnings have expired."); }
 
 		# Schedule another execution
-		my $next_time = int( time() ) + $config{warningsCheckFrequency};
-		$_[KERNEL]->alarm( "checkOldWarnings" => $next_time => \%args );
+		$_[KERNEL]->delay( "checkOldWarnings" => $config{'warningsCheckFrequency'} );
 	}
 }
 
@@ -916,7 +904,7 @@ sub checkOldWarnings
 # Put a warning into the database
 sub dbStoreWarning
 {
-	my $name = @_[0];			$name =~ s/"/\'/;
+	my $name = $_[0];			$name =~ s/"/\'/;
 
 	my $oldWarnings = $dbc->selectrow_array ( "SELECT warnings FROM warnings WHERE name = \"$name\"" );
 	if ( $oldWarnings ) { $dbc->do ( "UPDATE warnings SET warnings = warnings+1, lastWarnTime = " . time() . " WHERE name = \"$name\"" ); }
@@ -938,12 +926,12 @@ sub updateStats
 
 	my @oldStats = $dbc->selectrow_array ( "SELECT warnings, autoWarnings, qkicks, kicks, bans, ircKicks FROM statistics WHERE day = '$day'" );
 
-	my $newWarnings = ( $incrementWarnings ) ? @oldStats[0] +1 : 0+ @oldStats[0];
-	my $newAutoWarnings = ( $incrementAutoWarnings ) ? @oldStats[1] +1 : 0+ @oldStats[1];
-	my $newQKicks = ( $incrementQKicks ) ? @oldStats[2] +1 : 0+ @oldStats[2];
-	my $newKicks = ( $incrementKicks ) ? @oldStats[3] +1 : 0+ @oldStats[3];
-	my $newBans = ( $incrementBans ) ? @oldStats[4] +1 : 0+ @oldStats[4];
-	my $newIRCKicks = ( $incrementIRCKicks ) ? @oldStats[5] +1 : 0+ @oldStats[5];
+	my $newWarnings = ( $incrementWarnings ) ? $oldStats[0] +1 : 0+ $oldStats[0];
+	my $newAutoWarnings = ( $incrementAutoWarnings ) ? $oldStats[1] +1 : 0+ $oldStats[1];
+	my $newQKicks = ( $incrementQKicks ) ? $oldStats[2] +1 : 0+ $oldStats[2];
+	my $newKicks = ( $incrementKicks ) ? $oldStats[3] +1 : 0+ $oldStats[3];
+	my $newBans = ( $incrementBans ) ? $oldStats[4] +1 : 0+ $oldStats[4];
+	my $newIRCKicks = ( $incrementIRCKicks ) ? $oldStats[5] +1 : 0+ $oldStats[5];
 
 	if ( @oldStats ) { $dbc->do( "UPDATE statistics SET warnings = $newWarnings, autoWarnings = $newAutoWarnings, qkicks = $newQKicks, kicks = $newKicks, bans = $newBans, ircKicks = $newIRCKicks WHERE day = '$day'" ) }
 	else { $dbc->do( "INSERT INTO statistics ( day, warnings, autoWarnings, qkicks, kicks, bans, ircKicks ) VALUES ( '$day', $newWarnings, $newAutoWarnings, $newQKicks, $newKicks, $newBans, $newIRCKicks )" ); }
@@ -1014,7 +1002,7 @@ sub reduceOldWarnings
 # Function for getting the number of warnings for a specific name
 sub getWarnings
 {
-	my $name = lc(@_[0]);			$name =~ s/"/\'/;
+	my $name = lc($_[0]);			$name =~ s/"/\'/;
 
 	my $result = $dbc->selectrow_array ( "SELECT warnings FROM warnings WHERE LOWER(name) = \"$name\"" );
 	if ( $result eq '0E0' ) { $result = 0; }
@@ -1035,7 +1023,7 @@ sub getAllWarnings
 	$query->execute();
 
 	@row = $query->fetchrow_array;
-	while ( defined(@row[0]) )
+	while ( defined($row[0]) )
 	{
 		$result{$row[0]} = $row[1];
 		@row = $query->fetchrow_array;
@@ -1050,7 +1038,7 @@ sub getAllWarnings
 # Function for deleting all of a players warnings
 sub deleteWarnings
 {
-	my $name = lc(@_[0]);			$name =~ s/"/\'/;
+	my $name = lc($_[0]);			$name =~ s/"/\'/;
 
 	my $result = $dbc->do ( "DELETE FROM warnings WHERE lower(name) = \"$name\"" );
 	if ( $result eq '0E0' ) { $result = 0; }
@@ -1062,7 +1050,7 @@ sub deleteWarnings
 # autowarnings function
 sub updateWordCount
 {
-	my $word = @_[0];		$word =~ s/"/\'/;
+	my $word = $_[0];		$word =~ s/"/\'/;
 
 	# Try to update the existing word count
 	my $result = $dbc->do ( "UPDATE badword_statistics SET timesCaught = timesCaught+1 WHERE word = \"$word\"" );
@@ -1085,7 +1073,7 @@ sub DBflushStats
 # Function for getting the 5 most frequently warned for words from the database
 sub DBgetFrequentWords
 {
-	my $limit = ( @_[0] > 0 ) ? @_[0] : 5;
+	my $limit = ( $_[0] > 0 ) ? $_[0] : 5;
 	my ($words, $query);
 	my @row;
 
@@ -1093,7 +1081,7 @@ sub DBgetFrequentWords
 	$query->execute();
 
 	@row = $query->fetchrow_array;
-	while ( defined(@row[0]) )
+	while ( defined($row[0]) )
 	{
 		$words .= "$row[0] ($row[1]), ";
 		@row = $query->fetchrow_array;
@@ -1131,7 +1119,7 @@ sub updateDatabase
       $query->execute();
 
       my @row = $query->fetchrow_array;
-      while ( defined(@row[0]) )
+      while ( defined($row[0]) )
       {
         my $autokbname = lc($row[0]);
 
@@ -1169,7 +1157,7 @@ sub updateDatabase
       $query->execute();
 
       my @row = $query->fetchrow_array;
-      while ( defined(@row[0]) )
+      while ( defined($row[0]) )
       {
         my $autokbname = lc($row[0]);
 
@@ -1195,7 +1183,7 @@ sub updateDatabase
       $query->execute();
 
       my @row = $query->fetchrow_array;
-      while ( defined(@row[0]) )
+      while ( defined($row[0]) )
       {
         my $log = "$row[0]: $row[1]";
         plugin::execute_query ( "INSERT INTO logs ( logType, content, timestamp ) VALUES ( 11, \"$log\", $row[2] )", 1 );
