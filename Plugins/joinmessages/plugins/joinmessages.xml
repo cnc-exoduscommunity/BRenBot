@@ -1,0 +1,40 @@
+<?xml version="1.0" ?>
+<plugin name="joinmessages">
+
+  <!-- Configuration settings for the plugin, change the values of these to suit your server -->
+  <config>
+  </config>
+
+
+  <!-- Do not modify this events list or you may break the plugin -->
+  <events>
+    <event>command</event>
+    <event>playerjoin</event>
+  </events>
+
+
+  <!-- Do not modify this hooks list or you may break the plugin -->
+  <gamelog_regex_hooks>
+  </gamelog_regex_hooks>
+
+
+  <!-- Do not add or remove commands from this section, but feel free to modify the permission level
+  require to use the command, the help text, whether the command is enabled or not and its aliases -->
+  <command name="setjoin">
+    <permission level="1"/>
+    <syntax value="!setjoin &lt;joinmessage&gt;"/>
+    <help value="Sets your join message for this server"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+  </command>
+
+  <command name="viewjoin">
+    <permission level="1"/>
+    <syntax value="!viewjoin"/>
+    <help value="View your current join message for this server"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <hideInHelp value="1"/>
+  </command>
+</plugin>

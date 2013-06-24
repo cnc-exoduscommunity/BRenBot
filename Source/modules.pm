@@ -390,46 +390,6 @@ sub is_banned
 }
 
 
-###################################################
-####
-## Functions related to join messages (module join_messages)
-####
-###################################################
-
-sub get_joinmessage
-{
-	my $name = lc(shift);
-	$name =~ s/'/''/g;
-
-	my @array = brdatabase::execute_query( "SELECT * FROM join_messages WHERE LOWER(name) = '$name'" );
-	if ( scalar(@array) > 0 )
-		{ return $array[0]->{'message'}; }
-	return undef;
-}
-
-sub show_joinmessage
-{
-	my $name = shift;
-	my $message = get_joinmessage($name);
-	if ( defined($message) )
-	{
-		RenRem::RenRemCMD( "msg [$name] $message" );
-	}
-}
-
-sub set_joinmessage
-{
-	my $name = lc(shift);
-	my $message = shift;
-	$name =~ s/'/''/g;
-	$message =~ s/'/''/g;
-
-	my @count = brdatabase::execute_query( "SELECT * FROM join_messages WHERE LOWER(name) = '$name'" );
-	if (scalar(@count) == 0)
-		{ brdatabase::execute_query( "INSERT INTO join_messages ( name, message ) VALUES ( '$name','$message' )", 1 ); }
-	else
-		{ brdatabase::execute_query( "UPDATE join_messages SET message = '$message' WHERE LOWER(name) = '$name'", 1 ); }
-}
 
 
 ###################################################
@@ -503,7 +463,6 @@ sub check_modules
 	my %modulesList =
 	(
 		teammessages => "Displays team (f3) chat messages in IRC",
-		join_messages => "Enables !setjoin / !viewjoin on the server",
 		gamespy_players => "Broadcast this server to the GameSpy Arcade server browser",
 		gamelog => "Enables support for the SSGM gamelog",
 		bhs => "Support for Tiberian Technologies / Blackhand Studios FDS library (ppage, pamsg etc)",
@@ -969,7 +928,7 @@ sub padd_string
 
 	for (my $i=1; $i <= $minlength - length($string); $i++)
 	{
-		$output .= " ";
+		$output .= "ï¿½";
 	}
 	return $output;
 }

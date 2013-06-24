@@ -111,9 +111,6 @@ sub joinstuff
       if ( !plugin::call_core_override('playerjoin_msg', $name) )
         { brIRC::ircmsg( "11$name joined the game on team ".get_team_colour($player{'side'}).get_team_fullname($player{'side'}) ); }
 
-			if ( modules::get_module( "join_messages" ) )
-				{ modules::show_joinmessage ( $name ); }
-
 			# If they are authed, or not protected, show their mod status
 			my $authed = brAuth::GetAuthState ( $player{name} );
 			if ( $authed == 1 || $authed == 2 && !($brconfig::config_moderators_force_auth) )

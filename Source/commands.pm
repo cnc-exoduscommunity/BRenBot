@@ -289,15 +289,15 @@ sub parsearg
     my ($plugin_name, $command_name, $command_config) = plugin::find_command($command);
     if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 )
       { ($command_name,$command_config) = find_command($command); }
-    
+
     # No (enabled) command found? Guess we'll have to give up then...
     return if ( !defined $command_name or $command_config->{'enabled'}->{'value'} == 0 );
-    
+
     # OK, got a command, parse its configuration...
     my ($commandgroups, $modules) = parse_command_settings($command_config);
 
-    
-    
+
+
     # Work out which command group the command came from
     my $current_commandgroup;
     if ($args{'nicktype'} == 1)
@@ -469,7 +469,6 @@ sub parsearg
 			postmsg => \&postmsg,
 			vote => \&vote,
 			voting => \&voting,
-			setjoin => \&setjoin,
 			rotation => \&rotation,
 			maplist => \&maplist,
 			version => \&version,
@@ -492,7 +491,6 @@ sub parsearg
 			getbw => \&getbw,
 			setbw => \&setbw,
 			wpage => \&wpage,
-			viewjoin => \&viewjoin,
 			delregister => \&delregister,
 			logsearch => \&LogSearch,
 			kill => \&kill,
@@ -522,36 +520,35 @@ sub parsearg
 	}
 } # end of parsearg
 
-############ MEMBER EVENTS UNDER HERE ################
 
-# Searches in the log's for a specific string
+
+
+# --------------------------------------------------------------------------------------------------
+##
+#### General Command Functions
+##
+# --------------------------------------------------------------------------------------------------
+
+##* \function logsearch
+# \brief Searches in the database logs table for entries containing a specified search string
 #
-# PARAM		String		Search Value
-#
+# \param[in] $search
+#   String to search for within the log entries
+#*
 sub LogSearch
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	$args{arg} =~ m/\!logsearch\s(.+)/i;
-	my $search = $1;
+  eval
+  {
+    $args{'arg'} =~ m/\!logsearch\s(.+)/i;
+    my $search = $1;
 
-	eval
-	{
-		if (!($search))
-		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ($args{nicktype} == 1)
-			{
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD( "[BR] Usage: $syntaxvalue" );
-			}
-
-			return;
-		}
+    if (!($search))
+    {
+      show_syntax_error(@_);
+      return;
+    }
 
 		# Retrieve logs from the database
 		my @logsArray = brdatabase::findLogs ( $search, 8 );
@@ -603,9 +600,8 @@ sub stats
 	{
 		if (!$args{arg1})
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			return;
+			show_syntax_error(@_);
+      return;
 		}
 
 		my ( $result, %player ) = playerData::getPlayerData ( $args{arg1} );
@@ -943,18 +939,8 @@ sub set
 	{
 		if (!$args{arg1})
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ($args{nicktype} == 1)
-			{
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("[BR] Usage: $syntaxvalue");
-			}
-
-			return;
+			show_syntax_error(@_);
+      return;
 		}
 
 		my $module_name = $args{arg1};
@@ -1118,8 +1104,7 @@ sub about
 	}
 	else
 	{
-		my $syntaxvalue = $args{settings}->{syntax}->{value};
-		brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
+    show_syntax_error(@_);
 	}
 }
 
@@ -1245,64 +1230,6 @@ sub rotation
 }
 
 
-
-###################################################
-####
-## Commands related to join messages (module join_messages)
-####
-###################################################
-
-# !setjoin command - Sets a users join message
-sub setjoin
-{
-	my %args = %{$_[ ARG0 ]};
-
-	eval
-	{
-		return if ( $args{'nicktype'} == 1 );
-
-		if (!$args{arg1})
-		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Usage: $syntaxvalue" );
-			return;
-		}
-
-		if ($args{arg} =~ /^\!setjoin\s((.+))/i)  #set joinmessage
-	 	{
-			my $setjoin_msg = substr( $1, 0, 249 ); # Limit length to prevent FDS crash
-			modules::set_joinmessage( $args{'nick'}, $setjoin_msg );
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Your join message has been set." );
-			return;
-		}
-
-	}
-	or modules::display_error($@);
-}
-
-# !viewjoin command - Shows a user their current join message
-sub viewjoin
-{
-	my %args = %{$_[ ARG0 ]};
-
-	eval
-	{
-		return if ( $args{'nicktype'} == 1 );
-
-		my $jointext = modules::get_joinmessage( $args{'nick'} );
-
-		if ( $jointext )
-		{
-			$jointext=substr($jointext,0,249); # Limit length to prevent FDS crash
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "Your joinmessage is '$jointext'" );
-		}
-		else
-		{
-			modules::pagePlayer( $args{'nick'}, 'BRenBot', "You do not have a join message set. Set one with !setjoin <jointext>." );
-		}
-	}
-	or modules::display_error($@);
-}
 
 
 
@@ -1613,18 +1540,8 @@ sub postmsg
 	{
 		if (!$args{arg1})
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ($args{nicktype} == 1)
-			{
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue");
-			}
-
-			return;
+			show_syntax_error(@_);
+      return;
 		}
 
 		my $msgnum  = $args{arg1};
@@ -1701,13 +1618,12 @@ sub donate
 		}
 		else
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			RenRem::RenRemCMD( "msg [BR] Usage: $syntaxvalue" );
-			return;
+			show_syntax_error(@_);
+      return;
 		}
 
 		# Check BHS.dll is enabled
-		if ( modules::get_module( "bhs" ) == 1 )
+    if ( modules::get_module( "bhs" ) == 1 )
 		{
 			my ( $result, %player ) = playerData::getPlayerData ( $args{'nick'}, 1 );
 			if ( $result == 1 )
@@ -1796,18 +1712,8 @@ sub ppage
 	{
 		if (!$args{arg1})
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ($args{nicktype} == 1)
-			{
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue");
-			}
-
-			return;
+			show_syntax_error(@_);
+      return;
 		}
 		if ($args{arg} =~ /^\!ppage\s(.+?)\s(.+)/i)
 		{ #pamsg
@@ -1851,17 +1757,7 @@ sub sndp
 	{
 		if (!$args{arg1})
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ($args{nicktype} == 1)
-			{
-				brIRC::ircmsg ( "[BR] Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue");
-			}
-
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -1902,17 +1798,7 @@ sub tpage
 	{
 		if (!$args{arg1})
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ($args{nicktype} == 1)
-			{
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue");
-			}
-
+			show_syntax_error(@_);
 			return;
 		}
 		if ($args{arg} =~ /^\!tpage\s(gdi|all|1|nod|sov|0)\s(.+)/i)
@@ -1953,15 +1839,7 @@ sub snda
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
-			}
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -1991,15 +1869,7 @@ sub sndt
 	{
 		if (!$args{arg1} || !$args{arg2})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
-			}
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -2033,15 +1903,7 @@ sub pamsg
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
-			}
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -2087,8 +1949,7 @@ sub page
 	{
 		if (!$args{arg1})
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
+			show_syntax_error(@_);
 			return;
 		}
 		else
@@ -2136,15 +1997,7 @@ sub wpage
 	{
 		if (!$args{arg1} || !$args{arg2})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
-			}
+			show_syntax_error(@_);
 			return;
 		}
 		else
@@ -2172,15 +2025,7 @@ sub forcetc
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
-			}
+			show_syntax_error(@_);
 			return;
 		}
 		my $user = $args{arg1};
@@ -2234,15 +2079,7 @@ sub kill
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
-			}
+			show_syntax_error(@_);
 			return;
 		}
 		my $user = $args{arg1};
@@ -2415,15 +2252,7 @@ sub setnextmap
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
-			}
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -2448,15 +2277,7 @@ sub allow
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD("msg [BR] Usage: $args{settings}->{syntax}->{value}");
-			}
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -2492,11 +2313,7 @@ sub ban
 		# Check the correct command syntax was used
 		if ( !$args{'arg1'} || !$args{'arg2'} )
 		{
-			my $syntaxvalue = $args{'settings'}->{'syntax'}->{'value'};
-			if ( $args{'nicktype'} == 1 )
-				{ brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
-			else
-				{ RenRem::RenRemCMD("msg [BR] Usage: $syntaxvalue"); }
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -2573,13 +2390,7 @@ sub delban
 	{
 		if ( $args{arg} !~ m/^\!\S+\s*\d+$/  )
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-				{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $args{settings}->{syntax}->{value}" ); }
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -2710,13 +2521,7 @@ sub auth
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-				{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $args{settings}->{syntax}->{value}" ); }
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -2733,13 +2538,7 @@ sub hostmsg
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-				{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $args{settings}->{syntax}->{value}" ); }
+			show_syntax_error(@_);
 			return;
 		}
 		else
@@ -2771,13 +2570,7 @@ sub admin_message
 	{
 		if (!$args{arg1})
 		{
-			if ($args{nicktype} == 1)
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-				{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $args{settings}->{syntax}->{value}" ); }
+			show_syntax_error(@_);
 			return;
 		}
 		else
@@ -2851,7 +2644,7 @@ sub ids
 
 
 
-# Shows the bhs.dll version of each player ingame
+# Shows the scripts version of each player ingame
 sub scripts
 {
 	my %args = %{$_[ ARG0 ]};
@@ -2942,13 +2735,7 @@ sub setbw
 			}
 			else
 			{
-				if ($args{nicktype} == 1)
-				{
-					my $syntaxvalue = $args{settings}->{syntax}->{value};
-					brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-				}
-				else
-					{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $args{settings}->{syntax}->{value}" ); }
+				show_syntax_error(@_);
 			}
 		}
 		else
@@ -3087,7 +2874,7 @@ sub showbw
 		# Output players in groups of 4 to the IRC
 		for ( my $i=0; $i<=scalar(@bwoutput)-1;$ i+=4 )
 		{
-			brIRC::ircmsg ( "$bwoutput[$i]   $bwoutput[$i+1]   $bwoutput[$i+2]   $bwoutput[$i+3]", $args{'ircChannelCode'} );
+			brIRC::ircmsg ( "$bwoutput[$i]ï¿½  $bwoutput[$i+1]   $bwoutput[$i+2]   $bwoutput[$i+3]", $args{'ircChannelCode'} );
 		}
 	}
 }
@@ -3103,15 +2890,7 @@ sub deltempmod
 	{
 		if ( !($args{arg1}) )
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ( $args{nicktype} == 1 )
-			{
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-				{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $syntaxvalue" ); }
-
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -3141,13 +2920,7 @@ sub addtempmod
 	{
 		if ( !($args{arg1}) )
 		{
-			if ( $args{nicktype} == 1 )
-			{
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-				{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $args{settings}->{syntax}->{value}" ); }
+			show_syntax_error(@_);
 			return;
 		}
 		# Dont let temp admins give temp admin to others
@@ -3614,14 +3387,11 @@ sub kick
 			my $temporary_ban = ($args{'command'} eq "kick") ? 1 : 0;
 
 			# Check they have entered a person to kick and the reason for kicking them
-		   if ( !$reason || !$target )
-		   {
-				my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-				if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
-				else { modules::pagePlayer ( $args{'nick'}, "BRenBot", "Usage: $syntaxvalue" ); }
-				return;
-			}
+      if ( !$reason || !$target )
+      {
+        show_syntax_error(@_);
+        return;
+      }
 
 
 			# Get player details (Works for both ID and name). Return if they are not found.
@@ -3714,8 +3484,8 @@ sub shun
 		}
 		else
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			$message = "[BR] Usage: $syntaxvalue";
+			show_syntax_error(@_);
+      return;
 		}
 
 		if ( $message )
@@ -3770,8 +3540,8 @@ sub unshun
 		}
 		else
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-			$message = "Usage: $syntaxvalue";
+			show_syntax_error(@_);
+      return;
 		}
 
 		if ( $args{nicktype} == 1 )
@@ -3857,15 +3627,7 @@ sub voting
 		}
 		else
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ($args{nicktype} == 1)
-			{
-				brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
-			}
-			else
-				{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $syntaxvalue" ); }
-
+			show_syntax_error(@_);
 			return;
 		}
 	} # End of eval
@@ -3924,12 +3686,7 @@ sub vote
 		# First check the syntax
 		if ( !$args{arg1} )
 		{
-			my $syntaxvalue = $args{settings}->{syntax}->{value};
-
-			if ( $args{nicktype} == 1 )
-				{ brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} ); }
-			else
-				{ modules::pagePlayer( $args{'nick'}, "BRenBot", "Usage: $syntaxvalue" ); }
+			show_syntax_error(@_);
 			return;
 		}
 
@@ -4447,8 +4204,7 @@ sub cmsg
 	}
 	else
 	{
-		my $syntaxvalue = $args{settings}->{syntax}->{value};
-		brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
+		show_syntax_error(@_);
 	}
 }
 
@@ -4741,8 +4497,7 @@ sub plugin_load
 
   if (!$args{'arg1'})
   {
-    my $syntaxvalue = $args{'settings'}->{'syntax'}->{'value'};
-    brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
+    show_syntax_error(@_);
     return;
   }
 
@@ -4769,8 +4524,7 @@ sub plugin_unload
 
   if (!$args{'arg1'})
   {
-    my $syntaxvalue = $args{'settings'}->{'syntax'}->{'value'};
-    brIRC::ircmsg ( "Usage: $syntaxvalue", $args{'ircChannelCode'} );
+    show_syntax_error(@_);
     return;
   }
 
@@ -4795,7 +4549,43 @@ sub plugin_unload
   );
 }
 
+
+
+
 # --------------------------------------------------------------------------------------------------
+##
+#### Utility Functions
+##
+# --------------------------------------------------------------------------------------------------
+
+sub show_syntax_error()
+{
+  my %args = %{$_[ ARG0 ]};
+  my $syntax = 'Usage: '.$args{'settings'}->{'syntax'}->{'value'};
+
+  if ( $args{'nicktype'} == 0 )
+    { modules::pagePlayer( $args{'nick'}, 'BRenBot', $syntax ); }
+  elsif ( $args{'nicktype'} == 1 )
+    { brIRC::ircmsg( $syntax, $args{'ircChannelCode'} ); }
+  else
+    { modules::console_output('A plugin used incorrect command syntax for '.$args{'command'}); }
+}
+
+##* \function private check_ssgm_version ( $$required_version ))
+# \brief Checks if the version of SSGM running on the server is >= to a required version
+#
+# \param[in] $required_version
+#   The required version of SSGM to check against
+#
+# \return
+#   1 if the version of SSGM is >= to the required version, 0 otherwise
+#*
+sub check_ssgm_version
+{
+  my $required_version = shift;
+
+  return ( $brConfig::ssgm_version >= $required_version ) ? 1 : 0;
+}
 
 
 

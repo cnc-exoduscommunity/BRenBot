@@ -385,22 +385,6 @@
     <group>irc_admin</group>
     <hideInHelp value="0"/>
   </command>
-  <command name="setjoin">
-    <permission level="1"/>
-    <syntax value="!setjoin &lt;joinmessage&gt;"/>
-    <help value="Sets the user&apos;s joinmessage"/>
-    <enabled value="1"/>
-    <group>ingame</group>
-    <hideInHelp value="0"/>
-  </command>
-  <command name="viewjoin">
-    <permission level="1"/>
-    <syntax value="!viewjoin"/>
-    <help value="View the user&apos;s joinmessage"/>
-    <enabled value="1"/>
-    <group>ingame</group>
-    <hideInHelp value="1"/>
-  </command>
   <command name="rotation">
     <permission level="1"/>
     <syntax value="!rotation"/>

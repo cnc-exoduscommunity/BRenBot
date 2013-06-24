@@ -1084,4 +1084,17 @@ sub core_override_playerleave_message($$)
   return 0 if ( exists($core_function_overrides{'playerleave_msg'}) );
   $core_function_overrides{'playerleave_msg'} = { 'plugin_name' => $plugin_name, 'plugin_event' => $plugin_event };
   return 1;
+}ll on the plugin
+#
+# @return 1 if the override was set successfully, 0 if another plugin has already overridden this
+#         functionality. This override can only be set once.
+#*
+sub core_override_playerleave_message($$)
+{
+  my $plugin_name = shift;
+  my $plugin_event = shift;
+
+  return 0 if ( exists($core_function_overrides{'playerleave_msg'}) );
+  $core_function_overrides{'playerleave_msg'} = { 'plugin_name' => $plugin_name, 'plugin_event' => $plugin_event };
+  return 1;
 }

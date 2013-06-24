@@ -843,4 +843,16 @@ sub db_update
 
 
 # Plugin loaded OK
+1;lugin::execute_query( $definition, 1 );
+    delete $tables{$table};
+  }
+
+
+
+  # Nothing to update at the moment...
+  return 1;
+}
+
+
+# Plugin loaded OK
 1;
