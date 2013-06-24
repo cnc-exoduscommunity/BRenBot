@@ -3693,12 +3693,12 @@ sub vote
 		# Now check that voting is enabled
 		if ( $brconfig::config_votingenabled eq "0" )
 		{
-			RenRem::RenRemCMD( "msg [BR] Sorry, Voting has been temporarily disabled by the administration.");
+			modules::pagePlayer ( $args{'nick'}, 'BRenBot', 'Sorry, Voting has been temporarily disabled by the administration.' );
 			return;
 		}
 
 		# Check they are not trying to use the voting system from IRC
-		if ($args{nicktype} eq 1)
+		if ($args{'nicktype'} eq 1)
 		{
 			brIRC::ircmsg ( "Voting is for ingame users only.", $args{'ircChannelCode'} );
 			return;
@@ -3713,7 +3713,7 @@ sub vote
 			# Is there already a vote running?
 			if ( $voteinprogress == 1 )
 			{
-				RenRem::RenRemCMD( "msg [BR] Only 1 vote is allowed at a time.  Please wait for the current voting period to end." );
+        modules::pagePlayer ( $args{'nick'}, 'BRenBot', 'Only 1 vote is allowed at a time.  Please wait for the current voting period to end.' );
 				return;
 			}
 
@@ -3727,7 +3727,7 @@ sub vote
 			# Vote yes or no
 			if ( !$voteinprogress )
 			{
-				RenRem::RenRemCMD("msg [BR] Error: A vote is not in progress!");
+        modules::pagePlayer ( $args{'nick'}, 'BRenBot', 'There isn\' anything to vote on at the moment' );
 				return;
 			}
 
@@ -3739,7 +3739,7 @@ sub vote
 				return;
 			}
 			#$kernel->post( IRC => privmsg => CHANNEL, "Duplicate Vote Cast by $args{nick}...discarding.");
-			RenRem::RenRemCMD( "msg [BR] Vote Error: $args{nick}, you are not allowed to vote multiple times!" );
+      modules::pagePlayer ( $args{'nick'}, 'BRenBot', 'You are not allowed to vote more than once' );
 		}
 	} # End of eval
 	or modules::display_error($@);
