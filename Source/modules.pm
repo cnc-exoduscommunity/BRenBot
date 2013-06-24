@@ -928,7 +928,7 @@ sub padd_string
 
 	for (my $i=1; $i <= $minlength - length($string); $i++)
 	{
-		$output .= "�";
+		$output .= " ";
 	}
 	return $output;
 }

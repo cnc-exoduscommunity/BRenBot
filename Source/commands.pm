@@ -2874,7 +2874,7 @@ sub showbw
 		# Output players in groups of 4 to the IRC
 		for ( my $i=0; $i<=scalar(@bwoutput)-1;$ i+=4 )
 		{
-			brIRC::ircmsg ( "$bwoutput[$i]�  $bwoutput[$i+1]   $bwoutput[$i+2]   $bwoutput[$i+3]", $args{'ircChannelCode'} );
+			brIRC::ircmsg ( "$bwoutput[$i]   $bwoutput[$i+1]   $bwoutput[$i+2]   $bwoutput[$i+3]", $args{'ircChannelCode'} );
 		}
 	}
 }
