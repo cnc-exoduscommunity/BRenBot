@@ -13,18 +13,12 @@ use modules;
 use RenRem;
 
 
-my %plugins;                # List of all known plugins and their current states
-our %commands;              # Hash of commands and aliases in all plugins
-
-our %plugin_events_old;
-our %plugin_config;
-our %plugin_gamelog_regexes;
-our %plugin_renlog_regexes;
-our @loaded_plugins;        # List of all loaded plugins
-our @gamelogRegexPlugins;   # List of plugins which have gamelog hooks setup
-our @renlogRegexPlugins;    # List of plugins which have renlog hooks setup
-
+my %plugins;                    # List of all known plugins and data associated with them
+our %commands;                  # Hash of commands and aliases in currently loaded plugins
 our %core_function_overrides;
+
+our %plugin_config;
+
 
 # --------------------------------------------------------------------------------------------------
 
@@ -70,8 +64,7 @@ sub find_plugins
 # \brief Called when BRenBot is ready for the plugins subsystem to initialise, loads a list of known
 #        plugins and loads them as appropriate
 #
-# \todo This should check the database to see which plugins are enabled
-# \todo Config item - autoload new plugins (those not already known about - should this be done in find_plugins?)
+# \todo Config item - autoload new plugins (those not already known about)
 sub init
 {
   find_plugins();
@@ -79,9 +72,13 @@ sub init
 
   while ( my($plugin,$data) = each(%plugins) )
   {
-    # \todo Get initial state for plugin from database
-
-    load_plugin($plugin);
+    # Get initial state for plugin from database
+    my @db_record = plugin::execute_query("SELECT * FROM plugins WHERE name = '$plugin_name'");
+    if ( @db_record and $db_record[0]->{'bIsEnabled'} == 1 )
+    {
+      # Get initial state for plugin from database
+      load_plugin($plugin);
+    }
   }
 }
 
@@ -104,7 +101,12 @@ sub set_state
   {
     $plugins{$plugin_name}{'state'} = $plugin_state;
 
-    # \todo Save the new enabled/disabled state to database...
+    # Save the new enabled/disabled state to the database...
+    my $dbState = ($plugin_state==1)?"1":"0";
+    if ( plugin::execute_query("SELECT * FROM plugins WHERE name = '$plugin_name'") )
+      { plugin::execute_query("UPDATE plugins SET bIsEnabled = $db_state WHERE name = '$plugin_name'", 1); }
+    else
+      { plugin::execute_query("INSERT INTO plugins(name,bIsEnabled) VALUES ( '$plugin_name', $db_state )", 1); }
   }
 }
 
@@ -214,12 +216,9 @@ sub load_plugin
 
 
   # Populate relevant data structures from XML data
-  # \todo are all of these still actually being used? If not, maybe they should be removed?
   read_xml_commands($plugin_name, $xml);
-  @{$plugin_events_old{$plugin_name}}           = get_events($xml, $plugin_name);
   read_xml_config($plugin_name, $xml);
-  %{$plugin_gamelog_regexes{$plugin_name}}  = get_gamelog_regexes ( $xml, $plugin_name );
-  %{$plugin_renlog_regexes{$plugin_name}}   = get_renlog_regexes ( $xml, $plugin_name );
+  register_plugin_events($plugin_name,$xml)
 
 
   # Loaded successfully, now try to start it...
@@ -275,10 +274,6 @@ sub load_plugin
     return 2;
   }
 
-  # Plugin completely loaded, add it to the list of plugins
-  # \todo once we finish the state get/set functions (database backed), do we need to keep this list?
-  push (@loaded_plugins, $plugin_name);
-
   # Return success
   set_state ( $plugin_name, 1 );
   return 1;
@@ -314,14 +309,7 @@ sub unload_plugin
   foreach (keys %core_function_overrides)
     { delete $core_function_overrides{$_} if $core_function_overrides{$_}{'plugin_name'} eq $plugin_name; }
 
-  delete $plugin_events_old{$plugin_name};
   delete $plugin_config{$plugin_name};
-  delete $plugin_gamelog_regexes{$plugin_name};
-  delete $plugin_renlog_regexes{$plugin_name};
-
-  my ($size,$idx) = (scalar(@loaded_plugins), 0);
-  ++$idx until $idx >= $size or $loaded_plugins[$idx] eq $plugin_name;
-  splice (@loaded_plugins,$idx,1) if ( $idx < $size );
 
   # Unimport plugin package in 5 seconds - this gives the plugin chance to shut down cleanly
   POE::Session->create
@@ -457,18 +445,59 @@ sub plugin_event
 
 # --------------------------------------------------------------------------------------------------
 
+#** \function register_plugin_events ( $$plugin_name, $$xml )
+# \brief Register game events and log hooks for a plugin based on its XML file
+#
+# \param[in] $plugin_name
+#   Name of the plugin to register events for
+# \param[in] $xml
+#   Parsed XML configuration file for the plugin
+#*
+sub register_plugin_events
+{
+  my $plugin_name = shift;
+  my $xml = shift;
+
+  if ( $xml->{'events'}->{'event'} )
+  {
+    $plugins{$plugin_name}{'events'} = @{$xml->{'events'}->{'event'}} );
+  }
+
+  $plugins{$plugin_name}{'renlog_hooks'} = {};
+  $plugins{$plugin_name}{'gamelog_hooks'} = {};
+
+  my $hooks = $xml->{'renlog_regex_hooks'}->{'hook'};
+  if ( $hooks )
+  {
+    while ( my ($event,$regex) = each %{$hooks} )
+    {
+      $plugins{$plugin_name}{'renlog_hooks'}{$regex} = $event;
+    }
+  }
+
+  $hooks = $xml->{'gamelog_regex_hooks'}->{'hook'};
+  if ( $hooks )
+  {
+    while ( my ($event,$regex) = each %{$hooks} )
+    {
+      $plugins{$plugin_name}{'gamelog_hooks'}{$regex} = $event;
+    }
+  }
+}
+
+# --------------------------------------------------------------------------------------------------
+
 # Get an array of plugins which have registered for the named event
 sub get_plugin_event
 {
   my $event = shift;
+
   my @found_plugins;
-
-  foreach (@loaded_plugins)
+  while ( my($plugin, $data) = each(%plugins) )
   {
-    my $plugin = $_;
-    my @events = @{$plugin_events_old{$plugin}};
+    next if ( get_state($plugin) != 1);
 
-    foreach (@events)
+    foreach ( @{$data->{'events'}} )
     {
       if ($_ eq $event)
       {
@@ -1072,19 +1101,6 @@ sub core_override_playerjoin_message($$)
 #   The name of the plugin setting the override
 # \param[in] plugin_event
 #   The name of an event to call on the plugin
-#
-# @return 1 if the override was set successfully, 0 if another plugin has already overridden this
-#         functionality. This override can only be set once.
-#*
-sub core_override_playerleave_message($$)
-{
-  my $plugin_name = shift;
-  my $plugin_event = shift;
-
-  return 0 if ( exists($core_function_overrides{'playerleave_msg'}) );
-  $core_function_overrides{'playerleave_msg'} = { 'plugin_name' => $plugin_name, 'plugin_event' => $plugin_event };
-  return 1;
-}ll on the plugin
 #
 # @return 1 if the override was set successfully, 0 if another plugin has already overridden this
 #         functionality. This override can only be set once.

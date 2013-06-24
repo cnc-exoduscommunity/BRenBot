@@ -226,16 +226,16 @@ sub dumpLogs
 # Checks that all required tables are present in the database
 sub check_tables
 {
-	my %required_tables =
-	(
-		globals => "CREATE TABLE globals ( name TEXT PRIMARY KEY, value TEXT )",
-		kicks => "CREATE TABLE kicks ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, serial TEXT, kicker TEXT, reason TEXT, timestamp INTEGER )",
-		bans => "CREATE TABLE bans ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, serial TEXT, banner TEXT, reason TEXT, timestamp INTEGER )",
-		logs => "CREATE TABLE logs ( id INTEGER PRIMARY KEY AUTOINCREMENT, logCode INTEGER, log TEXT, timestamp INTEGER )",
-		modules => "CREATE TABLE modules ( name TEXT PRIMARY KEY, description TEXT, status INTEGER, locked INTEGER DEFAULT 0 )",
-		auth_users => "CREATE TABLE auth_users ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, password TEXT )",
-		join_messages => "CREATE TABLE join_messages ( name TEXT PRIMARY KEY, message TEXT )"
-	);
+  my %required_tables =
+  (
+    globals    => "CREATE TABLE globals ( name TEXT PRIMARY KEY, value TEXT )",
+    kicks      => "CREATE TABLE kicks ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, serial TEXT, kicker TEXT, reason TEXT, timestamp INTEGER )",
+    bans       => "CREATE TABLE bans ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, serial TEXT, banner TEXT, reason TEXT, timestamp INTEGER )",
+    logs       => "CREATE TABLE logs ( id INTEGER PRIMARY KEY AUTOINCREMENT, logCode INTEGER, log TEXT, timestamp INTEGER )",
+    modules    => "CREATE TABLE modules ( name TEXT PRIMARY KEY, description TEXT, status INTEGER, locked INTEGER DEFAULT 0 )",
+    auth_users => "CREATE TABLE auth_users ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, password TEXT )",
+    plugins    => "CREATE TABLE plugins ( name TEXT PRIMARY KEY, bIsEnabled INTEGER )"
+  );
 
 	my @array = execute_query( "SELECT name FROM sqlite_master" );
 	while ( ( my $k, my $v ) = each %required_tables )
@@ -290,11 +290,6 @@ sub check_database
 	 	set_global ( 'build', main::BR_BUILD );
 
 	 	modules::console_output ( "Database update to ".main::BR_VERSION." (build ".main::BR_BUILD.") complete." );
- 	}
-}
-
-
-return 1; complete." );
  	}
 }
 

@@ -1,8 +1,10 @@
+#**
 # The recommendations plugin for BRenBot 1.54 and newer, this contains all the functionality of the
 # recommendations system that existed in BRenBot prior to version 1.53.14
 #
-# \author Daniel Paul (danpaul88)
+# \author Daniel Paul (danpaul88@yahoo.co.uk)
 # \version 1.0
+#*
 
 package recommendations;
 
@@ -106,9 +108,11 @@ sub command
 # Gameresult event - Triggers once BRenBot has read the results##.txt file at the end of the map
 sub gameresult
 {
+  return if ($loaded_ok == 0);
+
   my %args = %{$_[ARG0]};
   my @results = @{$args{'gameresults'}};
-  
+
   # Data storage...
   my $mvp = undef;
   my $mvp_score = $config{'autorec_min_score'}-1;
@@ -164,6 +168,8 @@ sub gameresult
 # Called when a new map has loaded
 sub mapload
 {
+  return if ($loaded_ok == 0);
+
   while ( my ( $player, $stats ) = each ( %autorec_cache ) )
   {
     while ( my ( $stat_name, $stat_value ) = each ( %{$stats} ) )
@@ -184,7 +190,7 @@ sub mapload
 # Building kill detected
 sub gamelog_building_killed
 {
-  return if ( $config{'autorec_two_buildings_killed'} <= 0 );
+  return if ( $loaded_ok == 0 or $config{'autorec_two_buildings_killed'} <= 0 );
   
   my %args = %{$_[ARG0]};
   my $line = $args{'line'};
@@ -218,7 +224,7 @@ sub gamelog_building_killed
 # Building repair detected
 sub gamelog_building_repair
 {
-  return if ( $config{'autorec_min_building_repair'} <= 0 );
+  return if ( $loaded_ok == 0 or $config{'autorec_min_building_repair'} <= 0 );
   
   my %args = %{$_[ARG0]};
   my $line = $args{'line'};
@@ -252,7 +258,7 @@ sub gamelog_building_repair
 # Vehicle kill detected
 sub gamelog_vehicle_killed
 {
-  return if ( $config{'autorec_min_vehicle_kills'} <= 0 );
+  return if ( $loaded_ok == 0 or $config{'autorec_min_vehicle_kills'} <= 0 );
   
   my %args = %{$_[ARG0]};
   my $line = $args{'line'};
@@ -285,7 +291,7 @@ sub gamelog_vehicle_killed
 # Vehicle repair detected
 sub gamelog_vehicle_repair
 {
-  return if ( $config{'autorec_min_vehicle_repair'} <= 0 );
+  return if ( $loaded_ok == 0 or $config{'autorec_min_vehicle_repair'} <= 0 );
   
   my %args = %{$_[ARG0]};
   my $line = $args{'line'};
@@ -832,18 +838,6 @@ sub db_update
   {
     plugin::console_output("[Recommendations] Creating missing table " . $table);
     plugin::execute_query( $definition, 1 );
-    delete $tables{$table};
-  }
-
-
-
-  # Nothing to update at the moment...
-  return 1;
-}
-
-
-# Plugin loaded OK
-1;lugin::execute_query( $definition, 1 );
     delete $tables{$table};
   }
 
