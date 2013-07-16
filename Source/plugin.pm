@@ -73,7 +73,7 @@ sub init
   while ( my($plugin,$data) = each(%plugins) )
   {
     # Get initial state for plugin from database
-    my @db_record = plugin::execute_query("SELECT * FROM plugins WHERE name = '$plugin_name'");
+    my @db_record = plugin::execute_query("SELECT * FROM plugins WHERE name = '$plugin'");
     if ( @db_record and $db_record[0]->{'bIsEnabled'} == 1 )
     {
       # Get initial state for plugin from database
@@ -102,7 +102,7 @@ sub set_state
     $plugins{$plugin_name}{'state'} = $plugin_state;
 
     # Save the new enabled/disabled state to the database...
-    my $dbState = ($plugin_state==1)?"1":"0";
+    my $db_state = ($plugin_state==1)?"1":"0";
     if ( plugin::execute_query("SELECT * FROM plugins WHERE name = '$plugin_name'") )
       { plugin::execute_query("UPDATE plugins SET bIsEnabled = $db_state WHERE name = '$plugin_name'", 1); }
     else
@@ -218,7 +218,7 @@ sub load_plugin
   # Populate relevant data structures from XML data
   read_xml_commands($plugin_name, $xml);
   read_xml_config($plugin_name, $xml);
-  register_plugin_events($plugin_name,$xml)
+  register_plugin_events($plugin_name,$xml);
 
 
   # Loaded successfully, now try to start it...
@@ -460,7 +460,7 @@ sub register_plugin_events
 
   if ( $xml->{'events'}->{'event'} )
   {
-    $plugins{$plugin_name}{'events'} = @{$xml->{'events'}->{'event'}} );
+    $plugins{$plugin_name}{'events'} = @{$xml->{'events'}->{'event'}};
   }
 
   $plugins{$plugin_name}{'renlog_hooks'} = {};
@@ -513,72 +513,28 @@ sub get_plugin_event
 # Returns a list of plugins which have gamelog regex hooks setup
 sub get_plugin_gamelog_regexes
 {
-  return @gamelogRegexPlugins;
+  my @found_plugins;
+  while ( my($plugin, $data) = each(%plugins) )
+  {
+    next if ( get_state($plugin) != 1);
+    push (@found_plugins, $plugin) if exists $data->{'gamelog_hooks'};
+  }
+
+  return @found_plugins;
 }
 
 
 # Returns a list of plugins which have renlog regex hooks setup
 sub get_plugin_renlog_regexes
 {
-  return @renlogRegexPlugins;
-}
-
-
-# Returns a hash of all the plugin gamelog regexes, and the events they should trigger
-sub get_gamelog_regexes
-{
-  my $xml = shift;
-  my $plugin = shift;
-
-  my $c = $xml->{gamelog_regex_hooks}->{hook};
-  my %regexes;
-
-  if ( $c )
+  my @found_plugins;
+  while ( my($plugin, $data) = each(%plugins) )
   {
-    push ( @gamelogRegexPlugins, $plugin );
-    for my $event ( keys %{$c} )
-    {
-      my $regex = $c->{$event}->{regex};
-      $regexes{$regex} = $event;
-    }
+    next if ( get_state($plugin) != 1);
+    push (@found_plugins, $plugin) if exists $data->{'renlog_hooks'};
   }
 
-  return %regexes;
-}
-
-
-# Returns a hash of all the plugin renlog regexes, and the events they should trigger
-sub get_renlog_regexes
-{
-  my $xml = shift;
-  my $plugin = shift;
-
-  my $c = $xml->{renlog_regex_hooks}->{hook};
-  my %regexes;
-
-  if ( $c )
-  {
-    push ( @renlogRegexPlugins, $plugin );
-    for my $event ( keys %{$c} )
-    {
-      my $regex = $c->{$event}->{regex};
-      $regexes{$regex} = $event;
-    }
-  }
-
-  return %regexes;
-}
-
-
-sub get_events
-{
-  my $xml = shift;
-  my $plugin = shift;
-  my @events;
-
-  if ( $xml->{events}->{event} )
-    { @events = @{$xml->{events}->{event}}; }
-  return (@events);
+  return @found_plugins;
 }
 
 # --------------------------------------------------------------------------------------------------
