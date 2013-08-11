@@ -921,16 +921,18 @@ sub GetNextMap
 
 sub padd_string
 {
-	my $minlength = shift;
-	my $string	= shift;
+  my $minlength = shift;
+  my $string	= shift;
+  my $lpad = (@_) ? shift : 0;
 
-	my $output = $string;
+  my $output = $string;
 
-	for (my $i=1; $i <= $minlength - length($string); $i++)
-	{
-		$output .= " ";
-	}
-	return $output;
+  for (my $i=1; $i <= $minlength - length($string); $i++)
+  {
+    if ( $lpad != 1 ) { $output .= " "; }
+    else              { $output = " ".$output; }
+  }
+  return $output;
 }
 
 sub GetRotation

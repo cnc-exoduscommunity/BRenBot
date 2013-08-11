@@ -141,6 +141,7 @@ sub init
   gamelog::loadPresets();
 
   modules::loadMapSettings();
+  brTeams::read_config();
 
   checkBrenbotDll();
 }

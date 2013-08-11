@@ -3,16 +3,17 @@
 # This module is dedicated to storing the settings for team names and colours and providing quick
 # methods for formatting text with this information
 
+package brTeams;
 use brIRC;
 
 # --------------------------------------------------------------------------------------------------
 
 # Create the data array with default values for use in Renegade
-our %teams = {
+our %teams = (
   0 => {
     'name'          => "Nod",
     'abbreviation'  => "Nod",
-    'colour'        => "04,00"
+    'colour'        => "04"
   },
   1 => {
     'name'          => "GDI",
@@ -22,9 +23,9 @@ our %teams = {
   2 => {
     'name'          => "Neutral",
     'abbreviation'  => "Neutral",
-    'colour'        => "09,00"
+    'colour'        => "09"
   }
-};
+);
 
 # --------------------------------------------------------------------------------------------------
 
@@ -32,17 +33,17 @@ our %teams = {
 sub read_config
 {
   my $teamid = -1;
-  
+
   eval
   {
     open ( TEAMCONFIG, "teams.cfg" );
     while ( <TEAMCONFIG> )
     {
       chomp;  # Kill any \n's
-      
+
       if ( $_ !~ m/^\#/ && $_ !~ m/^\s+$/ )   # If the line starts with a hash or is blank ignore it
       {
-        if ( $_ =~ m/\[TEAM[0-2]\]/i )
+        if ( $_ =~ m/\[TEAM([0-2])\]/i )
         {
           $teamid = $1;
         }
@@ -56,7 +57,7 @@ sub read_config
           {
             $teams{$teamid}{'abbreviation'} = $1;
           }
-          elsif ( $_ =~ m/^colour\s*=\s*(\d{1,2}(?:,\d{1,2}))?$/i )
+          elsif ( $_ =~ m/^colour\s*=\s*(\d{1,2}(?:,\d{1,2})?)$/i )
           {
             $teams{$teamid}{'colour'} = $1;
           }
@@ -73,15 +74,16 @@ sub read_config
 sub get_id_from_name
 {
   my $team = lc(shift);
-  
-  if ( $team !~ m/^\d+$/ )
+
+  # If $team is numeric then it is already an ID so return it
+  return $team if ( $team =~ m/^\d+$/ and $team >= 0 and $team <= 2 );
+
+  # Otherwise search for a matching team by name or abbreviation
+  while ( my ( $id, $data ) = each %teams )
   {
-    while ( my ( $id, $data ) = each %teams )
-    {
-      return $id if ( lc($data{'name'}) eq $team || lc($data{'abbreviation'}) eq $team );
-    }
+    return $id if ( lc($data{'name'}) eq $team || lc($data{'abbreviation'}) eq $team );
   }
-  
+
   return -1;
 }
 
@@ -91,7 +93,7 @@ sub get_id_from_name
 sub get_name
 {
   my $team = get_id_from_name(shift);
-  
+
   if ( $team != -1 )
     { return $teams{$team}{'name'}; }
   else
@@ -102,7 +104,7 @@ sub get_name
 sub get_abbreviation
 {
   my $team = get_id_from_name(shift);
-  
+
   if ( $team != -1 )
     { return $teams{$team}{'abbreviation'}; }
   else
@@ -113,8 +115,8 @@ sub get_abbreviation
 sub get_colour
 {
   my $team = get_id_from_name(shift);
-  
-  if ( $team > 0 and $team <= 2 )
+
+  if ( $team != -1 )
     { return $teams{$team}{'colour'}; }
   else
     { return "01"; }
@@ -127,7 +129,7 @@ sub colourise
 {
   my $colour  = get_colour(shift);
   my $message = shift;
-  
+
   return brIRC::colourise($colour, $message);
 }
 

@@ -11,6 +11,7 @@ use gamelog;
 use brconfig;
 use modules;
 use brIRC;
+use brTeams;
 use gamespy;    # Used by !set command
 use brAuth;
 use RenRem;
@@ -1068,14 +1069,16 @@ sub modules
 			push ( @modulesList, $module );
 		}
 
-		for ( my $i =0; $i <= scalar(@modulesList)-1; $i +=4 )
+    my $nModules = scalar(@modulesList);
+		for ( my $i = 0; $i < $nModules; $i += 4 )
 		{
 			my $module1 = modules::padd_string ( 20, $modulesList[$i] );
-			my $module2 = modules::padd_string ( 20, $modulesList[$i+1] );
-			my $module3 = modules::padd_string ( 20, $modulesList[$i+2] );
+			my $module2 = ($i+1 < $nModules) ? modules::padd_string ( 20, $modulesList[$i+1] ) : "";
+			my $module3 = ($i+2 < $nModules) ? modules::padd_string ( 20, $modulesList[$i+2] ) : "";
+			my $module4 = ($i+3 < $nModules) ? $modulesList[$i+3] : "";
 
 			# Fourth one does not need padding, it comes at the end of the line
-			brIRC::ircnotice ( $nick, "$module1 $module2 $module3 $modulesList[$i+3]" );
+			brIRC::ircnotice ( $nick, "$module1 $module2 $module3 $module4" );
 		}
 	}
 	or modules::display_error($@);
@@ -2939,43 +2942,43 @@ sub addtempmod
 
 sub gameinfo
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		#RenRem::RenRemCMD("game_info");
-		my ( $serverMode, $currentMap, $gdiPlayers, $gdiPoints, $nodPlayers, $nodPoints, $currentPlayers, $maxPlayers, $timeRemaining, $sfps ) = serverStatus::getGameStatus();
-
-		if (modules::get_module("new_gi") )		# Use new style GI
-		{
-			if ( $main::currentMod eq "APB" )
-				{ brIRC::ircmsg ( "15Gameinfo: (11$serverMode15) 15Map: $currentMap 12Allies: $gdiPlayers/$maxPlayers players  $gdiPoints points 04Soviet: $nodPlayers/$maxPlayers players  $nodPoints points15 $timeRemaining mins left SFPS: $sfps", $args{'ircChannelCode'} ); }
-			else
-				{ brIRC::ircmsg ( "15Gameinfo: (11$serverMode15) 15Map: $currentMap 08GDI: $gdiPlayers/$maxPlayers players  $gdiPoints points 04Nod: $nodPlayers/$maxPlayers players  $nodPoints points15 $timeRemaining mins left SFPS: $sfps", $args{'ircChannelCode'} ); }
-		}
-		else
-		{
-			# Use old style GI
-			brIRC::ircmsg ( "      Map : $currentMap", $args{'ircChannelCode'} );
-			brIRC::ircmsg ( "     Time : $timeRemaining", $args{'ircChannelCode'} );
-			brIRC::ircmsg ( "  Players : $currentPlayers / $maxPlayers", $args{'ircChannelCode'} );
-			if ( $main::currentMod eq "APB" )
-			{
-				brIRC::ircmsg ( "12   Allies : $gdiPlayers players          $gdiPoints points", $args{'ircChannelCode'} );
-				brIRC::ircmsg ( "04   Soviet : $nodPlayers players          $nodPoints points", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				brIRC::ircmsg ( "08      GDI : $gdiPlayers players          $gdiPoints points", $args{'ircChannelCode'} );
-				brIRC::ircmsg ( "04      Nod : $nodPlayers players          $nodPoints points", $args{'ircChannelCode'} );
-			}
-			brIRC::ircmsg ( "     SFPS : $sfps", $args{'ircChannelCode'} );
-		}
-	}
-	or modules::display_error($@);
-
+  eval
+  {
+    my ( $serverMode, $currentMap, $gdiPlayers, $gdiPoints, $nodPlayers, $nodPoints, $currentPlayers, $maxPlayers, $timeRemaining, $sfps ) = serverStatus::getGameStatus();
+    my $team0name = brTeams::get_name(0);
+    my $team0colour = brTeams::get_colour(0);
+    my $team1name = brTeams::get_name(1);
+    my $team1colour = brTeams::get_colour(1);
+    
+    if (modules::get_module("new_gi") )		# Use new style GI
+    {
+      my $string = brIRC::bold(brIRC::colourise(15,'Gameinfo: '));
+      $string   .= brIRC::colourise(11,"($serverMode) ");
+      $string   .= brIRC::colourise(15,"Map: $currentMap ");
+      $string   .= brIRC::colourise($team1colour,"$team1name: $gdiPlayers/$maxPlayers players  $gdiPoints points ");
+      $string   .= brIRC::colourise($team0colour,"$team0name: $nodPlayers/$maxPlayers players  $nodPoints points ");
+      $string   .= brIRC::colourise(15,"$timeRemaining mins left SFPS: $sfps");
+      brIRC::ircmsg ( $string, $args{'ircChannelCode'} );
+    }
+    else
+    {
+      # Use old style GI
+      brIRC::ircmsg ( "      Map : $currentMap", $args{'ircChannelCode'} );
+      brIRC::ircmsg ( "     Time : $timeRemaining", $args{'ircChannelCode'} );
+      brIRC::ircmsg ( "  Players : $currentPlayers / $maxPlayers", $args{'ircChannelCode'} );
+      
+      brIRC::ircmsg ( brIRC::colourise($team1colour, modules::padd_string(9,$team1name,1)
+      . " : $gdiPlayers players          $gdiPoints points", $args{'ircChannelCode'} ));
+      
+      brIRC::ircmsg ( brIRC::colourise($team0colour, modules::padd_string(9,$team0name,1)
+      . " : $nodPlayers players          $nodPoints points", $args{'ircChannelCode'} ));
+      
+      brIRC::ircmsg ( "     SFPS : $sfps", $args{'ircChannelCode'} );
+    }
+  }
+  or modules::display_error($@);
 }
 
 sub playerinfo
