@@ -597,6 +597,7 @@ sub readMods
 sub read_ssgm_settings
 {
 	my $ssgmini = 0;
+	
 	if ( -e $config_fdspath . "ssgm.ini" )
 	{
 		if ( -e $config_fdspath . "tt.cfg" )
@@ -615,11 +616,13 @@ sub read_ssgm_settings
 		$ssgm_version = 1;
 		$ssgmini = $config_fdspath . "ssapb.ini";
 	}
-	else
-	{
-		modules::console_output ( "[Config] Unable to find any of ssgm.ini, ssaow.ini or ssapb.ini! Some functions may not work." );
-		return;
-	}
+  else
+  {
+    $ssgm_version = 0;
+    $config_fdslogpath = $config_fdspath;
+    modules::console_output ( "[Config] Unable to find any of ssgm.ini, ssaow.ini or ssapb.ini! Some functions may not work." );
+    return;
+  }
 
 	modules::console_output ( "[Config] Detected SSGM version $ssgm_version\n" );
 

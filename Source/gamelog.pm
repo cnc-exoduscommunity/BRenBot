@@ -46,8 +46,8 @@ sub init
 {
 	my $firstrun = shift;
 
-	# Bail out if the gamelog is already running, or SSGM version is >= 4
-	return if ( $gamelog_running == 1 || $brconfig::ssgm_version >= 4 );
+	# Bail out if the gamelog is already running, or SSGM version is >= 4 or SSGM is not installed
+	return if ( $gamelog_running == 1 || $brconfig::ssgm_version >= 4 || $brconfig::ssgm_version < 1 );
 
 
 	if ( $brconfig::gamelog_in_ssgm != 1 )
@@ -171,6 +171,8 @@ sub renew_wheel
 {
 	my ( $session, $heap, $input ) = @_[ SESSION, HEAP, ARG0 ];
 
+  return if ( $brconfig::ssgm_version < 1 );
+  
 	if (-e $brconfig::config_fdslogpath . "gamelog2.txt")
 	{
 		$_[HEAP]->{wheel} =

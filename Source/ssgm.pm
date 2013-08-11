@@ -175,7 +175,7 @@ sub start
 
 
 	# Otherwise this is a pre 4.0 version of SSGM, attempt to read logs from file
-	else
+	elsif ( $brconfig::ssgm_version > 0 )
 	{
 		# Get filename for the ssgm logfile
 		my $filename;
@@ -292,8 +292,11 @@ sub start
 
 sub renew_wheel
 {
+  # If SSGM is not installed then we can't possibly read its logfiles
+  return if ( $brconfig::ssgm_version < 1 );
+  
 	# Is SSGM 4.0 installed? If so we don't need to do anything...
-	if ( $brconfig::ssgm_version >= 4 ) { return; }
+	return if ( $brconfig::ssgm_version >= 4 );
 
 	my ( $session, $heap, $input ) = @_[ SESSION, HEAP, ARG0 ];
 	my $name;
