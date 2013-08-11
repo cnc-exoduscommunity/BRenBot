@@ -3,96 +3,27 @@
 # Setting up a BRenBot 1.x development and build environment
 #
 # Author: danpaul88
-# Revision: 1.01
-# Date: 07-08-2011
+# Revision: 1.10
+# Date: 11-08-2013
 #
 ##################################################################################
 
 
-1) Download and install ActiveState ActivePerl 5.14.1, build 1401.
+1) Download and install Strawberry Perl 5.16.3 (32 bit) from
 
-http://downloads.activestate.com/ActivePerl/releases/5.14.1.1401/ActivePerl-5.14.1.1401-MSWin32-x86-294969.msi
-
-
-
-
-2) After installing ActiveState ActivePerl, run the Perl Package Manager from the start menu and wait for
-it to finish loading. Once it is fully loaded select View from the toolbar and select the 'All Packages'
-option. This will list all available packages.
-
-Find the following packages, and on each one right click and click on 'install <name>'
-
-	GetOpt-ArgvFile
-	Module-ScanDeps
-	Parse-Binary
-	PAR
-	PAR-Dist
-	POE
-	Win32-Exe
-
-Now, select File from the toolbar and click Run Marked Actions, and wait for the installation to complete.
+   http://strawberry-perl.googlecode.com/files/strawberry-perl-5.16.3.1-32bit.msi
 
 
 
 
-3) Next, we need to install nmake, so we can build PAR-Packer (which, for some reason, cannot be installed
-through PPM) and DBD-SQLite2 (which is technially obsolete). Download it from the following location;
+2) After installing Strawberry Perl open a command prompt (WinKey+R, cmd, enter) and type in cpan
+   and hit the enter key. Once it loads type the following commands
 
-http://download.microsoft.com/download/vc15/patch/1.52/w95/en-us/nmake15.exe
+   install POE::Test::Loops
+   install POE
+   install Date::Calc
+   install Class::Unload
+   install pp
 
-Now, copy this file into your C:\Perl\Bin folder, and then run it. This will install nmake for you.
-
-
-
-
-4) Now we need to install PAR-Packer, which is used to pack BRenBot 1.x builds into exe files. Get the
-file from the following location;
-
-http://search.cpan.org/CPAN/authors/id/R/RS/RSCHUPP/PAR-Packer-1.009.tar.gz
-
-Extract the folder (7zip can do this) inside the archive onto your desktop, it can be deleted once we
-have finished. Now, open a command prompt window and navigate to this extracted folder. Run the following
-sequence of commands to install PAR-Packer;
-
-makefile.pl
-nmake
-nmake test
-nmake install
-
-Note: Installing this module requires Visual C++ to be installed first, as it must compile some C++ code
-during the installation.
-
-Note2: If nmake fails running it 3 or more times in a row might work. Wierd.
-
-Note3: Apply SVN rev. 1257 from http://svn.openfoundry.org/par/PAR-Packer/trunk to 1.009 before installing
-		or it fails to run on machines without perl installed...
-
-
-
-
-5) Finally, we need to install DBD-SQLite2, which is included with BRenBot builds to support older plugins
-still using SQLite2 databases, and by brLoader. Get the file from the following location;
-
-http://search.cpan.org/CPAN/authors/id/M/MS/MSERGEANT/DBD-SQLite2-0.33.tar.gz
-
-Extract the folder (WinRAR can do this) inside the archive onto your desktop, it can be deleted once we
-have finished. Now, open a command prompt window and navigate to this extracted folder. Run the following
-sequence of commands to install DBD-SQLite2;
-
-makefile.pl
-nmake
-nmake test
-nmake install
-
-Note: Installing this module requires Visual C++ to be installed first, as it must compile some C++ code
-during the installation.
-
-
-
-
-
-6) Installation of a complete development and build environment for BRenBot is complete. You can test
-BRenBot by simply running brenbot.pl (I recommend doing this from a command prompt, otherwise you will
-miss any errors that occur). Building an executable is as easy as calling pp -o brenbot.exe brenbot.pl
-from the command prompt after navigating to the folder with BRenBot in. For release builds, see the
-'Packaging Command Lines.txt' file for a more complete command line including version information etc.
+   Once all of these commands are completed you should be able to run brenbot.pl successfully and
+   compile it into a distributable package using the instructions in Packaging Command Lines.txt
