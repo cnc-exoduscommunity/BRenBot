@@ -250,27 +250,22 @@ sub parse_line
 	{
 		clear();
 	}
+  
+  # Look for any plugins whose regex hooks match this line
+  my %args = (
+    'line'    => $line,
+    'startup' => $startup
+  );
 
-
-	# Look for any plugins whose regex hooks match this line
-	my @plugins = plugin::get_plugin_gamelog_regexes();
-
-	my %args;
-	$args{line}			= $line;
-	$args{startup}		= $startup;
-
-	foreach (@plugins)
-	{
-		my $plugin = $_;
-		my %regexes = %{$plugin::plugin_gamelog_regexes{$plugin}};
-		my $alias	= "plugin_" . $plugin;
-
-		while (my ($regex, $event) = each %regexes)
-		{
-			if ( $line =~ m/$regex/i )
-			{ $main::poe_kernel->post($alias => $event => \%args); }
- 		}
-	}
+  my %plugins = plugin::get_plugin_gamelog_regexes();
+  while ( my($plugin, %regexes) = each(%plugins) )
+  {
+    while (my ($regex, $event) = each %regexes)
+    {
+      if ( $line =~ m/$regex/i )
+        { $main::poe_kernel->post("plugin_".$plugin => $event => \%args); }
+    }
+  }
 }
 
 sub created

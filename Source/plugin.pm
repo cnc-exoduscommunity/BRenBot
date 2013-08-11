@@ -28,7 +28,7 @@ our %plugin_config;
 sub find_plugins
 {
   my @deleted_plugins = keys %plugins;
-  
+
   return unless(opendir(DATADIR, "plugins/"));
 
   # Check plugins list in the plugins directory
@@ -48,7 +48,7 @@ sub find_plugins
     my ($idx) = grep { $deleted_plugins[$_] eq $plugin_name } 0..$#deleted_plugins;
     splice(@deleted_plugins,$idx,1) if defined($idx);
   }
-  
+
   closedir(DATADIR);
 
   # Remove any plugins that we didn't find (unless they are in the "loaded" state)
@@ -74,7 +74,7 @@ sub init
   {
     # Get initial state for plugin from database
     my @db_record = plugin::execute_query("SELECT * FROM plugins WHERE name = '$plugin'");
-    if ( @db_record and $db_record[0]->{'bIsEnabled'} == 1 )
+    if ( @db_record and $db_record[0]->{'bisenabled'} == 1 )
     {
       # Get initial state for plugin from database
       load_plugin($plugin);
@@ -144,7 +144,7 @@ sub load_plugin
 {
   my $plugin_name = shift;
   my $plugin_state = get_state($plugin_name);
-  
+
   # If the plugin state was not found try checking the plugin directory to see if it was added...
   if ( $plugin_state == -1 )
   {
@@ -344,7 +344,7 @@ sub unload_plugin
 sub unimport_plugin
 {
   my $plugin_name = shift;
-  
+
   eval "no $plugin_name;
         Class::Unload->unload('$plugin_name');
         delete \$INC{'$plugin_name.pm'};";
@@ -460,7 +460,7 @@ sub register_plugin_events
 
   if ( $xml->{'events'}->{'event'} )
   {
-    $plugins{$plugin_name}{'events'} = @{$xml->{'events'}->{'event'}};
+    $plugins{$plugin_name}{'events'} = $xml->{'events'}->{'event'};
   }
 
   $plugins{$plugin_name}{'renlog_hooks'} = {};
@@ -513,28 +513,28 @@ sub get_plugin_event
 # Returns a list of plugins which have gamelog regex hooks setup
 sub get_plugin_gamelog_regexes
 {
-  my @found_plugins;
+  my %found_plugins;
   while ( my($plugin, $data) = each(%plugins) )
   {
-    next if ( get_state($plugin) != 1);
-    push (@found_plugins, $plugin) if exists $data->{'gamelog_hooks'};
+    next if ( get_state($plugin) != 1 || !exists $data->{'gamelog_hooks'});
+    $found_plugins{$plugin} = $data->{'gamelog_hooks'};
   }
 
-  return @found_plugins;
+  return %found_plugins;
 }
 
 
 # Returns a list of plugins which have renlog regex hooks setup
 sub get_plugin_renlog_regexes
 {
-  my @found_plugins;
+  my %found_plugins;
   while ( my($plugin, $data) = each(%plugins) )
   {
-    next if ( get_state($plugin) != 1);
-    push (@found_plugins, $plugin) if exists $data->{'renlog_hooks'};
+    next if ( get_state($plugin) != 1 || !exists $data->{'renlog_hooks'});
+    $found_plugins{$plugin} = $data->{'renlog_hooks'};
   }
 
-  return @found_plugins;
+  return %found_plugins;
 }
 
 # --------------------------------------------------------------------------------------------------

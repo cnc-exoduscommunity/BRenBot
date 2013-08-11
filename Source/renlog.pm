@@ -992,27 +992,26 @@ sub ParseLogInput
 		if ( /was kicked/g ) { brIRC::ircmsg( "$line" ); }
 	}
 
+  
+  
+  
 
-	# Look for any plugins whose regex hooks match this line
-	my @plugins = plugin::get_plugin_renlog_regexes();
+  # Look for any plugins whose regex hooks match this line
+  my %args = (
+    'rawline' => $rawline,
+    'line'    => $line,
+    'time'    => $time
+  );
 
-	my %args;
-	$args{'rawline'}		= $rawline;
-	$args{'line'}			= $line;
-	$args{'time'}			= $time;
-
-	foreach (@plugins)
-	{
-		my $plugin = $_;
-		my %regexes = %{$plugin::plugin_renlog_regexes{$plugin}};
-		my $alias  = "plugin_" . $plugin;
-
-		while (my ($regex, $event) = each %regexes)
-		{
-			if ( $rawline =~ m/$regex/i )
-			{ $main::poe_kernel->post($alias => $event => \%args); }
- 		}
-	}
+  my %plugins = plugin::get_plugin_renlog_regexes();
+  while ( my($plugin, %regexes) = each(%plugins) )
+  {
+    while (my ($regex, $event) = each %regexes)
+    {
+      if ( $rawline =~ m/$regex/i )
+        { $main::poe_kernel->post("plugin_".$plugin => $event => \%args); }
+    }
+  }
 }
 
 

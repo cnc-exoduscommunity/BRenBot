@@ -48,18 +48,14 @@ sub updatePlayerData
   }
   
   # Update the player data array
-  $playerData{$id} = {
-    'id'          => $id,
-    'name'        => $name,
-    'score'       => $score,
-    'side'        => $side,
-    'teamid'      => brTeams::get_id_from_name($side),
-    'ping'        => $ping,
-    'ip'          => $ip,
-    'kbps'        => $kbps,
-    'time'        => $time,
-    'lastUpdated' => time()
-  };
+  $playerData{$id}{'score'}       = $score;
+  $playerData{$id}{'side'}        = $side;
+  $playerData{$id}{'teamid'}      = brTeams::get_id_from_name($side);
+  $playerData{$id}{'ping'}        = $ping;
+  $playerData{$id}{'ip'}          = $ip;
+  $playerData{$id}{'kbps'}        = $kbps;
+  $playerData{$id}{'time'}        = $time;
+  $playerData{$id}{'lastUpdated'} = time();
 }
 
 

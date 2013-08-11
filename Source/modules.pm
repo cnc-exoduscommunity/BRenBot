@@ -354,39 +354,38 @@ sub record_ban
 
 sub is_banned
 {
-	my $name = shift;					$name =~ s/'/''/g;
+  my $name = shift;					$name =~ s/'/''/g;
 
-	# Data should already be in the playerData array - Exact match only
-	my ( $result, %player ) = playerData::getPlayerData ( $name, 1 );
-	return if ( $result != 1 );
-
-
-	# Generate query string
-	my $whereCondition = "WHERE LOWER(name) = '".lc($name)."'";
-
-	if ( $player{'serial'} )
-		{ $whereCondition .= " OR serial = '".$player{'serial'}."'"; }
-
-	if ( $player{'ip'} ne "X.X.X.X" )
-	{
-		$whereCondition .= " OR ip = '".$player{'ip'}."'";
-
-		# IP range matching
-		if ( $player{'ip'} =~ m/(\d+\.\d+\.\d+)\.\d+/ )
-			{ $whereCondition .= " OR ip = '".$1.".*'"; }
-	}
-
-	# Now run the query and see if we get any results
-	my @bansArray = brdatabase::execute_query( "SELECT * FROM bans $whereCondition" );
-	if (scalar(@bansArray) > 0)
-	{
-		my ( $year, $month, $day, $hour, $min, $sec ) = BRTime_To_Date( $bansArray[0]->{'timestamp'} );
-		return ( 1, "'".$bansArray[0]->{'reason'}."' (Ban ID ".$bansArray[0]->{'id'}.")", $bansArray[0]->{'banner'}, "$month.$day.$year" );
-	}
+  # Data should already be in the playerData array - Exact match only
+  my ( $result, %player ) = playerData::getPlayerData ( $name, 1 );
+  return if ( $result != 1 );
 
 
-	# If we get down to here there were no bans found, so return 0.
-	return 0;
+  # Generate query string
+  my $whereCondition = "WHERE LOWER(name) = '".lc($name)."'";
+
+  if ( $player{'serial'} and length($player{'serial'}) > 0 )
+    { $whereCondition .= " OR serial = '".$player{'serial'}."'"; }
+
+  if ( $player{'ip'} =~ m/(\d+\.\d+\.\d+)\.\d+/ )
+  {
+    $whereCondition .= " OR ip = '".$player{'ip'}."'";
+
+    # IP range matching
+    $whereCondition .= " OR ip = '".$1.".*'";
+  }
+
+  # Now run the query and see if we get any results
+  my @bansArray = brdatabase::execute_query( "SELECT * FROM bans $whereCondition" );
+  if (scalar(@bansArray) > 0)
+  {
+    my ( $year, $month, $day, $hour, $min, $sec ) = BRTime_To_Date( $bansArray[0]->{'timestamp'} );
+    return ( 1, "'".$bansArray[0]->{'reason'}."' (Ban ID ".$bansArray[0]->{'id'}.")", $bansArray[0]->{'banner'}, "$month.$day.$year" );
+  }
+
+
+  # If we get down to here there were no bans found, so return 0.
+  return 0;
 }
 
 
