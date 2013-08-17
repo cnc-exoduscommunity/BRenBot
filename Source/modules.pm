@@ -4,8 +4,8 @@ package modules;
 use strict;
 
 use POE;
-use POE::Kernel;	# Needed for successful pp compile
-use POE::Session;	# Needed for successful pp compile
+use POE::Kernel;  # Needed for successful pp compile
+use POE::Session; # Needed for successful pp compile
 use Date::Calc qw( Delta_YMDHMS Time_to_Date);
 use XML::Simple;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
@@ -18,13 +18,11 @@ use brAuth;
 
 
 my @modules;
-my $os = $^O;
 
-my $mapSettings;			# Map settings XML hash array
-our $donatelimit	= 0;	# Donate limit for current map
-our $maprules		= "";	# Rules for current map
-our $minelimit		= 30;	# Mine limit for current map
-our $vehiclelimit	= 8;	# Current vehicle limit
+my $mapSettings;        # Map settings XML hash array
+our $maprules		= "";   # Rules for current map
+our $minelimit		= 30; # Mine limit for current map
+our $vehiclelimit	= 8;  # Current vehicle limit
 
 
 
@@ -36,8 +34,8 @@ our $vehiclelimit	= 8;	# Current vehicle limit
 # whilst expecting the continuation of another multipart message.
 #
 # Parameters
-# Message					Message to be output to the console
-# Multipart Type			1 for the start of a message, 2 for middle sections, 3 for end
+# Message           Message to be output to the console
+# Multipart Type    1 for the start of a message, 2 for middle sections, 3 for end
 my $console_output_multipart_status = 0;
 sub console_output
 {
@@ -165,10 +163,10 @@ sub del_ban
 # Kicks a player from the server and optionally records it in the database as a 24 hour ban
 #
 # Parameters
-#	Target				ID or name of player to be kicked
-#	Kicker				Name of the person who kicked them
-#	Reason				Reason for them being kicked from the server
-#	Temporary_Ban		Set to 1 to ban the player for 24 hours
+#   Target          ID or name of player to be kicked
+#   Kicker          Name of the person who kicked them
+#   Reason          Reason for them being kicked from the server
+#   Temporary_Ban   Set to 1 to ban the player for 24 hours
 sub kick_player
 {
 	my $target = shift;			$target =~ s/'/''/g;
@@ -278,9 +276,9 @@ sub check_kicks
 # Bans a player from the server and records it in the database
 #
 # Parameters
-#	Target				ID or name of player to be banned
-#	banner				Name of the person who banned them
-#	Reason				Reason for them being banning them from the server
+#   Target          ID or name of player to be banned
+#   banner          Name of the person who banned them
+#   Reason          Reason for them being banning them from the server
 sub ban_player
 {
 	my $target = shift;					$target =~ s/'/''/g;
@@ -321,11 +319,11 @@ sub ban_player
 # Creates a ban record in the database
 #
 # Parameters
-#	Player				Name to be banned from the server
-#	banner				Name of the person who banned them
-#	Reason				Reason for them being banning them from the server
-#	Serial				Serial hash to be banned from the server
-#	IP					IP Address to be banned from the server
+#   Player          Name to be banned from the server
+#   banner          Name of the person who banned them
+#   Reason          Reason for them being banning them from the server
+#   Serial          Serial hash to be banned from the server
+#   IP              IP Address to be banned from the server
 sub record_ban
 {
 	my $name = shift;					$name =~ s/'/''/g;
@@ -466,8 +464,7 @@ sub check_modules
 		gamelog => "Enables support for the SSGM gamelog",
 		bhs => "Support for Tiberian Technologies / Blackhand Studios FDS library (ppage, pamsg etc)",
 		new_gi => "!gi shows info on one line instead of five lines",
-		donate => "Allows players to donate money to their teammates (bhs only)",
-		map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit, donate limit and map rules.",
+		map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit and map rules.",
 		ssgmlog => "Support for SSGM extended logging (Beacon, Game Results, BW alerts etc)",
 		autobalance => "Enables the autobalance module, which attempts to make teams even when a new map loads.",
 		BRenBot_dll => "Enables support for extended console commands inside BRenBot.dll"
@@ -1266,7 +1263,6 @@ sub loadMapSettings
 	# Ensure we have default settings for everything
 	if ( !exists($mapSettings->{'default'}->{'time'}) )			{ $mapSettings->{'default'}->{'time'} = 30; }
 	if ( !exists($mapSettings->{'default'}->{'mines'}) )		{ $mapSettings->{'default'}->{'mines'} = 30; }
-	if ( !exists($mapSettings->{'default'}->{'donatelimit'}) )	{ $mapSettings->{'default'}->{'donatelimit'} = 0; }
 	if ( !exists($mapSettings->{'default'}->{'vehicles'}) )		{ $mapSettings->{'default'}->{'vehicles'} = 8; }
 	if ( !exists($mapSettings->{'default'}->{'rules'}) )		{ $mapSettings->{'default'}->{'rules'} = ""; }
 }
@@ -1283,7 +1279,6 @@ sub applyMapSettings
 	my $new_time		= $mapSettings->{'default'}->{'time'};
 	$minelimit			= $mapSettings->{'default'}->{'mines'};
 	$vehiclelimit		= $mapSettings->{'default'}->{'vehicles'};
-	$donatelimit		= $mapSettings->{'default'}->{'donatelimit'};
 	$maprules			= $mapSettings->{'default'}->{'rules'};
 
 	# Get any map specific settings
@@ -1292,7 +1287,6 @@ sub applyMapSettings
 		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'time'}) )			{ $new_time = $mapSettings->{'map'}->{$map}->{'time'}; }
 		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'mines'}) )			{ $minelimit = $mapSettings->{'map'}->{$map}->{'mines'}; }
 		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'vehicles'}) )		{ $vehiclelimit = $mapSettings->{'map'}->{$map}->{'vehicles'}; }
-		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'donatelimit'}) )	{ $donatelimit = $mapSettings->{'map'}->{$map}->{'donatelimit'}; }
 		if ( exists($mapSettings->{'map'}->{$map}->{'rules'}) )				{ $maprules = $mapSettings->{'map'}->{$map}->{'rules'}; }
 	}
 
@@ -1302,19 +1296,48 @@ sub applyMapSettings
 	RenRem::RenRemCMD ( "mlimit $minelimit" );
 	RenRem::RenRemCMD ( "vlimit $vehiclelimit" );
 
-	my $message = "Settings for $map: Time Limit: $new_time, Mine Limit: $minelimit, Vehicle Limit: $vehiclelimit.";
-	if ( $donatelimit > 0 && get_module( "donate" ) == 1 )
-		{ $message .= "Donations are allowed after $donatelimit minutes."; }
-	RenRem::RenRemCMDtimed ( "msg [BR] $message", 5 );
+  # Really don't think there is much point announcing these...
+	#my $message = "Settings for $map: Time Limit: $new_time, Mine Limit: $minelimit, Vehicle Limit: $vehiclelimit.";
+	#RenRem::RenRemCMDtimed ( "msg [BR] $message", 5 );
 	
 	if ( $maprules )
 		{ RenRem::RenRemCMDtimed ( "msg [BR] Special rules for $map: $maprules", 5 ); }
 }
 
 
+# Returns the value of the specified setting for a map, if any such setting exists
+#
+# \param[in] $setting
+#   The name of the setting to get the value of
+# \param[in] $map
+#   Optional, the name of the map to get the setting for. Defaults to the current map
+#
+# \return
+#   The value of the setting for the specified map if it exists. If no setting exists for the
+#   specified map returns the default value of the setting or undef if no default exists either
+sub get_map_setting
+{
+  my $setting = shift;
+  my $map     = defined $_[0] ? $_[0] : serverStatus::getMap();
+  
+  # Check for a map specific value
+  if ( exists($mapSettings->{'map'}->{$map}->{$setting}) )
+    { return $mapSettings->{'map'}->{$map}->{$setting}; }
+  
+  # Otherwise fall back to any default value provided
+  if ( exists($mapSettings->{'default'}->{$setting}) )
+    { return $mapSettings->{'default'}->{$setting}; }
+
+  return undef;
+}
 
 
 
+###################################################
+####
+## Misc.
+####
+###################################################
 
 # Return true if a value is numeric
 sub IsNumeric
@@ -1374,8 +1397,7 @@ sub do_autobalance
 						{
 							if ( $player->{'side'} eq "GDI" || $player->{'side'} eq "All" )
 							{
-								my $loaded = gamelog::get_player( $player->{'name'} );
-								if ( $loaded && $loaded->{'name'} eq $player->{'name'} )
+								if ( gamelog::isPlayerLoaded($player->{'name'}) )
 								{
 									modules::console_output ( "Swapping $player->{name} from GDI to Nod." );
 									RenRem::RenRemCMD( "team2 $player->{id} 0" );
@@ -1396,8 +1418,7 @@ sub do_autobalance
 						{
 							if ( $player->{'side'} eq "NOD" || $player->{'side'} eq "Sov" )
 							{
-								my $loaded = gamelog::get_player( $player->{'name'} );
-								if ( $loaded && $loaded->{'name'} eq $player->{'name'} )
+								if ( gamelog::isPlayerLoaded($player->{'name'}) )
 								{
 									modules::console_output ( "Swapping $player->{name} from Nod to GDI." );
 									RenRem::RenRemCMD( "team2 $player->{id} 1" );

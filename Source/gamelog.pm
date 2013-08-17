@@ -1053,35 +1053,9 @@ sub clear
 # option is disable this will always return true(1).
 sub isPlayerLoaded
 {
-	my $name = lc(shift);
-
-	if ( $brconfig::enable_gamelog_loaded_check == 0 || exists ( $curplayers{$name} ) ) { return 1; }
-
-	return 0;
-}
-
-
-# Not sure if this is still used...
-
-# TODO: Replace references with isPlayerLoaded sometime...
-sub get_player
-{
-	my $name = shift;
-
-	eval
-	{
-		foreach my $object (keys %gameobjects)
-		{
-			if ($gameobjects{$object}->{name} eq $name)
-			{
-				if ( $gameobjects{$object}->{destroyed} ne 1 )
-				{
-					return ($gameobjects{$object});
-				}
-			}
-		}
-	}
-	or modules::display_error($@);
+  my $name = lc(shift);
+  return 1 if ( $brconfig::enable_gamelog_loaded_check == 0 || exists ( $curplayers{$name} ) );
+  return 0;
 }
 
 sub display_buildings

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Time::HiRes qw(time);		# Used by POE to make alarms more accurate
+use Time::HiRes qw(time);   # Used by POE to make alarms more accurate
 use POE;
 use POE::Kernel;
 use POE::Session;
@@ -22,9 +22,9 @@ use strict;
 # sub POE::Kernel::TRACE_FILENAME () { 'memoryleakdebug.txt' }
 
 # Define these before loading BRenBot modules as they may be used inside those modules
-use constant BR_VERSION => 1.53;
-use constant BR_BUILD => 14;
-use constant BR_COPYRIGHT_YEAR => "2003-2013";
+use constant BR_VERSION         => 1.53;
+use constant BR_BUILD           => 15;
+use constant BR_COPYRIGHT_YEAR  => "2003-2013";
 
 # Load BRenBot modules
 use modules;
@@ -44,9 +44,6 @@ use ssgm;
 use gamespy;
 use brAuth;
 
-# Extra modules which plugin developers can use, not actually used by BRenBot itself.
-use Net::FTP;
-
 # Disable buffering on STDIN / STDOUT
 $| = 1;
 
@@ -59,34 +56,8 @@ our $start_time = time();
 brdatabase::db_connect();
 brconfig::init();
 
-our %tempMods;						# List of temporary moderators
-our $currentMod = "Renegade";		# Stores current mod, EG: APB, AR
-
-# Central point for overriding team names and colors
-our $team0Name = "Nod";
-our $team0FullName = "Nod";
-our $team0Colour = "04";
-our $team1Name = "GDI";
-our $team1FullName = "GDI";
-our $team1Colour = "08";
-our $team2Name = "Neutral";
-our $team2FullName = "Neutral";
-our $team2Colour = "09";
-
-sub get_team_colour
-{
-  my $teamname = shift;
-  return $team0Colour if ( $teamname eq $team0Name );
-  return $team1Colour if ( $teamname eq $team1Name );
-  return $team2Colour;
-}
-sub get_team_fullname
-{
-  my $teamname = shift;
-  return $team0FullName if ( $teamname eq $team0Name );
-  return $team1FullName if ( $teamname eq $team1Name );
-  return $team2FullName;
-}
+our %tempMods;                  # List of temporary moderators
+our $currentMod = "Renegade";   # Stores current mod, EG: APB, AR   - This will be deprecated by brTeams in future, avoid using it for new code
 
 
 
@@ -109,7 +80,7 @@ sub joinstuff
 		if ( !( renlog::check_banlist( $name ) ) && !( modules::check_kicks( $name ) ) )
 		{
       if ( !plugin::call_core_override('playerjoin_msg', $name) )
-        { brIRC::ircmsg( "11$name joined the game on team ".get_team_colour($player{'side'}).get_team_fullname($player{'side'}) ); }
+        { brIRC::ircmsg( brIRC::colourise(11,"$name joined the game on team ").brTeams::get_colourised_name($player{'side'}) ); }
 
 			# If they are authed, or not protected, show their mod status
 			my $authed = brAuth::GetAuthState ( $player{name} );
@@ -151,7 +122,7 @@ sub joinstuff
 										# applicable when bhs.dll is only required by the map
 										if ( $player{'scriptsVersion'} < $brconfig::config_minimum_scripts_version && $brconfig::config_minimum_scripts_version > 0 )
 										{
-											modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.'  or higher is required to play on this server ('.$player{'scriptsVersion'}.' installed)' );
+											modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.' or higher is required to play on this server ('.$player{'scriptsVersion'}.' installed)' );
 										}
 									}
 
@@ -166,7 +137,7 @@ sub joinstuff
 									# No chances left... bye bye!
 									else
 									{
-										modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.'  or higher is required to play on this server (pre 1.3 installed)' );
+										modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.' or higher is required to play on this server (pre 1.3 installed)' );
 									}
 								}
 							} # end of tick
@@ -301,28 +272,28 @@ if ( $brconfig::gamelog_in_ssgm != 1 && modules::get_module ( "gamelog" ) )
 if ( modules::get_module( "ssgmlog" ) )
 	{ ssgm::start(); }
 
-# Load plugins
-plugin::init();
-
-# Load GSA if necessary
-if ( modules::get_module( "gamespy_players" ) != 0 )
-{
-	gamespy::init();
-}
-
-# Load IRC
-brIRC::init();
-
 # Get initial status of server
 RenRem::RenRemCMD ( "game_info" );
 RenRem::RenRemCMD ( "player_info" );
 RenRem::RenRemCMD ( "sversion" );
+
+# Load GSA if necessary
+if ( modules::get_module( "gamespy_players" ) != 0 )
+{
+  gamespy::init();
+}
 
 # Load modules
 modules::AutoAnnounce_Init();
 
 # Initialize renlog
 renlog::init();
+
+# Load plugins
+plugin::init();
+
+# Load IRC once everything else is ready
+brIRC::init();
 
 
 

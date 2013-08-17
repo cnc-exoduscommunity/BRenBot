@@ -246,15 +246,6 @@
     <hideInHelp value="1"/>
     <alias>amsg</alias>
   </command>
-  <command name="donate">
-    <permission level="1"/>
-    <syntax value="!donate &lt;playername&gt; &lt;amount&gt;"/>
-    <help value="Donates money from your account to another user's account"/>
-    <enabled value="1"/>
-    <group>ingame</group>
-    <module>bhs</module>
-    <hideInHelp value="0"/>
-  </command>
   <command name="nextmap">
     <permission level="1"/>
     <syntax value="!nextmap"/>

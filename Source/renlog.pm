@@ -508,12 +508,6 @@ sub ParseLogInput
 			if ( $1 eq "All" and $main::currentMod ne 'APB' )
       {
         $main::currentMod = 'APB';
-        $main::team0Name = 'Sov';
-        $main::team0FullName = 'Soviet';
-        $main::team0Colour = '04';
-        $main::team1Name = 'All';
-        $main::team1FullName = 'Allies';
-        $main::team1Colour = '10';
       }
 			serverStatus::updateStatus_GDI ( $2, $4, $3 );
 		}
@@ -658,7 +652,7 @@ sub ParseLogInput
 			}
       
       if ( !plugin::call_core_override('playerleave_msg', $1) )
-        { brIRC::ircmsg( "11$1 left the game from team ".main::get_team_colour($player{'side'}).main::get_team_fullname($player{'side'}) ); }
+        { brIRC::ircmsg( brIRC::colourise(11,"$1 left the game from team ").brTeams::get_colourised_name($player{'side'}) ); }
 
 			my @plugins = plugin::get_plugin_event( "playerleave" );
 			my %args;
@@ -666,6 +660,7 @@ sub ParseLogInput
 			$args{'id'} = $player{'id'};
 			$args{'nick'} = $player{'name'};
 			$args{'name'} = $player{'name'};
+			$args{'teamid'} = $player{'teamid'};
 			$args{'ip'} = $player{'ip'};
 
 			foreach (@plugins)

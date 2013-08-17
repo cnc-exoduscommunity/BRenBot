@@ -1,0 +1,43 @@
+<?xml version="1.0" ?>
+<plugin name="donate">
+
+  <!-- Configuration settings for the plugin, change the values of these to suit your server -->
+  <config>
+  </config>
+
+
+  <!-- Do not modify this events list or you may break the plugin -->
+  <events>
+    <event>command</event>
+  </events>
+
+
+  <!-- Do not modify this hooks list or you may break the plugin -->
+  <gamelog_regex_hooks>
+  </gamelog_regex_hooks>
+
+
+  <!-- Do not add or remove commands from this section, but feel free to modify the permission level
+  require to use the command, the help text, whether the command is enabled or not and its aliases -->
+  <command name="donate">
+    <permission level="1"/>
+    <syntax value="!donate &lt;playername&gt; &lt;amount&gt;"/>
+    <help value="Donates money from your account to another user's account"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <module>bhs</module>
+    <hideInHelp value="0"/>
+    <alias>d</alias>
+  </command>
+
+  <command name="teamdonate">
+    <permission level="1"/>
+    <syntax value="!donate &lt;amount&gt;"/>
+    <help value="Donates money from your account to all of your teammates"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <module>bhs</module>
+    <hideInHelp value="0"/>
+    <alias>td</alias>
+  </command>
+</plugin>

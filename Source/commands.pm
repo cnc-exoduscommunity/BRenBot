@@ -482,7 +482,6 @@ sub parsearg
 			rehash => \&rehash,
 			die => \&die,
 			help => \&help,
-			donate => \&donate,
 			showmsgs => \&showmsgs,
 			buildings => \&buildings,
 			vehicles => \&vehicles,
@@ -981,7 +980,7 @@ sub set
 			return;
 		}
 
-		if ( lc($module_name) eq "brenbot_dll" || lc($module_name) eq "bhs" )
+		if ( lc($module_name) eq "bhs" )
 		{
 			brIRC::ircmsg ( "State of module $module_name cannot be altered using this command, to enable or disable the module please install or delete the relevent dll files from the server.", $args{'ircChannelCode'} );
 			return;
@@ -1597,116 +1596,6 @@ sub autoannounce
   or modules::display_error($@);
 }
 
-sub donate
-{
-	my %args = %{$_[ ARG0 ]};
-
-	eval
-	{
-		my $user;
-		my $money;
-
-		# Cannot be used from IRC
-		if ( $args{'nicktype'} == 1 )
-		{
-			brIRC::ircmsg ( "You need to be ingame to use this command.", $args{'ircChannelCode'} );
-			return;
-		}
-
-		# Check syntax, get arguments
-		if ( $args{arg} =~ m/^\!\S+\s(.+)\s(\d+)$/i )
-		{
-			$user = $1;
-			$money = $2;
-		}
-		else
-		{
-			show_syntax_error(@_);
-      return;
-		}
-
-		# Check BHS.dll is enabled
-    if ( modules::get_module( "bhs" ) == 1 )
-		{
-			my ( $result, %player ) = playerData::getPlayerData ( $args{'nick'}, 1 );
-			if ( $result == 1 )
-			{
-				# Check if gamelog is enabled (required for donations)
-				if ( modules::get_module( "gamelog" ) != 1 && $brconfig::config_seperate_donate != 1 )
-				{
-					modules::pagePlayer( $player{'id'}, "BRenBot", "Donations are not enabled on this server. Ask your admin to turn gamelog on." );
-					return;
-				}
-
-				# Check if donate module is enabled
-				if ( modules::get_module( "donate" ) != 1 )
-				{
-					modules::pagePlayer( $player{'id'}, "BRenBot", "Donations have been disabled by the administration." );
-					return;
-				}
-
-				my ( $result2, %player2 ) = playerData::getPlayerData ( $user );
-				if ( $result2 == 1 )
-				{
-					if ( $player2{'name'} eq $player{'name'} )
-					{
-						modules::pagePlayer( $player{'id'}, "BRenBot", "You can't donate money to yourself!" );
-						return;
-					}
-
-					if ( $player2{'side'} eq $player{'side'} )
-					{
-						if ( $money <= 0 )
-						{
-							modules::pagePlayer( $player{'id'}, "BRenBot", "You can't donate negative money!" );
-							return;
-						}
-
-						if ( gamelog::isPlayerLoaded( $player2{'name'} ) )
-						{
-							my $donatelimit = $modules::donatelimit *60;
-
-							if ( ($donatelimit != 0) && ( serverStatus::getMapStartTime() != 0) )
-							{
-								my $running_time = time() - serverStatus::getMapStartTime();
-
-								if ($running_time < $donatelimit)
-								{
-									my $remaining = $donatelimit - $running_time;
-									$remaining = sprintf("%.0f", $remaining);
-									modules::pagePlayer( $player{'id'}, "BRenBot", "Donations are not allowed on ".serverStatus::getMap()." in the first $donatelimit seconds. You have to wait $remaining seconds!" );
-									return;
-								}
-							}
-
-							modules::pagePlayer( $player{'id'}, "BRenBot", "You have donated $money credits to $player2{name}!" );
-							modules::pagePlayer( $player2{'id'}, "BRenBot", "$player{name} has donated $money to you!" );
-							RenRem::RenRemCMD( "donate $player{id} $player2{id} $money" );
-						}
-						else
-						{
-							modules::pagePlayer( $player{'id'}, "BRenBot", "$player2{name} has not done with loading this map yet.");
-						}
-						return;
-					} # end of same team
-					else
-					{
-						modules::pagePlayer( $player{'id'}, "BRenBot", "$player2{name} is not on your team. ");
-						return;
-					}
-
-				} # end of user result=1
-				else
-				{
-					modules::pagePlayer( $player{'id'}, "BRenBot", "$user was not found ingame, or is not unique." );
-					return;
-				}
-			} # end of result=1
-		} # end of module bhs
-	}
-	or modules::display_error($@);
-}
-
 sub ppage
 {
 	my %args = %{$_[ ARG0 ]};
@@ -2108,9 +1997,9 @@ sub kill
 					return;
 				}
 
-				# If we dont have BRenBot.dll we need to swap their team twice to kill them, check this would not
+				# If we dont have SSGM 4 we need to swap their team twice to kill them, check this would not
 				# end the game before doing so
-				if ( !modules::get_module("BRenBot_dll")
+				if ( !($brconfig::ssgm_version >= 4)
 					&& ( ( ( $player{side} eq "GDI" || $player{side} eq "All" ) && ( serverStatus::getPlayers_GDI() == 1 ) )
 					|| ( ( $player{side} eq "NOD" || $player{side} eq "Sov" ) && ( serverStatus::getPlayers_Nod() == 1 ) ) ) )
 				{
@@ -2131,10 +2020,9 @@ sub kill
 				{
 					RenRem::RenRemCMD( "msg $player{name} has been killed by $admin." );
 
-					# Use kill console command if BRenBot.dll is installed, otherwise use team2 twice
-					if ( modules::get_module("BRenBot_dll") )
+					# Use kill console command if SSGM 4 is installed, otherwise use team2 twice
+					if ( $brconfig::ssgm_version >= 4 )
 					{
-						RenRem::RenRemCMD ( "eject $player{id}" );
 						RenRem::RenRemCMD ( "kill $player{id}" );
 					}
 					else
@@ -2200,9 +2088,9 @@ sub killme
 					return;
 				}
 
-				# If we dont have BRenBot.dll we need to swap their team twice to kill them, check this would not
+				# If we dont have SSGM 4 we need to swap their team twice to kill them, check this would not
 				# end the game before doing so
-				if ( !modules::get_module("BRenBot_dll")
+				if ( !($brconfig::ssgm_version >= 4)
 					&& ( ( ( $player{side} eq "GDI" || $player{side} eq "All" ) && ( serverStatus::getPlayers_GDI() == 1 ) )
 					|| ( ( $player{side} eq "NOD" || $player{side} eq "Sov" ) && ( serverStatus::getPlayers_Nod() == 1 ) ) ) )
 				{
@@ -2213,10 +2101,9 @@ sub killme
 
 				if ( gamelog::isPlayerLoaded( $player{'name'} ) )
 				{
-					# Use kill console command if BRenBot.dll is installed, otherwise use team2 twice
-					if ( modules::get_module("BRenBot_dll") )
+					# Use kill console command if SSGM 4 is installed, otherwise use team2 twice
+					if ( $brconfig::ssgm_version >= 4 )
 					{
-						RenRem::RenRemCMD ( "eject $player{id}" );
 						RenRem::RenRemCMD ( "kill $player{id}" );
 					}
 					else
@@ -3151,7 +3038,7 @@ sub players_processTeam
     }
   }
   
-  players_outputTeam($teamid, $string) if ( $string ne "" );
+  players_outputTeam($teamid, $ircChannel, $string) if ( $string ne "" );
 }
 
 # Worker function for the !teamplayers command
@@ -3565,15 +3452,13 @@ sub unshun
 ## dumpLogs command
 sub dumpLogs
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
-	brdatabase::dumpLogs ( 1, $brconfig::config_kicklogfile );
-	brdatabase::dumpLogs ( 2, $brconfig::config_banlogfile );
-	brdatabase::dumpLogs ( 3, $brconfig::config_misclogfile );
+  brdatabase::dumpLogs ( 1, $brconfig::config_kicklogfile );
+  brdatabase::dumpLogs ( 2, $brconfig::config_banlogfile );
+  brdatabase::dumpLogs ( 3, $brconfig::config_misclogfile );
 
-	brIRC::ircmsg ( "Log dump complete.", $args{'ircChannelCode'} );
+  brIRC::ircmsg ( "Log dump complete.", $args{'ircChannelCode'} );
 }
 
 
@@ -4587,7 +4472,7 @@ sub check_ssgm_version
 {
   my $required_version = shift;
 
-  return ( $brConfig::ssgm_version >= $required_version ) ? 1 : 0;
+  return ( $brconfig::ssgm_version >= $required_version ) ? 1 : 0;
 }
 
 

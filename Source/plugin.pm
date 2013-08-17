@@ -704,7 +704,7 @@ sub isFullMod { return modules::isFullMod(@_); }
 sub isAdmin { return modules::isAdmin(@_); }
 
 
-# Check if a given player has finished loading the map, returns 1 for 1, 0 for false.
+# Check if a given player has finished loading the map, returns 1 for true, 0 for false.
 # Parameters: playername
 sub isPlayerLoaded { return gamelog::isPlayerLoaded(@_); }
 
@@ -719,6 +719,18 @@ sub parseModName { return modules::parseModName(@_); }
 #########################
 ## Server functions
 #########################
+
+# Get the version of scripts.dll installed on the server
+#
+# \return Scripts version running on the server, or 0 if it is too old to be detected
+sub get_server_scripts_version { return $brconfig::serverScriptsVersion; }
+
+
+# Get the version of SSGM installed on the server
+#
+# \return SSGM version running on the server, or 0 if it is not running SSGM
+sub get_server_ssgm_version { return $brconfig::ssgm_version; }
+
 
 # Send a RenRem command to the FDS
 #
@@ -740,8 +752,23 @@ sub RenRemCMDtimed { RenRem::RenRemCMDtimed(@_); }
 sub getGameStatus { return serverStatus::getGameStatus(); }
 
 
-# Server message function for plugins - shows a public chat message
-# for all players in the server
+# Get the current map
+#
+# \return The name of the current map being played in the server
+sub get_map { return serverStatus::getMap(); }
+
+
+# Get the current map starting time
+#
+# \return The unix timestamp at which the current map on the server started
+sub get_map_start_time { return serverStatus::getMapStartTime(); }
+
+
+# Get the value of a map setting for the current map
+sub get_map_setting { return modules::get_map_setting(@_); }
+
+
+# Server message function for plugins - shows a public chat message for all players in the server
 sub serverMsg
 {
   my $msg = shift;
@@ -953,6 +980,14 @@ sub plugin::team_get_colourised_name { return brTeams::get_colourised_name(@_); 
 # \param[in] $team
 #   The ID of the team
 sub plugin::team_get_colourised_abbreviation { return brTeams::get_colourised_abbreviation(@_); }
+
+# Get the list of players on a specified team
+#
+# \param[in] $team
+#   The ID, name or abbreviation of the team
+#
+# \return A hash of playerdata for each player on the team
+sub plugin::team_get_players { return playerData::getPlayersByTeam(@_); }
 
 
 
