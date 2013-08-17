@@ -50,8 +50,6 @@ sub check_donate_limit($);
 
 sub start
 {
-  return ($loaded_ok = 0) if ( db_update() != 1 );
-
   # Set our current version in the globals table
   plugin::set_global ( 'version_plugin_donate', $currentVersion );
 
@@ -127,7 +125,7 @@ sub donate
   my ($result2, %donatee) = playerData::getPlayerData( $args{'nick'}, 1 );
   if ( $result2 != 1 )
   {
-    modules::pagePlayer( $donator{'id'}, 'BRenBot', $teammate.' was not found in the server or is not unique'; );
+    modules::pagePlayer( $donator{'id'}, 'BRenBot', $teammate.' was not found in the server or is not unique' );
     return;
   }
 
