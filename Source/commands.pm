@@ -3028,7 +3028,7 @@ sub players_processTeam
   my %teamplayers = playerData::getPlayersByTeam($teamid);
   while ( my ( $id, $player ) = each ( %teamplayers ) )
   {
-    $string .= " ".modules::padd_string(modules::parseModName($player->{'name'}, 1));
+    $string .= " ".modules::padd_string(22, modules::parseModName($player->{'name'}, 1));
 
     if ( ++$count >= 5 )
     {
