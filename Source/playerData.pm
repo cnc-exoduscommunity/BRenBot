@@ -296,6 +296,7 @@ sub getPlayersByTeam
     {
       $teamplayers{$id} = $player if ( $player->{'teamid'} == $teamid );
     }
+    return %teamplayers;
   }
 }
 
