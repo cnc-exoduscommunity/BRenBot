@@ -23,7 +23,7 @@ use strict;
 
 # Define these before loading BRenBot modules as they may be used inside those modules
 use constant BR_VERSION         => 1.53;
-use constant BR_BUILD           => 15;
+use constant BR_BUILD           => 16;
 use constant BR_COPYRIGHT_YEAR  => "2003-2013";
 
 # Load BRenBot modules
@@ -83,7 +83,7 @@ sub joinstuff
         { brIRC::ircmsg( brIRC::colourise(11,"$name joined the game on team ").brTeams::get_colourised_name($player{'side'}) ); }
 
 			# If they are authed, or not protected, show their mod status
-			my $authed = brAuth::GetAuthState ( $player{name} );
+			my $authed = brAuth::GetAuthState ( $player{'name'} );
 			if ( $authed == 1 || $authed == 2 && !($brconfig::config_moderators_force_auth) )
 				{ ShowModJoinMessage( $player{'name'} ); }
 

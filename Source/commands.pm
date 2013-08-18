@@ -3013,6 +3013,11 @@ sub players
 
     players_processTeam(1, $args{'ircChannelCode'});
     players_processTeam(0, $args{'ircChannelCode'});
+    
+    # These two will rarely be populated (the second hopefully never) but we should be returning
+    # a complete list of players ingame so we check these anyway
+    players_processTeam(2, $args{'ircChannelCode'});
+    players_processTeam(-1, $args{'ircChannelCode'});
   }
   or modules::display_error($@);
 }
@@ -3026,7 +3031,7 @@ sub players_processTeam
   my $count       = 0;
 
   my %teamplayers = playerData::getPlayersByTeam($teamid);
-  while ( my ( $id, $player ) = each ( %teamplayers ) )
+  while ( my($id, $player) = each(%teamplayers) )
   {
     $string .= " ".modules::padd_string(22, modules::parseModName($player->{'name'}, 1));
 

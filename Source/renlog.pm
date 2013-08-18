@@ -190,7 +190,10 @@ sub fakeUser
 		{
 			# NB: DO NOT USE modules::kick_player as it may remove the incorrect player
 			RenRem::RenRemCMD( "msg [BR] $player{name} is being kicked by BRenBot for: FAKE NICK" );
-			RenRem::RenRemCMD( "kick $player{id}" );
+        
+      my $command = 'kick '.$player{'id'};
+      $command .= ' Fake Nickname' if ($brconfig::ssgm_version >= 4);
+      RenRem::RenRemCMD ( $command, 1 );
 		}
 	}
 
@@ -204,7 +207,10 @@ sub fakeUser
 			{
 				# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
 				RenRem::RenRemCMD( "msg [BR] $player->{name} is being kicked by BRenBot for: Impersonating someone else" );
-				RenRem::RenRemCMD( "kick $player->{id}");
+        
+        my $command = 'kick '.$player->{'id'};
+        $command .= ' Impersonating someone else' if ($brconfig::ssgm_version >= 4);
+        RenRem::RenRemCMD ( $command, 1 );
 			}
 		}
 	}

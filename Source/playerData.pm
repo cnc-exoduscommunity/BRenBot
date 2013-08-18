@@ -48,14 +48,14 @@ sub updatePlayerData
   }
   
   # Update the player data array
-  $playerData{$id}{'score'}       = $score;
-  $playerData{$id}{'side'}        = $side;
-  $playerData{$id}{'teamid'}      = brTeams::get_id_from_name($side);
-  $playerData{$id}{'ping'}        = $ping;
-  $playerData{$id}{'ip'}          = $ip;
-  $playerData{$id}{'kbps'}        = $kbps;
-  $playerData{$id}{'time'}        = $time;
-  $playerData{$id}{'lastUpdated'} = time();
+  $playerData{$id}->{'score'}       = $score;
+  $playerData{$id}->{'side'}        = $side;
+  $playerData{$id}->{'teamid'}      = brTeams::get_id_from_name($side);
+  $playerData{$id}->{'ping'}        = $ping;
+  $playerData{$id}->{'ip'}          = $ip;
+  $playerData{$id}->{'kbps'}        = $kbps;
+  $playerData{$id}->{'time'}        = $time;
+  $playerData{$id}->{'lastUpdated'} = time();
 }
 
 
@@ -288,16 +288,15 @@ sub getPlayerList
 #   ID or abbreviation of a team
 sub getPlayersByTeam
 {
+  # Note: We allow teamid -1 since we might want to get a list of players on an unknown team
   my $teamid = brTeams::get_id_from_name(shift);
-  if ( $teamid != -1 )
+
+  my %teamplayers;
+  while ( my ( $id, $player ) = each ( %playerData ) )
   {
-    my %teamplayers;
-    while ( my ( $id, $player ) = each ( %playerData ) )
-    {
-      $teamplayers{$id} = $player if ( $player->{'teamid'} == $teamid );
-    }
-    return %teamplayers;
+    $teamplayers{$id} = $player if ( $player->{'teamid'} == $teamid );
   }
+  return %teamplayers;
 }
 
 

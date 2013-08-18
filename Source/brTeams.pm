@@ -51,15 +51,15 @@ sub read_config
         {
           if ( $_ =~ m/^name\s*=\s*(\S.*)$/i )
           {
-            $teams{$teamid}{'name'} = $1;
+            $teams{$teamid}->{'name'} = $1;
           }
           elsif ( $_ =~ m/^abbreviation\s*=\s*(\S.*)$/i )
           {
-            $teams{$teamid}{'abbreviation'} = $1;
+            $teams{$teamid}->{'abbreviation'} = $1;
           }
           elsif ( $_ =~ m/^colour\s*=\s*(\d{1,2}(?:,\d{1,2})?)$/i )
           {
-            $teams{$teamid}{'colour'} = $1;
+            $teams{$teamid}->{'colour'} = $1;
           }
         }
       }
@@ -79,9 +79,9 @@ sub get_id_from_name
   return $team if ( $team =~ m/^\d+$/ and $team >= 0 and $team <= 2 );
 
   # Otherwise search for a matching team by name or abbreviation
-  while ( my ( $id, $data ) = each %teams )
+  for my $id (keys %teams)
   {
-    return $id if ( lc($data{'name'}) eq $team || lc($data{'abbreviation'}) eq $team );
+    return $id if ( lc($teams{$id}->{'name'}) eq $team || lc($teams{$id}->{'abbreviation'}) eq $team );
   }
 
   return -1;
@@ -95,7 +95,7 @@ sub get_name
   my $team = get_id_from_name(shift);
 
   if ( $team != -1 )
-    { return $teams{$team}{'name'}; }
+    { return $teams{$team}->{'name'}; }
   else
     { return "Unknown"; }
 }
@@ -106,7 +106,7 @@ sub get_abbreviation
   my $team = get_id_from_name(shift);
 
   if ( $team != -1 )
-    { return $teams{$team}{'abbreviation'}; }
+    { return $teams{$team}->{'abbreviation'}; }
   else
     { return "Unk"; }
 }
@@ -117,7 +117,7 @@ sub get_colour
   my $team = get_id_from_name(shift);
 
   if ( $team != -1 )
-    { return $teams{$team}{'colour'}; }
+    { return $teams{$team}->{'colour'}; }
   else
     { return "01"; }
 }
