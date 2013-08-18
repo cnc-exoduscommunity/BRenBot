@@ -210,9 +210,9 @@ sub teamdonate
   my $creditsPerTeammate = $credits / (scalar keys %teammates) -1;
   while ( my ($id, $donatee) = each(%teammates) )
   {
-    continue if ( $donator{'id'} == $donatee{'id'} );
-    plugin::pagePlayer( $donatee{'id'}, 'BRenBot', "$donator{name} has donated $creditsPerTeammate to you!" );
-    plugin::RenRemCMD( "donate $donator{id} $donatee{id} $creditsPerTeammate" );
+    next if ( $donator{'id'} == $donatee->{'id'} );
+    plugin::pagePlayer( $donatee->{'id'}, 'BRenBot', "$donator{name} has donated $creditsPerTeammate to you!" );
+    plugin::RenRemCMD( "donate $donator{id} $donatee->{id} $creditsPerTeammate" );
   }
 
   # Actual total donations might be lower if the figure didn't divide nicely between players...
