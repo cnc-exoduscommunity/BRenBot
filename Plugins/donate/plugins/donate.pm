@@ -207,7 +207,7 @@ sub teamdonate
 
   # OK, passed all the checks, go ahead and do the donations!
   my %teammates = plugin::team_get_players($donator{'teamid'});
-  my $creditsPerTeammate = $credits / (scalar keys %teammates) -1;
+  my $creditsPerTeammate = int($credits / (scalar keys %teammates) -1);
   while ( my ($id, $donatee) = each(%teammates) )
   {
     next if ( $donator{'id'} == $donatee->{'id'} );
@@ -216,7 +216,7 @@ sub teamdonate
   }
 
   # Actual total donations might be lower if the figure didn't divide nicely between players...
-  $credits = $creditsPerTeammate * (scalar keys %teammates) -1;
+  $credits = $creditsPerTeammate * ((scalar keys %teammates) -1);
   plugin::pagePlayer( $donator{'id'}, 'BRenBot', "You have donated $credits credits to your team!" );
 }
 
