@@ -25,9 +25,9 @@ my $sfps				= 0;
 my $radarmode			= -1; # radarmode
 
 # Variables for the status refresh loop
-my $lastRequestTime		= 0;
-my $lastResponseTime	= 0;
-my $fdsResponding		= 1;
+my $lastRequestTime   = 0;
+my $lastResponseTime  = 0;
+my $fdsResponding     = 0;
 
 # Other misc data about the server, mostly used by RG and GSA
 my $gameTitle			= "";
@@ -64,18 +64,19 @@ sub init
 					brIRC::ircmsg ( "04Warning: The FDS has not responded to the last two status requests, it may have gone offline." );
 					$fdsResponding = 0;
 				}
-				elsif ( $lastResponseTime > $lastRequestTime && $fdsResponding == 0 )
-				{
-					$fdsResponding = 1;
-					
-					# Check for changes in configuration of the server
-					RenRem::RenRemCMD ( "mapnum" );
-					RenRem::RenRemCMD ( "sversion" );
-				}
+        elsif ( $lastResponseTime > $lastRequestTime && $fdsResponding == 0 )
+        {
+          $fdsResponding = 1;
+
+          # Check for changes in configuration of the server
+          RenRem::RenRemCMD ( "mapnum" );
+          RenRem::RenRemCMD ( "sversion" );
+          brconfig::GetAvailableMaps();
+        }
 
 				# Get updated player info and game info
 				$lastRequestTime = time();
-				
+
 				# Request map number if we don't already know it
 				if ( $currentMapNum == -1 ) { RenRem::RenRemCMD ( "mapnum" ); }
 

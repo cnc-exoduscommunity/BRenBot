@@ -84,17 +84,14 @@ sub joinstuff
 
 			# If they are authed, or not protected, show their mod status
 			my $authed = brAuth::GetAuthState ( $player{'name'} );
-			if ( $authed == 1 || $authed == 2 && !($brconfig::config_moderators_force_auth) )
+			if ( $authed == 1 || $authed == 2 && !$brconfig::config_moderators_force_auth )
 				{ ShowModJoinMessage( $player{'name'} ); }
 
 			# BHS.dll version checking stuff
 			if ( modules::get_module( "bhs" ) )
 			{
-				# Request player version
-				RenRem::RenRemCMD( "version $player{id}" );
-
-				# If minimum scripts version is specified, or this map requires bhs.dll, trigger check in
-				# 5 seconds
+				# If minimum scripts version is specified, or this map requires bhs.dll, trigger check in 5
+				# seconds. Note that the playerData module takes care of requesting their scripts version
 				if ( $brconfig::config_minimum_scripts_version > 0 || $brconfig::config_force_bhs_dll_map == 1 )
 				{
 					# Start check session

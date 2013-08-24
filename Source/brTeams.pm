@@ -32,7 +32,7 @@ our %teams = (
 # Reads the team configuration file if it exists
 sub read_config
 {
-  my $teamid = -1;
+  my $teamid = undef;
 
   eval
   {
@@ -43,11 +43,11 @@ sub read_config
 
       if ( $_ !~ m/^\#/ && $_ !~ m/^\s+$/ )   # If the line starts with a hash or is blank ignore it
       {
-        if ( $_ =~ m/\[TEAM([0-2])\]/i )
+        if ( $_ =~ m/\[TEAM(\-?\d+)\]/i )
         {
-          $teamid = $1;
+          $teamid = int($1);
         }
-        elsif ( $teamid != -1 )
+        elsif ( defined $teamid )
         {
           if ( $_ =~ m/^name\s*=\s*(\S.*)$/i )
           {
@@ -73,18 +73,22 @@ sub read_config
 # Get the ID for a team given it's name or abbreviation
 sub get_id_from_name
 {
-  my $team = lc(shift);
+  my $team = shift;
+  
+  # Can't do anything useful with an undefined value...
+  return undef if !defined $team;
 
   # If $team is numeric then it is already an ID so return it
-  return $team if ( $team =~ m/^\d+$/ and $team >= 0 and $team <= 2 );
+  return int($team) if ( $team =~ m/^\d+$/ and $team >= 0 and $team <= 2 );
 
   # Otherwise search for a matching team by name or abbreviation
+  $team = lc($team);
   for my $id (keys %teams)
   {
-    return $id if ( lc($teams{$id}->{'name'}) eq $team || lc($teams{$id}->{'abbreviation'}) eq $team );
+    return int($id) if ( lc($teams{$id}->{'name'}) eq $team || lc($teams{$id}->{'abbreviation'}) eq $team );
   }
 
-  return -1;
+  return undef;
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -94,7 +98,7 @@ sub get_name
 {
   my $team = get_id_from_name(shift);
 
-  if ( $team != -1 )
+  if ( defined $team )
     { return $teams{$team}->{'name'}; }
   else
     { return "Unknown"; }
@@ -105,7 +109,7 @@ sub get_abbreviation
 {
   my $team = get_id_from_name(shift);
 
-  if ( $team != -1 )
+  if ( defined $team )
     { return $teams{$team}->{'abbreviation'}; }
   else
     { return "Unk"; }
@@ -116,7 +120,7 @@ sub get_colour
 {
   my $team = get_id_from_name(shift);
 
-  if ( $team != -1 )
+  if ( defined $team )
     { return $teams{$team}->{'colour'}; }
   else
     { return "01"; }
