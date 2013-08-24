@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<plugin name="tags">
+
+  <!-- Configuration settings for the plugin, change the values of these to suit your server -->
+  <config>
+  </config>
+
+
+  <!-- Do not modify this events list or you may break the plugin -->
+  <events>
+    <event>command</event>
+    <event>playerjoin</event>
+  </events>
+
+
+  <!-- Do not modify this hooks list or you may break the plugin -->
+  <gamelog_regex_hooks>
+  </gamelog_regex_hooks>
+
+
+  <!-- Do not add or remove commands from this section, but feel free to modify the permission level
+  require to use the command, the help text, whether the command is enabled or not and its aliases -->
+	<command name="tag">
+		<permission level="3"/>
+		<syntax value="!tag"/>
+		<help value="Tags a Player with a specific Tag."/>
+		<enabled value="1"/>
+		<group>ingame</group>
+		<group>irc_public</group>
+		<group>irc_admin</group>
+		<hideInHelp value="0"/>
+	</command>
+</plugin>
