@@ -120,11 +120,11 @@ sub donate
   }
 
   # Check donation requirements...
-  my ($result1, %donator) = playerData::getPlayerData( $args{'nick'}, 1 );
-  return if ( $result1 != 1 );
+  my ($result1, %donator) = playerData::getPlayerData($args{'nick'}, 1);
+  return if ($result1 != 1);
 
   my ($result2, %donatee) = playerData::getPlayerData($teammate);
-  if ( $result2 != 1 )
+  if ($result2 != 1)
   {
     modules::pagePlayer( $donator{'id'}, 'BRenBot', $teammate.' was not found in the server or is not unique' );
     return;
@@ -209,7 +209,7 @@ sub teamdonate
   # OK, passed all the checks, go ahead and do the donations!
   my %teammates = plugin::team_get_players($donator{'teamid'});
   my $creditsPerTeammate = int($credits / ((scalar keys %teammates) -1));
-  while ( my ($id, %donatee) = each(%teammates) )
+  while ( my ($id, $donatee) = each(%teammates) )
   {
     next if ( $donator{'id'} == $donatee->{'id'} );
     plugin::pagePlayer( $donatee->{'id'}, 'BRenBot', "$donator{name} has donated $creditsPerTeammate to you!" );
