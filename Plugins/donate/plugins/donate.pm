@@ -120,7 +120,7 @@ sub donate
   }
 
   # Check donation requirements...
-  my ($result1, %donator) = playerData::getPlayerData($args{'nick'}, 1);
+  my ($result1, %donator) = playerData::getPlayerData( $args{'nick'}, 1 );
   return if ( $result1 != 1 );
 
   my ($result2, %donatee) = playerData::getPlayerData($teammate);
