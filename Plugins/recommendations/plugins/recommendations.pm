@@ -12,6 +12,7 @@ use POE;
 use plugin;
 
 my $currentVersion = '1.0';
+my $loaded_ok = undef;
 
 # Check bot compatibility
 if ( !defined(plugin::getBrVersion) || plugin::getBrVersion() < 1.53
@@ -37,7 +38,6 @@ our %additional_events =
   'recallow'    => 'recallow',
 );
 
-my $loaded_ok = 0;
 my $tpLastUsed = 0;   # Global variable used to track last used time for !teamplayers/!shown00bs
 my @joinmessages;
 my %autorec_cache;    # Tracks per-player data for auto recommendations

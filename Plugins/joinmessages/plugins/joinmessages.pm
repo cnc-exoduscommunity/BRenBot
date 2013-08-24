@@ -13,6 +13,7 @@ use POE;
 use plugin;
 
 my $currentVersion = '1.0';
+my $loaded_ok = undef;
 
 # Check bot compatibility
 if ( !defined(plugin::getBrVersion) || plugin::getBrVersion() < 1.53
