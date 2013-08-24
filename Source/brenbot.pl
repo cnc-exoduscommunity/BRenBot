@@ -52,7 +52,7 @@ modules::console_output ( "BRenBot ".BR_VERSION." build ".BR_BUILD );
 modules::console_output ( "BRenBot is copyright ".BR_COPYRIGHT_YEAR." by Tiberian Technologies. All rights reserved." );
 
 # Main variables
-our $start_time = time();
+my $start_time = time();
 brdatabase::db_connect();
 brconfig::init();
 
@@ -186,6 +186,14 @@ sub ShowModJoinMessage
 			{ RenRem::RenRemCMD( "msg $name is a half moderator." ); }
 	}
 }
+
+
+# Get the uptime for the bot, in seconds
+sub get_uptime()
+{
+  return int(time()-$start_time);
+}
+
 
 
 

@@ -136,7 +136,7 @@ sub updateMap
 		# Only apply map settings if we just loaded, otherwise let the
 		# Level Loaded OK event process it.
 		if ( $lastMap eq "last round" )
-			{ modules::applyMapSettings ( $currentMap, 0 ); }	# Do NOT apply time limit
+			{ modules::applyMapSettings(0); }	# Do NOT apply time limit
 
 		# Process any actions that need taking for a new map
 		# Nothing at the moment...

@@ -6,7 +6,6 @@ use strict;
 use POE;
 use POE::Kernel;  # Needed for successful pp compile
 use POE::Session; # Needed for successful pp compile
-use Date::Calc qw( Delta_YMDHMS Time_to_Date);
 use XML::Simple;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 
@@ -18,11 +17,14 @@ use brAuth;
 
 
 my @modules;
-
 my $mapSettings;        # Map settings XML hash array
-our $maprules		= "";   # Rules for current map
-our $minelimit		= 30; # Mine limit for current map
-our $vehiclelimit	= 8;  # Current vehicle limit
+
+use constant DEFAULT_MINE_LIMIT     => 30;
+use constant DEFAULT_VEHICLE_LIMIT  => 8;
+
+our $minelimit    = DEFAULT_MINE_LIMIT;     # Current mine limit
+our $vehiclelimit = DEFAULT_VEHICLE_LIMIT;  # Current vehicle limit
+
 
 
 
@@ -50,11 +52,8 @@ sub console_output
 		if ( $console_output_multipart_status == 1 )
 			{ print "\n"; }
 
-		# Get current timestamp
-		my ($second,$minute,$hour,undef,undef,undef,undef,undef,undef)=localtime(time);
-
-		# Output timestamp
-		printf ( "[%02d:%02d:%02d] ",$hour,$minute,$second);
+    # Output timestamp
+    print strftimestamp('[%H:%M:%S] ', time);
 
 		# Set new multipart message status
 		$console_output_multipart_status = ( defined($multipart_type) && $multipart_type == 1 ) ? 1 : 0;
@@ -99,56 +98,6 @@ sub del_user
 	my $name = lc(shift);		$name =~ s/'/''/g;
 
 	brdatabase::execute_query( "DELETE FROM auth_users WHERE LOWER(name) = '$name'", 1 );
-}
-
-
-sub time_difference
-{
-	my $timestamp1 = shift;
-	my $timestamp2 = shift;
-
-	my ( $year1, $month1, $day1, $hour1, $min1, $sec1 ) = BRTime_To_Date( $timestamp2 );
-	my ( $year2, $month2, $day2, $hour2, $min2, $sec2 ) = BRTime_To_Date( $timestamp1 );
-
-
-  	my ($D_y,$D_m,$D_d, $Dh,$Dm,$Ds) =
-	 	Delta_YMDHMS($year1,$month1,$day1, $hour1,$min1,$sec1,
-				   	$year2,$month2,$day2, $hour2,$min2,$sec2);
-
-	my $result_text;
-
-	$result_text .= "$D_y years, " if ($D_y);
-	$result_text .= "$D_m months, " if ($D_m);
-	$result_text .= "$D_d days, " if ($D_d);
-	$result_text .= "$Dh hours, " if ($Dh);
-	$result_text .= "$Dm minutes, " if ($Dm);
-	$result_text .= "$Ds seconds, " if ($Ds);
-
-	chop $result_text;
-	chop $result_text;
-	return $result_text;
-}
-
-
-# Gets the bot's uptime
-sub get_uptime
-{
-	my $result_text = time_difference ( time(), shift );
-	$result_text =~ s/\-//g;		# Because the values are negative, remove the - signs to get the uptime
-	return $result_text;
-}
-
-sub del_ban
-{
-	my $id = shift;
-	my @array = brdatabase::execute_query( "SELECT * FROM bans WHERE id = $id" );
-	if (@array != 0)
-	{
-		brdatabase::execute_query( "DELETE FROM bans WHERE id = $id", 1 );
-		return 1;
-	}
-
-	return 0;
 }
 
 
@@ -246,20 +195,19 @@ sub check_kicks
 
 	if ( scalar(@array) > 0 )
 	{
-		my ( undef, undef, $day, $hour, $minute, undef ) = BRTime_To_Date( $array[0]->{'timestamp'} );
-		my ( undef, undef, $daynow, undef, undef, undef ) = BRTime_To_Date( time() );
+    my $kicktime      = strftimestamp('%H:%M',$array[0]->{'timestamp'});
+    my $kickday       = ( strftimestamp('%d',time()) eq strftimestamp('%d',$array[0]->{'timestamp'}) ) ? "today" : "yesterday";
+    my $reasonSuffix  = ( lc($player{'name'}) eq lc($array[0]->{'name'}) ) ? "" : ( $player{'ip'} eq $array[0]->{'ip'} ) ? " (IP Matched)" : " (Serial Matched)";
 
-		my $kickday = ( $daynow == $day ) ? "today" : "yesterday";
-		my $reasonSuffix = ( lc($player{'name'}) eq lc($array[0]->{'name'}) ) ? "" : ( $player{'ip'} eq $array[0]->{'ip'} ) ? " (IP Matched)" : " (Serial Matched)";
-		RenRem::RenRemCMD( "msg [BR] $player{name} was KICKED $kickday at $hour.$minute by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.$reasonSuffix );
+    RenRem::RenRemCMD( "msg [BR] $player{name} was KICKED $kickday at $kicktime by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.$reasonSuffix );
 
-		if ( get_module( "bhs" ) )
-			{ RenRem::RenRemCMD( "pamsg $player{id} You were KICKED $kickday at $hour.$minute by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.". You may return to the server in ".((86400-(time()-$array[0]->{'timestamp'}))/60)." minutes" ); }
+    if ( get_module( "bhs" ) )
+      { RenRem::RenRemCMD( "pamsg $player{id} You were KICKED $kickday at $kicktime by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.". You may return to the server in ".((86400-(time()-$array[0]->{'timestamp'}))/60)." minutes" ); }
 
-		RenRem::RenRemCMD( "kick $player{id}" );
-		playerData::setKeyValue ( $player{'id'}, "kicked", 1 );
-		return 1;
-	}
+    RenRem::RenRemCMD( "kick $player{id}" );
+    playerData::setKeyValue ( $player{'id'}, "kicked", 1 );
+    return 1;
+  }
 
 	return 0;
 }
@@ -349,6 +297,19 @@ sub record_ban
 }
 
 
+sub del_ban
+{
+  my $id = shift;
+  my @array = brdatabase::execute_query( "SELECT * FROM bans WHERE id = $id" );
+  if (@array != 0)
+  {
+    brdatabase::execute_query( "DELETE FROM bans WHERE id = $id", 1 );
+    return 1;
+  }
+
+  return 0;
+}
+
 
 sub is_banned
 {
@@ -377,8 +338,8 @@ sub is_banned
   my @bansArray = brdatabase::execute_query( "SELECT * FROM bans $whereCondition" );
   if (scalar(@bansArray) > 0)
   {
-    my ( $year, $month, $day, $hour, $min, $sec ) = BRTime_To_Date( $bansArray[0]->{'timestamp'} );
-    return ( 1, "'".$bansArray[0]->{'reason'}."' (Ban ID ".$bansArray[0]->{'id'}.")", $bansArray[0]->{'banner'}, "$month.$day.$year" );
+    my $bandate = modules::strftimestamp('%d/%m/%Y', $bansArray[0]->{'timestamp'});
+    return ( 1, "'".$bansArray[0]->{'reason'}."' (Ban ID ".$bansArray[0]->{'id'}.")", $bansArray[0]->{'banner'}, $bandate );
   }
 
 
@@ -1106,21 +1067,21 @@ sub get_past_date_time
 }
 
 
-
-# Converts a timestamp to a date using Time_To_Date and then formats with with
-# prefixed 0's
-sub BRTime_To_Date
+# Converts a UNIX timestamp into a data and/or time string representation
+#
+# $format
+#   The formatting string to apply to the timestamp
+# $timestamp
+#   The timestamp to format
+# $localtime
+#   Optional, whether to format the timestamp in local time. Defaults to 1 (true)
+sub strftimestamp
 {
-	my ( $year, $month, $day, $hour, $min, $sec ) = Time_to_Date( shift );
+  my $format    = shift;
+  my $timestamp = shift;
+  my $localtime = defined $_[0] ? shift : 1;
 
-	# Prefix each with a 0 if its less than 10
-	if ($month  < 10) {$month  ="0".$month;}
-	if ($day	< 10) {$day	="0".$day;}
-	if ($sec	< 10) {$sec ="0".$sec;}
-	if ($hour   < 10) {$hour   ="0".$hour;}
-	if ($min	< 10) {$min ="0".$min;}
-
-	return ( $year, $month, $day, $hour, $min, $sec );
+  return POSIX::strftime($format, ($localtime)?localtime($timestamp):gmtime($timestamp))
 }
 
 
@@ -1229,79 +1190,60 @@ sub pagePlayer
 
 sub loadMapSettings
 {
-	my $error;
-  eval
+  eval { $mapSettings = XMLin( "mapsettings.xml", SuppressEmpty => 1, ForceArray => ['map'] ); };
+  if ( $@ )
   {
-    no warnings 'deprecated';  # Suppress XML::Parser::Expat warning about tied handles...
-    $mapSettings = XMLin( "mapsettings.xml", SuppressEmpty => 1, ForceArray => [ 'map' ] );
+    modules::console_output ( "The following error occured reading mapsettings.xml: $@" );
+    return;
   }
-	or $error = $@;
 
-	if ( $error )
-	{
-		modules::console_output ( "The following error occured reading mapsettings.xml: $error" );
-		return;
-	}
-
-	# Under Win32 replace all &amp; with & in map names
-	while ( my ($mapname, $data) = each %{$mapSettings->{'map'}} )
-	{
-		my $mapname_new = $mapname;
-		$mapname_new =~ s/&amp;/&/gi;
-		if ( $mapname_new ne $mapname )
-		{
-			$mapSettings->{'map'}->{$mapname_new} = $data;
-			delete $mapSettings->{'map'}->{$mapname};
-		}
-	}
+  # Under Win32 replace all &amp; with & in map names
+  while ( my ($mapname, $data) = each %{$mapSettings->{'map'}} )
+  {
+    my $mapname_new = $mapname;
+    $mapname_new =~ s/&amp;/&/gi;
+    if ( $mapname_new ne $mapname )
+    {
+      $mapSettings->{'map'}->{$mapname_new} = $data;
+      delete $mapSettings->{'map'}->{$mapname};
+    }
+  }
 
 #	use Data::Dumper;
 #	open ( DATA_DUMP, '>xmlmapsettings.txt' );
 #	print DATA_DUMP Dumper($mapSettings);
 #	close DATA_DUMP;
-
-	# Ensure we have default settings for everything
-	if ( !exists($mapSettings->{'default'}->{'time'}) )			{ $mapSettings->{'default'}->{'time'} = 30; }
-	if ( !exists($mapSettings->{'default'}->{'mines'}) )		{ $mapSettings->{'default'}->{'mines'} = 30; }
-	if ( !exists($mapSettings->{'default'}->{'vehicles'}) )		{ $mapSettings->{'default'}->{'vehicles'} = 8; }
-	if ( !exists($mapSettings->{'default'}->{'rules'}) )		{ $mapSettings->{'default'}->{'rules'} = ""; }
 }
 
 
+# Apply game settings for the current map
 sub applyMapSettings
 {
-	my $map = shift;
-	my $applyTime = shift;
+  my $applyTime = shift;  # False if we should skip applying the time limit - used if applying mid-map
 
-	if ( get_module ( "map_settings" ) != 1 )
-		{ return; }
+  if ( get_module ( "map_settings" ) != 1 )
+  {
+    $minelimit    = DEFAULT_MINE_LIMIT;
+    $vehiclelimit = DEFAULT_VEHICLE_LIMIT;
+  }
 
-	my $new_time		= $mapSettings->{'default'}->{'time'};
-	$minelimit			= $mapSettings->{'default'}->{'mines'};
-	$vehiclelimit		= $mapSettings->{'default'}->{'vehicles'};
-	$maprules			= $mapSettings->{'default'}->{'rules'};
-
-	# Get any map specific settings
-	if ( exists $mapSettings->{'map'}->{$map} )
-	{
-		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'time'}) )			{ $new_time = $mapSettings->{'map'}->{$map}->{'time'}; }
-		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'mines'}) )			{ $minelimit = $mapSettings->{'map'}->{$map}->{'mines'}; }
-		if ( IsNumeric($mapSettings->{'map'}->{$map}->{'vehicles'}) )		{ $vehiclelimit = $mapSettings->{'map'}->{$map}->{'vehicles'}; }
-		if ( exists($mapSettings->{'map'}->{$map}->{'rules'}) )				{ $maprules = $mapSettings->{'map'}->{$map}->{'rules'}; }
-	}
-
-	# Apply all settings
-	if ( $applyTime != 0 )
-		{ RenRem::RenRemCMD ( "time ".$new_time*60 ); }
-	RenRem::RenRemCMD ( "mlimit $minelimit" );
-	RenRem::RenRemCMD ( "vlimit $vehiclelimit" );
+  my $time      = get_map_setting('time');
+  $minelimit    = get_map_setting('mines', DEFAULT_MINE_LIMIT);
+  $vehiclelimit = get_map_setting('vehicles', DEFAULT_VEHICLE_LIMIT);
+  my $rules     = get_map_setting('rules');
+  
+  $minelimit = DEFAULT_MINE_LIMIT if !IsNumric($minelimit);
+  $vehiclelimit = DEFAULT_VEHICLE_LIMIT if !IsNumric($vehiclelimit);
+  
+  RenRem::RenRemCMD('time '.$time*60)       if ( $applyTime && defined($time) && IsNumeric($time) );
+  RenRem::RenRemCMD("mlimit $minelimit");
+  RenRem::RenRemCMD("vlimit $vehiclelimit");
 
   # Really don't think there is much point announcing these...
-	#my $message = "Settings for $map: Time Limit: $new_time, Mine Limit: $minelimit, Vehicle Limit: $vehiclelimit.";
-	#RenRem::RenRemCMDtimed ( "msg [BR] $message", 5 );
-	
-	if ( $maprules )
-		{ RenRem::RenRemCMDtimed ( "msg [BR] Special rules for $map: $maprules", 5 ); }
+  #my $message = "Settings for $map: Time Limit: $time, Mine Limit: $minelimit, Vehicle Limit: $vehiclelimit.";
+  #RenRem::RenRemCMDtimed ( "msg [BR] $message", 5 );
+  
+  RenRem::RenRemCMDtimed('msg [BR] Special rules for '.serverStatus::getMap().": $rules", 5) if (defined $rules);
 }
 
 
@@ -1309,6 +1251,9 @@ sub applyMapSettings
 #
 # \param[in] $setting
 #   The name of the setting to get the value of
+# \param[in] $fallback
+#   Optional, the fallback value to use if there is no map specific or default value configured
+#   in the mapsettings.xml file. Defaults to undef
 # \param[in] $map
 #   Optional, the name of the map to get the setting for. Defaults to the current map
 #
@@ -1317,8 +1262,9 @@ sub applyMapSettings
 #   specified map returns the default value of the setting or undef if no default exists either
 sub get_map_setting
 {
-  my $setting = shift;
-  my $map     = defined $_[0] ? $_[0] : serverStatus::getMap();
+  my $setting   = shift;
+  my $fallback  = defined $_[0] ? shift : undef;
+  my $map       = defined $_[0] ? shift : serverStatus::getMap();
   
   # Check for a map specific value
   if ( exists($mapSettings->{'map'}->{$map}->{$setting}) )
@@ -1328,7 +1274,7 @@ sub get_map_setting
   if ( exists($mapSettings->{'default'}->{$setting}) )
     { return $mapSettings->{'default'}->{$setting}; }
 
-  return undef;
+  return $fallback;
 }
 
 

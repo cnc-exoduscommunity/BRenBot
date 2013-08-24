@@ -223,23 +223,23 @@ sub check_banlist
 #	print "DEBUG: Checkbanlist\n";
 	my $name = shift;
 
-	my ( $result, $reason, $banner, $timestamp ) = modules::is_banned( $name );
+	my ( $result, $reason, $banner, $date ) = modules::is_banned( $name );
 	if ( $result && playerData::getKeyValue ( $name, "banned" ) != 1 )
 	{
 		my ( $result2, %player ) = playerData::getPlayerData ( $name );
 		if ( $result2 == 1 )
 		{
-			RenRem::RenRemCMD( "msg [BR] $player{name} has been BANNED on $timestamp by $banner for: $reason" );
+			RenRem::RenRemCMD( "msg [BR] $player{name} has been BANNED on $date by $banner for: $reason" );
 
 			modules::console_output ( "player_id $player{id} is BANNED" );
 
 			if ( modules::get_module("bhs") )
-				{ RenRem::RenRemCMD( "pamsg $player{id} You have been BANNED on $timestamp by $banner for: $reason" ); }
+				{ RenRem::RenRemCMD( "pamsg $player{id} You have been BANNED on $date by $banner for: $reason" ); }
 
 			# If we are using SSGM 4.0 then we need to add this ban to it's bans list
 			if ( $brconfig::ssgm_version >= 4 )
 			{
-				RenRem::RenRemCMD ( 'ban '.$player{'id'}." Banned on $timestamp by $banner for $reason" );
+				RenRem::RenRemCMD ( 'ban '.$player{'id'}." Banned on $date by $banner for $reason" );
 			}
 
 			# Otherwise remove them from the server the old fashioned way
@@ -794,7 +794,7 @@ sub ParseLogInput
 			brconfig::readServerSettings();		# Re-read the server settings
 
 			# Apply map settings
-			modules::applyMapSettings ( serverStatus::getMap(), 1 );
+			modules::applyMapSettings(1);
 
 			my @plugins = plugin::get_plugin_event( "mapload" );
 

@@ -1170,16 +1170,35 @@ sub nextmap
 
 sub uptime
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		my $uptime = modules::get_uptime( $main::start_time );
-
-		if ( $args{nicktype} == 1 ) { brIRC::ircmsg ( "I\'ve been running for $uptime.", $args{'ircChannelCode'} ); }
-		else { RenRem::RenRemCMD ( "msg [BR] I\'ve been running for $uptime." ); }
-	}
-	or modules::display_error($@);
+  eval
+  {
+    my $uptime = main::get_uptime();
+    my $message = 'I\'ve been running for ';
+    
+    # Format the uptime
+    my $days  = int($uptime/86400);
+    my $hours = int(($uptime%86400)/60);
+    
+    if ( $days > 0 )
+    {
+      $message .= "$days days";
+      $message .= "and $hours hours" if ( $hours > 0 );
+    }
+    else
+    {
+      my $minutes = int((($uptime%86400)%60)/60);
+      my $seconds = int((($uptime%86400)%60)%60);
+      
+      $message .= "$hours hours, " if ( $hours > 0 );
+      $message .= "$minutes minutes and $seconds seconds";
+    }
+    
+    if ( $args{nicktype} == 1 ) { brIRC::ircmsg ( $message, $args{'ircChannelCode'} ); }
+    else { RenRem::RenRemCMD ( "msg [BR] $message" ); }
+  }
+  or modules::display_error($@);
 }
 
 
@@ -2338,10 +2357,9 @@ sub banlog
 					if ( $shownCount++ >= 8 )
 						{ return; }
 
-					my %hash = %$_;
-					my ( $year, $month, $day, $hour, $min, $sec) = modules::BRTime_To_Date( $hash{'timestamp'} );
-
-					my $string = "($hash{'id'})07 $hash{'name'} ($hash{'ip'}) banned by $hash{'banner'} on $day.$month.$year $hour:$min:$sec for '$hash{'reason'}'";
+          my %hash = %$_;
+          my $bantime = modules::strftimestamp('%d/%m/%Y %H:%M:%S', $hash{'timestamp'});
+          my $string = "($hash{'id'})07 $hash{'name'} ($hash{'ip'}) banned by $hash{'banner'} on $bantime for '$hash{'reason'}'";
 
 					if ($search)
 					{
