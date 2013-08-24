@@ -879,8 +879,8 @@ sub GetNextMap
 sub padd_string
 {
   my $minlength = shift;
-  my $string	= shift;
-  my $lpad = (@_) ? shift : 0;
+  my $string    = shift;
+  my $lpad      = shift // 0;
 
   my $output = $string;
 
@@ -1079,7 +1079,7 @@ sub strftimestamp
 {
   my $format    = shift;
   my $timestamp = shift;
-  my $localtime = defined $_[0] ? shift : 1;
+  my $localtime = shift // 1;
 
   return POSIX::strftime($format, ($localtime)?localtime($timestamp):gmtime($timestamp))
 }
@@ -1263,8 +1263,8 @@ sub applyMapSettings
 sub get_map_setting
 {
   my $setting   = shift;
-  my $fallback  = defined $_[0] ? shift : undef;
-  my $map       = defined $_[0] ? shift : serverStatus::getMap();
+  my $fallback  = shift // undef;
+  my $map       = shift // serverStatus::getMap();
   
   # Check for a map specific value
   if ( exists($mapSettings->{'map'}->{$map}->{$setting}) )
