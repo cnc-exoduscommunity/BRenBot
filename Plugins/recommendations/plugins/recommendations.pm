@@ -771,7 +771,7 @@ sub show_joinmessage
       return;
     }
 
-    my $team = plugin::team_team_name($player->{'teamid'});
+    my $team = plugin::team_get_name($player->{'teamid'});
     my $otherteam = plugin::team_get_name(($player->{'teamid'}==0)?1:0);
     
     my $maxrecs = scalar(@joinmessages);
