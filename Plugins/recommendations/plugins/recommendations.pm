@@ -568,7 +568,7 @@ sub teamplayers_outputTeam
   }
   else
   {
-    plugin::servermsg(plugin::team_get_name($teamid).":".$string);
+    plugin::serverMsg(plugin::team_get_name($teamid).":".$string);
   }
 }
 
@@ -589,7 +589,7 @@ sub recommend_player
   my $reason      = shift;        $reason =~ s/'/''/g;
 
   # Announce recommendation
-  plugin::servermsg ( $name.' has been recommended by '.$recommender.' for: '.$reason );
+  plugin::serverMsg ( $name.' has been recommended by '.$recommender.' for: '.$reason );
   plugin::play_sound_for_player ( $name, 'bonus_complete.wav' );
 
   # Does a record exist for this player?
@@ -624,7 +624,7 @@ sub n00b_player
   my $reason      = shift;        $reason =~ s/'/''/g;
 
   # Announce recommendation
-  plugin::servermsg ( $name.' has been marked a n00b by '.$n00ber.' for: '.$reason );
+  plugin::serverMsg ( $name.' has been marked a n00b by '.$n00ber.' for: '.$reason );
 
   # Does a record exist for this player?
   my @recData = plugin::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );
@@ -767,7 +767,7 @@ sub show_joinmessage
     
     if ( 0 == $recommendations )
     {
-      plugin::servermsg ( $player->{'name'} .' does not have any recommendations yet' );
+      plugin::serverMsg ( $player->{'name'} .' does not have any recommendations yet' );
       return;
     }
 
@@ -795,7 +795,7 @@ sub show_joinmessage
     $line =~ s/\%team/$team/ig;
     $line =~ s/\%otherteam/$otherteam/ig;
     
-    plugin::servermsg ( $line );
+    plugin::serverMsg ( $line );
   }
 }
 
