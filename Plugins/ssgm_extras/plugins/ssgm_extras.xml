@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+
+<plugin name="ssgm_extras">
+
+  <!-- Configuration settings for the plugin, change the values of these to suit your server -->
+  <config>
+  </config>
+
+
+  <!-- Do not modify this events list or you may break the plugin -->
+  <events>
+    <event>command</event>
+  </events>
+
+
+  <!-- Do not modify this hooks list or you may break the plugin -->
+  <gamelog_regex_hooks>
+  </gamelog_regex_hooks>
+
+
+  <!-- Do not add or remove commands from this section, but feel free to modify the permission level
+  require to use the command, the help text, whether the command is enabled or not and its aliases -->
+  <command name="givecredits">
+    <permission level="4"/>
+    <syntax value="!givecredits &lt;playerorteam&gt; &lt;amount&gt;"/>
+    <help value="Gives the specified amount of credits to either a single player, all players on a
+    team or to all players. Use the abbreviated team name to specify a team or * for all players."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+  </command>
+
+  <command name="takecredits">
+    <permission level="4"/>
+    <syntax value="!takecredits &lt;playerorteam&gt; &lt;amount&gt;"/>
+    <help value="Takes the specified amount of credits from either a single player, all players on a
+    team or to all players. Use the abbreviated team name to specify a team or * for all players."/>
+    <enabled value="1"/>
+    <group>irc_admin</group>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+  </command>
+</plugin>
