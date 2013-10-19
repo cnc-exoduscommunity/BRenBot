@@ -105,7 +105,7 @@ sub setjoin
   if ($args{arg} =~ /^\!\w+\s*(\S(.+))/i)  #set joinmessage
   {
     my $setjoin_msg = substr( $1, 0, 249 ); # Limit length to prevent FDS crash
-    modules::set_joinmessage( $args{'nick'}, $setjoin_msg );
+    set_joinmessage( $args{'nick'}, $setjoin_msg );
     plugin::pagePlayer( $args{'nick'}, 'BRenBot', "Your join message has been set." );
   }
   else
@@ -118,7 +118,7 @@ sub viewjoin
   my %args = %{$_[ ARG0 ]};
   return if ( $args{'nicktype'} == 1 );
 
-  my $jointext = modules::get_joinmessage( $args{'nick'} );
+  my $jointext = get_joinmessage( $args{'nick'} );
   if ( $jointext )
   {
     $jointext=substr($jointext,0,249); # Limit length to prevent FDS crash
@@ -145,16 +145,16 @@ sub set_joinmessage
   my $message = shift;                $message =~ s/'/''/g;
 
   if ( !defined(get_joinmessage($name)) )
-    { brdatabase::execute_query( "INSERT INTO join_messages ( name, message ) VALUES ( '$name','$message' )", 1 ); }
+    { plugin::execute_query( "INSERT INTO join_messages ( name, message ) VALUES ( '$name','$message' )", 1 ); }
   else
-    { brdatabase::execute_query( "UPDATE join_messages SET message = '$message' WHERE LOWER(name) = '$name'", 1 ); }
+    { plugin::execute_query( "UPDATE join_messages SET message = '$message' WHERE LOWER(name) = '$name'", 1 ); }
 }
 
 sub get_joinmessage
 {
   my $name = lc(shift);               $name =~ s/'/''/g;
 
-  my @array = brdatabase::execute_query( "SELECT * FROM join_messages WHERE LOWER(name) = '$name'" );
+  my @array = plugin::execute_query( "SELECT * FROM join_messages WHERE LOWER(name) = '$name'" );
   return $array[0]->{'message'} if ( scalar(@array) > 0 );
   return undef;
 }
