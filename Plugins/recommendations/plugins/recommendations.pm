@@ -763,16 +763,16 @@ sub show_joinmessage
   my ( $result, %player ) = plugin::getPlayerData( $_[HEAP]->{'playername'} );
   if ( $result == 1 )
   {
-    my $recommendations = get_recommendation($player->{'name'})-get_n00b($player->{'name'});
+    my $recommendations = get_recommendation($player{'name'})-get_n00b($player{'name'});
     
     if ( 0 == $recommendations )
     {
-      plugin::serverMsg ( $player->{'name'} .' does not have any recommendations yet' );
+      plugin::serverMsg ( $player{'name'} .' does not have any recommendations yet' );
       return;
     }
 
-    my $team = plugin::team_get_name($player->{'teamid'});
-    my $otherteam = plugin::team_get_name(($player->{'teamid'}==0)?1:0);
+    my $team = plugin::team_get_name($player{'teamid'});
+    my $otherteam = plugin::team_get_name(($player{'teamid'}==0)?1:0);
     
     my $maxrecs = scalar(@joinmessages);
     my $line = "%nick has %rec recommendations.";
@@ -790,7 +790,7 @@ sub show_joinmessage
     }
     
     # Format message
-    $line =~ s/\%nick/$player->{'name'}/ig;
+    $line =~ s/\%nick/$player{'name'}/ig;
     $line =~ s/\%rec/$recommendations/ig;
     $line =~ s/\%team/$team/ig;
     $line =~ s/\%otherteam/$otherteam/ig;
