@@ -76,7 +76,7 @@ sub playerjoin
   my %args = %{$_[ARG0]};
   my $joinmessage = get_joinmessage($args{'nick'});
   if ( defined($joinmessage) )
-    { plugin::servermsg ( '['.$args{'nick'}.'] '.$joinmessage ); }
+    { plugin::serverMsg ( '['.$args{'nick'}.'] '.$joinmessage ); }
 }
 
 sub command
