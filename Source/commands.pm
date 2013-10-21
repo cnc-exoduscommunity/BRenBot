@@ -3035,7 +3035,7 @@ sub players
     # These two will rarely be populated (the second hopefully never) but we should be returning
     # a complete list of players ingame so we check these anyway
     players_processTeam(2, $args{'ircChannelCode'});
-    players_processTeam(-1, $args{'ircChannelCode'});
+    players_processTeam(undef, $args{'ircChannelCode'});
   }
   or modules::display_error($@);
 }

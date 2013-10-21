@@ -288,13 +288,13 @@ sub getPlayerList
 #   ID or abbreviation of a team
 sub getPlayersByTeam
 {
-  # Note: We allow teamid -1 since we might want to get a list of players on an unknown team
   my $teamid = brTeams::get_id_from_name(shift);
 
   my %teamplayers;
   while ( my ( $id, $player ) = each ( %playerData ) )
   {
-    $teamplayers{$id} = $player if ( $player->{'teamid'} == $teamid );
+    # Undef == 0, so we need to differentiate them properly by checking for !defined
+    $teamplayers{$id} = $player if ( ($player->{'teamid'} == $teamid) and (defined($teamid) == defined($player->{'teamid'})) );
   }
   return %teamplayers;
 }
