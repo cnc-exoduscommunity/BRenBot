@@ -1232,8 +1232,8 @@ sub applyMapSettings
   $vehiclelimit = get_map_setting('vehicles', DEFAULT_VEHICLE_LIMIT);
   my $rules     = get_map_setting('rules');
   
-  $minelimit = DEFAULT_MINE_LIMIT if !IsNumric($minelimit);
-  $vehiclelimit = DEFAULT_VEHICLE_LIMIT if !IsNumric($vehiclelimit);
+  $minelimit = DEFAULT_MINE_LIMIT if !IsNumeric($minelimit);
+  $vehiclelimit = DEFAULT_VEHICLE_LIMIT if !IsNumeric($vehiclelimit);
   
   RenRem::RenRemCMD('time '.$time*60)       if ( $applyTime && defined($time) && IsNumeric($time) );
   RenRem::RenRemCMD("mlimit $minelimit");
