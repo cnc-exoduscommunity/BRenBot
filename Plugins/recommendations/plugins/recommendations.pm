@@ -152,7 +152,7 @@ sub gameresult
       {
         $_[KERNEL]->delay('grant_recommendations' => 45);
       },
-      show_joinmessage => sub
+      grant_recommendations => sub
       {
         if ( defined($mvp) && $config{'autorec_min_score'} > 0 )
           { recommend_player( $mvp, 'BRenBot', 'MVP on '.$args{'map'}.' with '.$mvp_score.' points' ); }
