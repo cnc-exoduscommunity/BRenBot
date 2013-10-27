@@ -20,9 +20,9 @@ sub db_connect
 	$dbh = DBI->connect("dbi:SQLite:dbname=brenbot.dat","","");
 	if (!$dbh)
 	{
-	    modules::console_output ( "FATAL ERROR: Unable to establish database connection!\nShutting down..." );
-		sleep ( 5 );
-		exit;
+    modules::console_output ( "FATAL ERROR: Unable to establish database connection!\nShutting down..." );
+    sleep(5);
+    exit;
 	}
 
 	# Check all tables are present in the database
@@ -262,7 +262,7 @@ sub check_tables
 
 
 # Gets the current database version, checks it against the program version
-# and runs any nessicary updates.
+# and runs any necessary updates.
 sub check_database
 {
 	my $dbVersion = get_global( "version" );
@@ -273,6 +273,13 @@ sub check_database
 	 	# This should never happen on the new SQLite3 databases....
 	 	modules::console_output ( "Database version data missing, your database could be corrupt...." );
  	}
+  
+  elsif ( $dbVersion > main::BR_VERSION || ($dbVersion == main::BR_VERSION && $dbBuild > main::BR_BUILD) )
+  {
+    modules::console_output("Database has been used with a newer version of BRenBot ($dbVersion build $dbBuild)\nAborting startup to prevent data corruption...");
+    sleep(5);
+    exit();
+  }
 
  	elsif ( $dbVersion != main::BR_VERSION || $dbBuild != main::BR_BUILD )
  	{
@@ -283,6 +290,16 @@ sub check_database
     {
       print "      Deleting redundant module pingresponse...\n";
       execute_query ( "DELETE FROM modules WHERE name = 'pingresponse'", 1 );
+    }
+
+    if ( $dbVersion < 1.53 || ($dbVersion == 1.53 && $dbBuild <= 17) )
+    {
+      print "      Deleting redundant modules...\n";
+      execute_query ( "DELETE FROM modules WHERE name = 'autorecs'", 1 );
+      execute_query ( "DELETE FROM modules WHERE name = 'donate'", 1 );
+      execute_query ( "DELETE FROM modules WHERE name = 'gameresults'", 1 );
+      execute_query ( "DELETE FROM modules WHERE name = 'join_messages'", 1 );
+      execute_query ( "DELETE FROM modules WHERE name = 'recommend'", 1 );
     }
 
 	 	# Finally set all the globals to the current version
