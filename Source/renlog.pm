@@ -791,7 +791,7 @@ sub ParseLogInput
 			# New Level has reloaded, need to update Player Array...
 
 			brIRC::ircmsg( "9$line", "A" );
-			brconfig::readServerSettings();		# Re-read the server settings
+			brconfig::readServerSettings(); # Re-read the server settings
 
 			# Apply map settings
 			modules::applyMapSettings(1);

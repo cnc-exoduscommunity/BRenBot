@@ -49,7 +49,7 @@ $| = 1;
 
 # Print version info
 modules::console_output ( "BRenBot ".BR_VERSION." build ".BR_BUILD );
-modules::console_output ( "BRenBot is copyright ".BR_COPYRIGHT_YEAR." by Tiberian Technologies. All rights reserved." );
+modules::console_output ( "Copyright ".BR_COPYRIGHT_YEAR.", Tiberian Technologies. All rights reserved." );
 
 # Main variables
 my $start_time = time();
