@@ -471,7 +471,10 @@ sub register_plugin_events
   {
     while ( my ($event,$regex) = each %{$hooks} )
     {
-      $plugins{$plugin_name}{'renlog_hooks'}{$regex} = $event;
+      if ( defined($regex->{'regex'}) )
+      {
+        $plugins{$plugin_name}{'renlog_hooks'}{$regex->{'regex'}} = $event;
+      }
     }
   }
 
@@ -480,7 +483,10 @@ sub register_plugin_events
   {
     while ( my ($event,$regex) = each %{$hooks} )
     {
-      $plugins{$plugin_name}{'gamelog_hooks'}{$regex} = $event;
+      if ( defined($regex->{'regex'}) )
+      {
+        $plugins{$plugin_name}{'gamelog_hooks'}{$regex->{'regex'}} = $event;
+      }
     }
   }
 }
