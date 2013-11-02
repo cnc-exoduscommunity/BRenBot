@@ -116,19 +116,6 @@ sub generate_info
 	my $string;
 	my $maxplayers = serverStatus::getMaxPlayers();
 	my $numplayers = serverStatus::getCurrentPlayers();
-	my $reserved_slots = $brconfig::config_reserved_slots;
-
-	if ($brconfig::config_reserved==1)
-	{
-		my $adjustment=0;
-		if ($numplayers > ($maxplayers - $brconfig::config_reserved_slots))
-		{
-			# already over normal limit!
-			$adjustment = $numplayers - ($maxplayers - $brconfig::config_reserved_slots);
-			my $test = $maxplayers - $brconfig::config_reserved_slots + $renlog::used_slots + $adjustment;
-		}
-		$maxplayers = ($maxplayers - $brconfig::config_reserved_slots + $renlog::used_slots) + $adjustment;
-	}
 
 	if ($brconfig::config_redirect==1)
 	{

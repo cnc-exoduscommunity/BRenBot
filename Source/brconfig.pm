@@ -66,9 +66,6 @@ our $config_vehiclekick                   = "0";
 our $config_renrem_host                   = "127.0.0.1";
 our $config_renrem_port;
 our $config_renrem_password;
-our $config_reserved_slots;
-our $config_reserved;
-our $reserved_slots_active                = '0';
 
 our $config_redirect_port;
 our $config_redirect;
@@ -264,8 +261,6 @@ sub ReadConfig
 			if (/^\s*AutoAnnounceInterval\s*=\s*(\d+)/i)				{$config_autoannounceinterval = $1; }
 			if (/^\s*EnableLadderLookup\s*=\s*(0|1)/i)					{$config_enableladderlookup = $1; }
 			if (/^\s*VehicleKick\s*=\s*(0|1)/i)							{$config_vehiclekick = $1; }
-			if (/^\s*ReservedSlots\s*=\s*(.+)/i)						{$config_reserved_slots = $1; }
-			if (/^\s*ReservedSlotsEnabled\s*=\s*(.+)/i)					{$config_reserved = $1; }
 			if (/^\s*Redirect\s*=\s*(.+)/i)								{$config_redirect = $1; }
 			if (/^\s*RedirectPort\s*=\s*(.+)/i)							{$config_redirect_port = $1; }
 			if (/^\s*Minimum_Scripts_Version\s*=\s*(\d+(\.\d+)?)/i)		{$config_minimum_scripts_version = $1; }

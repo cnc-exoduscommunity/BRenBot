@@ -438,7 +438,6 @@ sub parsearg
 			restart => \&restart,
 			reboot => \&reboot,
 			shutdown => \&shutdown,
-			letmein => \&letmein,
 			players => \&players,
 			playerinfo => \&playerinfo,
 			gameinfo => \&gameinfo,
@@ -3042,61 +3041,6 @@ sub players_outputTeam
 }
 
 # --------------------------------------------------------------------------------------------------
-
-# deprecated
-sub letmein
-{
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
-	my $kernel = $_[KERNEL];
-
-	eval
-	{
-		if ($brconfig::config_reserved == 1)
-		{
-			my $gdi_players = serverStatus::getPlayers_GDI();
-			my $nod_players = serverStatus::getPlayers_Nod();
-			my $max_players = serverStatus::getMaxPlayers();
-
-			if ( ( $gdi_players + $nod_players ) < ( $max_players - $brconfig::config_reserved_slots) )
-			{
-				my $slots = ( $max_players - $brconfig::config_reserved_slots) - ( $gdi_players + $nod_players );
-				brIRC::ircmsg ( "There are $slots more open slots available. No need for !letmein.", $args{'ircChannelCode'} );
-				undef $slots;
-				return;
-			}
-
-
-			if ( ( $gdi_players + $nod_players ) >= $max_players )
-			{
-				my $num_players = ( $gdi_players + $nod_players );
-				brIRC::ircmsg ( "There are already $num_players out of $max_players players. Limit has been reached.", $args{'ircChannelCode'} );
-				undef $num_players;
-				return;
-			}
-			if ( $renlog::used_slots > $brconfig::config_reserved_slots )
-			{
-				brIRC::ircmsg ( "There are already $brconfig::config_reserved_slots Slots open.", $args{'ircChannelCode'} );
-				return;
-			}
-			else
-			{
-				$renlog::used_slots++;
-				brIRC::ircmsg ( "One additional Slot has been opened. You need to join NOW to reclaim your opened slot!!", $args{'ircChannelCode'} );
-			}
-
-			undef $gdi_players;
-			undef $nod_players;
-			undef $max_players;
-		}
-		else
-		{
-			brIRC::ircmsg ( "Reserved slots are disabled.", $args{'ircChannelCode'} );
-		}
-	 }
-	 or modules::display_error($@);
-}
-
 
 sub restart
 {

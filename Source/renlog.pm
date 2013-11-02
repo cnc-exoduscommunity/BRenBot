@@ -14,7 +14,6 @@ use brAuth;
 
 our @invitelist;		# List of players waiting for an invite
 my %joiners;			# List of players who have joined since the last player info
-our $used_slots			= 0;
 our $renew_ssgm			= 0;
 
 my $logPlayerInfo 		= 0;	# Used to parse player_info commands
