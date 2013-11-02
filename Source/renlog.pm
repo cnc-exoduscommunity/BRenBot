@@ -502,19 +502,15 @@ sub ParseLogInput
 			serverStatus::updateSFPS ( $1 );
 		}
 
-		if ($line =~ /(GDI|All) : (.+?)\/(.+?) players\s+ (.+?) points/)
-		{
-			if ( $1 eq "All" and $main::currentMod ne 'APB' )
-      {
-        $main::currentMod = 'APB';
-      }
-			serverStatus::updateStatus_GDI ( $2, $4, $3 );
-		}
+    if ($line =~ /(GDI|All) : (.+?)\/(.+?) players\s+ (.+?) points/)
+    {
+      serverStatus::updateStatus_GDI ( $2, $4, $3 );
+    }
 
-		if ($line =~ /(NOD|Sov) : (.+?)\/(.+?) players\s+ (.+?) points/)
-		{
-			serverStatus::updateStatus_Nod ( $2, $4, $3 );
-		}
+    if ($line =~ /(NOD|Sov) : (.+?)\/(.+?) players\s+ (.+?) points/)
+    {
+      serverStatus::updateStatus_Nod ( $2, $4, $3 );
+    }
 
 		$line =~ s/^\[\d\d:\d\d:\d\d\]//g; # do away with timestamps
 

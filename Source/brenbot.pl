@@ -57,7 +57,6 @@ brdatabase::db_connect();
 brconfig::init();
 
 our %tempMods;                  # List of temporary moderators
-our $currentMod = "Renegade";   # Stores current mod, EG: APB, AR   - This will be deprecated by brTeams in future, avoid using it for new code
 
 
 
