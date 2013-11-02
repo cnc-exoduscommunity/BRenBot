@@ -306,28 +306,21 @@ sub ChatMSG
 			my ( $result, %player ) = playerData::getPlayerData ( $playername );
 			if ( $result == 1 )
 			{
-				# Format mod and admin names
-				my $pname = modules::parseModName ( $playername, 1 );
+        # Format mod and admin names
+        my $pname = modules::parseModName($playername, 1);
 
-				# Work out the colour for the message
-				my $colour = ( $player{'side'} eq "GDI" || $player{'side'} eq "All" )
-					? ( $main::currentMod eq "APB" ) ? "12" : "08"
-					: "04";
+        # F2 chat
+        if ( $teamMessage == 0 )
+        {
+          brIRC::ircmsg(brTeams::colourise($player{'teamid'},$pname).": $playermsg");
+        }
 
-
-				# F2 chat
-				if ( $teamMessage == 0 )
-				{
-					brIRC::ircmsg( "$colour$pname: $playermsg" );
-				}
-
-				# F3 chat, if teammessages is enabled
-				elsif ( $teamMessage && modules::get_module( "teammessages" ) )
-				{
-					brIRC::ircmsg( "06\[Team\] $colour$pname: $playermsg", "A" );
-					if ( $brconfig::irc_showTeamMessages_PublicChan == 1 )
-						{ brIRC::ircmsg( "06\[Team\] $colour$pname: $playermsg", "P" ); }
-				}
+        # F3 chat, if teammessages is enabled
+        elsif ( $teamMessage && modules::get_module( "teammessages" ) )
+        {
+          my $message = "06\[Team\]".brTeams::colourise($player{'teamid'},"$pname: $playermsg");
+          brIRC::ircmsg($message, ($brconfig::irc_showTeamMessages_PublicChan == 1) ? "P" : "B" );
+        }
 
 
 				# Run plugins for public chat messages
@@ -968,15 +961,8 @@ sub ParseLogInput
 			{
 				if ( $brconfig::gamelog_show_vehicle_purchase == 1 )
 				{
-					my $color = "04";
-
-					if ( $player{'side'} eq "GDI" || $player{'side'} eq "All" )
-					{
-						$color = ( $main::currentMod eq "APB" ) ? "12" : "08";
-					}
-
 					if ( !modules::get_module( "gamelog" ) )
-						{ brIRC::ircmsg( "3[Vehicle Purchase]: $color$player{name}", "A" ); }
+						{ brIRC::ircmsg( "3[Vehicle Purchase]: ".brTeams::colourise($player{'teamid'},$player{'name'}), "A" ); }
 					else
 						{ gamelog::vehicle_purchase_renlog( $player{'name'} ); }
 				}

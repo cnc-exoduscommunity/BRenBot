@@ -624,7 +624,6 @@ sub crate
 		{
 			my $team = $gameobjects{ $hash{object} }->{team};
 			my $name = $gameobjects{ $hash{object} }->{name};
-			my $color = ( $team == 0 ) ? "04" : "08";
 
 			my $param2;
 
@@ -657,7 +656,7 @@ sub crate
 			if ( $brconfig::gamelog_showCrateMsgs != 0 && $startup != 1 )
 			{
 				my $ircChannelCode = ( $brconfig::gamelog_showCrateMsgs == 1 ) ? "A" : "";
-				brIRC::ircmsg ( "3[Crate]:" . "" . $color . " $name got the $param crate $param2", $ircChannelCode );
+				brIRC::ircmsg ( "3[Crate]:" . brTeams::colourise($team,"$name got the $param crate $param2"), $ircChannelCode );
 			}
 		}
 	}
@@ -779,7 +778,7 @@ sub killed_wreck
 	eval
 	{
 		my $team = $killer->{'team'};
-		my $color = ( $team == 0 ) ? "04" : "08";
+		my $color = brTeams::get_colour($team);
 
 		my $killerchar = translatePreset ( $killer->{'preset'} );
 
@@ -812,23 +811,22 @@ sub killed_wreck
 
 sub killed_by_basedefence
 {
-	my $killerpreset = shift;
-	my $killed		= shift;
+  my $killerpreset = shift;
+  my $killed		= shift;
 
-	eval
-	{
-		my $team = $killed->{team};
-		my $color = ( $team == 0 ) ? "04" : "08";
+  eval
+  {
+    my $team = $killed->{team};
 
-		if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
-		{
-			my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
-			brIRC::ircmsg ( "" . $color . "$killed->{name} was pwnd by the " . translatePreset ( $killerpreset ) . ".", $ircChannelCode );
-		}
+    if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
+    {
+      my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
+      brIRC::ircmsg(brTeams::colourise($team,"$killed->{name} was pwnd by the " . translatePreset($killerpreset)), $ircChannelCode );
+    }
 
-		playerData::incrementKeyValue ( $killed->{'name'}, "stats_deaths" );;
-	}
-	or modules::display_error($@);
+    playerData::incrementKeyValue ( $killed->{'name'}, "stats_deaths" );;
+  }
+  or modules::display_error($@);
 }
 
 sub killed_building
@@ -842,14 +840,13 @@ sub killed_building
 		eval
 		{
 			my $team = $killer->{team};
-			my $color = ( $team == 0 ) ? "04" : "08";
 
 			if ($killer->{name})
 			{
 				if ( $brconfig::gamelog_showBuildingKillMsgs != 0 && $startup != 1 )
 				{
 					my $ircChannelCode = ( $brconfig::gamelog_showBuildingKillMsgs == 1 ) ? "A" : "";
-					brIRC::ircmsg ( "" . $color . "$killer->{name} destroyed the " . translatePreset ( $killed->{preset} ) . ".", $ircChannelCode );
+					brIRC::ircmsg(brTeams::colourise($team,"$killer->{name} destroyed the " . translatePreset($killed->{preset})), $ircChannelCode );
 				}
 			}
 		}
@@ -866,7 +863,7 @@ sub killed_soldier
 	eval
 	{
 		my $team = ( $killer ne 0 ) ? $killer->{team} : $killed->{team};
-		my $color = ( $team == 0 ) ? "04" : "08";
+		my $color = brTeams::get_colour($team);
 
 		if ( $killer ne 0 )
 		{
@@ -966,7 +963,7 @@ sub killed_vehicle
 		}
 
 
-		my $color = ( $team == 0 ) ? "04" : "08";
+		my $color = brTeams::get_colour($team);
 		my $killedpreset = 0;
 		my $killerpreset = 0;
 
@@ -1087,8 +1084,7 @@ sub display_buildings
 					}
 					else
 					{
-						my $colour = ( $main::currentMod eq "APB" ) ? "12" : "08";
-						$gdi .= "" . $colour . $buidingPreset . " (" . int($gameobjects{$object}->{health}) . "/" . int($gameobjects{$object}->{max_health}) . ") * ";
+						$gdi .= brTeams::colourise(1,$buidingPreset)." (" . int($gameobjects{$object}->{health}) . "/" . int($gameobjects{$object}->{max_health}) . ") * ";
 					}
 				}
 
@@ -1100,7 +1096,7 @@ sub display_buildings
 					}
 					else
 					{
-						$nod .= "04" . $buidingPreset . " (" . int($gameobjects{$object}->{health}) . "/" . int($gameobjects{$object}->{max_health}) . ") * ";
+						$nod .= brTeams::colourise(0,$buidingPreset)." (" . int($gameobjects{$object}->{health}) . "/" . int($gameobjects{$object}->{max_health}) . ") * ";
 					}
 				}
 			}
@@ -1135,99 +1131,74 @@ sub display_buildings
 # the number of those in the game...
 sub display_vehicles
 {
-	my $ircChannelCode = shift;
-	my %currentVehicles_gdi;
-	my %currentVehicles_nod;
-	my %currentVehicles_neutral;
-	my $objecthash;
+  my $ircChannelCode = shift;
+  my %currentVehicles_gdi;
+  my %currentVehicles_nod;
+  my %currentVehicles_neutral;
+  my $objecthash;
 
-	eval
-	{
-		foreach my $object (keys %gameobjects)
-		{
-			$objecthash = $gameobjects{$object};
+  eval
+  {
+    foreach my $object (keys %gameobjects)
+    {
+      $objecthash = $gameobjects{$object};
 
-			if ( ($objecthash->{type} eq "VEHICLE") && ($objecthash->{destroyed} == 0) )
-			{
-				my $translatedPreset = translatePreset ( $objecthash->{preset} );
+      if ( ($objecthash->{type} eq "VEHICLE") && ($objecthash->{destroyed} == 0) )
+      {
+        my $translatedPreset = translatePreset ( $objecthash->{preset} );
 
-				if ( $objecthash->{team} == 1 )
-				{
-					if ( $currentVehicles_gdi{$translatedPreset} )
-					{ $currentVehicles_gdi{$translatedPreset}++; }
-					else
-					{ $currentVehicles_gdi{$translatedPreset} = 1 }
-				}
-				elsif ( $objecthash->{team} == 0 )
-				{
-					if ( $currentVehicles_nod{$translatedPreset} )
-					{ $currentVehicles_nod{$translatedPreset}++; }
-					else
-					{ $currentVehicles_nod{$translatedPreset} = 1 }
-				}
-				else
-				{
-					if ( $currentVehicles_neutral{$translatedPreset} )
-					{ $currentVehicles_neutral{$translatedPreset}++; }
-					else
-					{ $currentVehicles_neutral{$translatedPreset} = 1 }
-				}
-			}
-		}
+        if ( $objecthash->{team} == 1 )
+        {
+          if ( $currentVehicles_gdi{$translatedPreset} )
+          { $currentVehicles_gdi{$translatedPreset}++; }
+          else
+          { $currentVehicles_gdi{$translatedPreset} = 1 }
+        }
+        elsif ( $objecthash->{team} == 0 )
+        {
+          if ( $currentVehicles_nod{$translatedPreset} )
+          { $currentVehicles_nod{$translatedPreset}++; }
+          else
+          { $currentVehicles_nod{$translatedPreset} = 1 }
+        }
+        else
+        {
+          if ( $currentVehicles_neutral{$translatedPreset} )
+          { $currentVehicles_neutral{$translatedPreset}++; }
+          else
+          { $currentVehicles_neutral{$translatedPreset} = 1 }
+        }
+      }
+    }
 
-		my $gdi_message = ( $main::currentMod eq "APB" ) ? "Allied Vehicles:" : "GDI Vehicles:";
-		my $nod_message = ( $main::currentMod eq "APB" ) ? "Soviet Vehicles:" : "Nod Vehicles:";
+    brIRC::ircmsg ( brIRC::bold('Current Vehicles:'),$ircChannelCode );
+    display_vehicles_printTeam(1,\%currentVehicles_gdi,$ircChannelCode);
+    display_vehicles_printTeam(0,\%currentVehicles_nod,$ircChannelCode);
+    
+    # Only print neutral vehicles if there are some in the list, otherwise omit it
+    if ( scalar keys %currentVehicles_neutral > 0 )
+    {
+      display_vehicles_printTeam(2,\%currentVehicles_neutral,$ircChannelCode);
+    }
+  }
+  or modules::display_error($@);
+}
 
-		my $neutral_message = "Empty Vehicles:";
+sub display_vehicles_printTeam
+{
+  my $teamid = shift;
+  my $teamvehicles = shift;
+  my $ircChannelCode = shift;
 
-		my $key;
-		foreach $key ( keys %currentVehicles_gdi )
-		{
-			$gdi_message .= " $currentVehicles_gdi{$key} $key,";
-		}
-		foreach $key ( keys %currentVehicles_nod )
-		{
-			$nod_message .= " $currentVehicles_nod{$key} $key,";
-		}
-		foreach $key ( keys %currentVehicles_neutral )
-		{
-			$neutral_message .= " $currentVehicles_neutral{$key} $key,";
-		}
+  my $message = "";
+  foreach (keys %{$teamvehicles})
+  {
+    $message .= " $teamvehicles->{$_} $_,";
+  }
 
-
-		POE::Session->create
-		( inline_states =>
-		{ _start => sub
-			{
-# 				$gdi = "No GDI vehicles" if (!$gdi);
-# 				$nod = "No Nod vehicles" if (!$nod);
-
-				# Trim trailing comma or add None
-				if ( $gdi_message eq "Allied Vehicles:" || $gdi_message eq  "GDI Vehicles:" )
-				{ $gdi_message .= " None"; }
-				else
-				{ $gdi_message = substr ( $gdi_message, 0, -1 ); }
-
-				if ( $nod_message eq "Soviet Vehicles:" || $nod_message eq  "Nod Vehicles:" )
-				{ $nod_message .= " None"; }
-				else
-				{ $nod_message = substr ( $nod_message, 0, -1 ); }
-
-				if ( $neutral_message eq "Empty Vehicles:" )
-				{ $neutral_message = ""; }
-				else
-				{ $neutral_message = substr ( $neutral_message, 0, -1 ); }
-
-				brIRC::ircmsg ( "Current Vehicles:" , $ircChannelCode );
-				my $colour = ( $main::currentMod eq "APB" ) ? "12" : "08";
-				brIRC::ircmsg ( "" . $colour . $gdi_message , $ircChannelCode );
-				brIRC::ircmsg ( "04" . $nod_message , $ircChannelCode );
-				if ( $neutral_message ) { brIRC::ircmsg ( "14" . $neutral_message, $ircChannelCode ); }
-			}
-		}
-		);
-	}
-	or modules::display_error($@);
+  # If there are no vehicles then use "None" for the message string
+  $message = "None" if ( $message eq "" );
+  brIRC::ircmsg(brTeams::colourise($teamid,brTeams::get_name($teamid).' Vehicles: '.$message), $ircChannelCode);
 }
 
 sub show_stats
@@ -1257,7 +1228,7 @@ sub show_stats
 						my $max_armor = int($object->{max_armor});
 
 						my $team = $object->{team};
-						my $color = ( $team == 0 ) ? "04" : "08";
+						my $color = brTeams::get_colour($team);
 
 						brIRC::ircmsg ( "" . $color . "$player{name}: Character: " . translatePreset( $object->{preset} ) . " Health: $health/$max_health Armor: $armor/$max_armor", $ircChannelCode );
 						brIRC::ircmsg ( "" . $color . "Kills: $player{stats_kills} Vehicle Kills: $player{stats_vehicleKills} Building Kills: $player{stats_buildingKills} Deaths: $player{stats_deaths}", $ircChannelCode );

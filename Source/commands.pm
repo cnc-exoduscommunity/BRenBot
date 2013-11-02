@@ -2701,10 +2701,8 @@ sub getbw
 						$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} => \%args );
 						#$_[KERNEL]->alias_set("getbw");
 
-						$_[HEAP]->{name} = $pname;
-						$_[HEAP]->{id}   = $pid;
-						$_[HEAP]->{side} = $pside;
-						$_[HEAP]->{outputType} = $outputType;
+						$_[HEAP]->{'name'} = $pname;
+						$_[HEAP]->{'outputType'} = $outputType;
 					},
 					tick => \&showbw
 				}
@@ -2720,15 +2718,15 @@ sub getbw
 
 sub showbw
 {
-  my $heap = @_[HEAP];
   my %args = %{$_[ ARG0 ]};
+  my $pname = $_[HEAP]->{'name'};
 
-  if ( $heap->{'name'} )  # Name specified, look up their bandwidth
+  if ( $pname )  # Name specified, look up their bandwidth
   {
-    my ( $result, %player ) = playerData::getPlayerData ( $heap->{'name'} );
+    my ( $result, %player ) = playerData::getPlayerData($pname);
     if ( $result == 1 )
     {
-      if ( $heap->{outputType} eq 'irc' )
+      if ( $args{'nicktype'} eq 'irc' )
       {
         my $pname = brTeams::colourise($player{'teamid'}, modules::parseModName($player{'name'}, 1));
         brIRC::ircmsg ( "$pname has their bandwidth set to $player{'bandwidth'}", $args{'ircChannelCode'} );
@@ -2748,8 +2746,8 @@ sub showbw
     my %playerlist = playerData::getPlayerList();
     while ( my ( $id, $player ) = each ( %playerlist ) )
     {
-      my $pname = brTeams::colourise($player{'teamid'}, modules::parseModName($player{'name'}, 1));
-      push ( @bwoutput, "$pname: $player->{bandwidth}" );		# Store player in the array
+      my $pname = brTeams::colourise($player->{'teamid'}, modules::parseModName($player->{'name'}, 1));
+      push ( @bwoutput, "$pname: $player->{bandwidth}" );
     }
 
     # Output players in groups of 4 to the IRC
@@ -2948,11 +2946,11 @@ sub playerinfo
 
 		# Ok, if we got to here that means there are players in the list, and they
 		# match any search criteria we had. Print out the list.
-		my $format = "%-5s %-" . ($longestName +2) . "s %-6s %-5s %-5s %-16s %-5s %-10s";
+		my $format = " %-5s %-" . ($longestName +2) . "s %-6s %-5s %-5s %-16s %-5s %-10s";
 		my $line = sprintf ( $format, 'Id', 'Name', 'Score', 'Side', 'Ping', 'Address', 'Kb/s', 'Time' );
 
-		# Print out header line
-		brIRC::ircmsg ( "01,14 " . $line, $args{'ircChannelCode'} );
+    # Print out header line
+    brIRC::ircmsg ( "01" . $line, $args{'ircChannelCode'} );
 
 
 		# And finally, loop through the playerlist and output those which match our
@@ -2971,13 +2969,8 @@ sub playerinfo
 				# Output lines using the same format we created earlier
 				$line = sprintf( $format, $player->{'id'}, $pname, $player->{'score'}, $player->{'side'}, $player->{'ping'}, $player->{'ip'}, $player->{'kbps'}, $player->{'time'} );
 
-				# Add colouring for teams
-				if ( $player->{'side'} =~ /(NOD|Sov)/i ) { $line = "04,14 $line"; }
-				if ( $player->{'side'} =~ /GDI/i ) { $line = "08,14 $line"; }
-				if ( $player->{'side'} =~ /All/i ) { $line = "12,14 $line"; }
-
-				# Finally output to IRC
-				brIRC::ircmsg ( $line, $args{'ircChannelCode'} );
+        # Finally output to IRC with team colour coding added
+        brIRC::ircmsg ( brTeams::colourise($player->{'teamid'},$line), $args{'ircChannelCode'} );
 
 			} # End of searching IF
 		} # end of foreach playerlist
@@ -4093,224 +4086,6 @@ sub cmsg
 		show_syntax_error(@_);
 	}
 }
-
-
-
-
-
-###################################################
-####
-## Area system functions
-####
-###################################################
-
-# Gets the current zone for a player
-# sub getLocation
-# {
-# 	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-# 	my %args = %{$args};
-#
-# 	return if ( $args{nicktype} == 1 || modules::get_module ( "gamelog" ) != 1 );
-#
-# 	my ( $result, %player ) = playerData::getPlayerData( $args{nick} );
-# 	if ( $result == 1 )
-# 	{
-# 		my ( $area, $xcoord, $ycoord ) = gamelog::getPlayerArea ( $player{name} );
-#
-# 		#RenRem::RenRemCMD ( "cmsgp $player{id} 30,144,255 You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
-# 		RenRem::RenRemCMD ( "ppage $player{id} You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
-# 		brIRC::ircmsg ( "09Page sent to $player{name} --> You are currently in the area $area. Your coordinates are $xcoord, $ycoord.", $args{'ircChannelCode'} );
-# 	}
-# }
-
-# Locates a players teammate, and reports their character and vehicle
-# sub locate
-# {
-# 	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-# 	my %args = %{$args};
-#
-# 	return if ( $args{nicktype} == 1 || modules::get_module ( "gamelog" ) != 1 );
-#
-# 	my ( $result, %player ) = playerData::getPlayerData( $args{nick} );
-# 	if ( $result == 1 )
-# 	{
-# 		my ( $result2, %player2 ) = playerData::getPlayerData( $args{arg1} );
-# 		if ( $result2 == 1 )
-# 		{
-# 			if ( $player{'side'} eq $player2{'side'} )
-# 			{
-# 				my ( $area, $xcoord, $ycoord, $character, $vehicle ) = gamelog::getPlayerArea ( $player2{'name'} );
-#
-# 				#RenRem::RenRemCMD ( "cmsgp $player{id} 30,144,255 You are currently in the area $area. Your coordinates are $xcoord, $ycoord." );
-# 				if ( $vehicle ne "" )
-# 				{
-# 					RenRem::RenRemCMD ( "ppage $player{id} $player2{name} is in the area $area, as a $character, inside a $vehicle." );
-# 					brIRC::ircmsg ( "09Page sent to $player{name} --> $player2{name} is in the area $area, as a $character, inside a $vehicle.", $args{'ircChannelCode'} );
-# 				}
-# 				else
-# 				{
-# 					RenRem::RenRemCMD ( "ppage $player{id} $player2{name} is in the area $area, as a $character." );
-# 					brIRC::ircmsg ( "09Page sent to $player{name} --> $player2{name} is in the area $area, as a $character.", $args{'ircChannelCode'} );
-# 				}
-#
-# 			}
-# 			else
-# 			{
-# 				RenRem::RenRemCMD ( "ppage $player{id} $player2{name} is not on your team! This command can only be used on your teammates." );
-# 				brIRC::ircmsg ( "09Page sent to $player{name} --> $player2{name} is not on your team! This command can only be used on your teammates.", $args{'ircChannelCode'} );
-# 			}
-# 		}
-# 		else
-# 		{
-# 			RenRem::RenRemCMD ( "ppage $player{id} $args{arg1} was not found in the game, or is not unique." );
-# 			brIRC::ircmsg ( "09Page sent to $player{name} --> $args{arg1} was not found in the game, or is not unique.", $args{'ircChannelCode'} );
-# 		}
-# 	}
-# }
-
-
-# Creates a new area
-# sub addArea
-# {
-# 	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-# 	my %args = %{$args};
-#
-# 	return if ( $args{nicktype} == 1 || modules::get_module ( "gamelog" ) != 1 );
-#
-# 	my ( $result, %player ) = playerData::getPlayerData ( $args{nick} );
-# 	if ( $result == 1 )
-# 	{
-# 		if ( $player{'openArea'} )
-# 		{
-# 			RenRem::RenRemCMD ( "ppage $player{id} You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area." );
-# 			brIRC::ircmsg ( "09Page sent to $player{name} --> You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area.", $args{'ircChannelCode'} );
-# 			return;
-# 		}
-#
-# 		if ( $args{arg} =~ m/^\!\S+\s(.+)\s(\d)$/i )
-# 		{
-# 			my $result = gamelog::createArea ( $1, $2, $args{nick} );
-# 			if ( $result == 1 )
-# 			{
-# 				RenRem::RenRemCMD ( "ppage $player{id} Created new area '$1'. Use !updateArea to expand the area, and close it with !closeArea." );
-# 				brIRC::ircmsg ( "09Page sent to $player{name} --> Created new area '$1'. Use !updateArea to expand the area, and close it with !closeArea.", $args{'ircChannelCode'} );
-#
-# 				playerData::setKeyValue ( $player{'id'}, "openArea", $1 );
-# 			}
-# 			elsif ( $result == 2 )
-# 			{
-# 				RenRem::RenRemCMD ( "ppage $player{id} Expanded existing area '$1' to include your current position, and opened for editing." );
-# 				brIRC::ircmsg ( "09Page sent to $player{name} --> Expanded existing area '$1' to include your current position, and opened for editing.", $args{'ircChannelCode'} );
-
-# 				playerData::setKeyValue ( $player{'id'}, "openArea", $1 );
-# 			}
-# 			else
-# 			{
-# 				RenRem::RenRemCMD ( "ppage $player{id} Error: Unable to access area data!" );
-# 				brIRC::ircmsg ( "09Page sent to $player{name} --> Error: Unable to access area data!", $args{'ircChannelCode'} );
-# 			}
-# 		}
-# 		else
-# 		{
-# 			RenRem::RenRemCMD ( "ppage $player{id} Correct Usage: ".$args{settings}->{syntax}->{value} );
-# 			brIRC::ircmsg ( "09Page sent to $player{name} --> Correct Usage: ".$args{settings}->{syntax}->{value}, $args{'ircChannelCode'} );
-# 		}
-# 	}
-# }
-
-# Opens an exiting area
-# sub openArea
-# {
-# 	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-# 	my %args = %{$args};
-#
-# 	return if ( $args{nicktype} == 1 || modules::get_module ( "gamelog" ) != 1 );
-#
-# 	my ( $result, %player ) = playerData::getPlayerData ( $args{nick} );
-# 	if ( $result == 1 )
-# 	{
-# 		if ( !($player{'openArea'}) && $args{arg} =~ m/^\!\S+\s(.+)$/i )
-# 		{
-# 			my $result = gamelog::expandArea ( $1, $args{nick} );
-# 			if ( $result == 1 )
-# 			{
-# 				RenRem::RenRemCMD ( "ppage $player{id} Expanded existing area '$1' to include your current position, and opened for editing." );
-# 				brIRC::ircmsg ( "09Page sent to $player{name} --> Expanded existing area '$1' to include your current position, and opened for editing.", $args{'ircChannelCode'} );
-
-# 				playerData::setKeyValue ( $player{'id'}, "openArea", $1 );
-# 			}
-# 			else
-# 			{
-# 				RenRem::RenRemCMD ( "ppage $player{id} Unable to find any area called '$1'!" );
-# 				brIRC::ircmsg ( "09Page sent to $player{name} --> Unable to find any area called '$1'!", $args{'ircChannelCode'} );
-# 			}
-# 		}
-# 		else
-# 		{
-# 			RenRem::RenRemCMD ( "ppage $player{id} You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area." );
-# 			brIRC::ircmsg ( "09Page sent to $player{name} --> You already have the area '$player{openArea}' open for editing! You must close this area with !closeArea before opening a new area.!", $args{'ircChannelCode'} );
-# 		}
-# 	}
-# }
-
-
-# Creates a new area
-# sub updateArea
-# {
-# 	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-# 	my %args = %{$args};
-#
-# 	return if ( $args{nicktype} == 1 || modules::get_module ( "gamelog" ) != 1 );
-#
-# 	my ( $result, %player ) = playerData::getPlayerData ( $args{nick} );
-# 	if ( $result == 1 )
-# 	{
-# 		if ( $player{'openArea'} )
-# 		{
-# 			my $result = gamelog::expandArea ( $player{'openArea'}, $args{nick} );
-# 			if ( $result == 1 )
-# 			{
-# 				RenRem::RenRemCMD ( "ppage $player{id} Expanded area '$player{openArea}' to include your current position." );
-# 				brIRC::ircmsg ( "09Page sent to $player{name} --> Expanded area '$player{openArea}' to include your current position.", $args{'ircChannelCode'} );
-# 			}
-# 			else
-# 			{
-# 				RenRem::RenRemCMD ( "ppage $player{id} Error: Unable to access area data!" );
-# 				brIRC::ircmsg ( "09Page sent to $player{name} --> Error: Unable to access area data!", $args{'ircChannelCode'} );
-# 			}
-#
-# 			return;
-# 		}
-#
-# 		RenRem::RenRemCMD ( "ppage $player{id} You do not have any area open for editing at this time. Create a new area using !addArea, or open an existing area using !openArea." );
-# 		brIRC::ircmsg ( "09Page sent to $player{name} --> You do not have any area open for editing at this time. Create a new area using !addArea, or open an existing area using !openArea.", $args{'ircChannelCode'} );
-# 	}
-# }
-
-
-# Closes an area
-# sub closeArea
-# {
-# 	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-# 	my %args = %{$args};
-#
-# 	return if ( $args{nicktype} == 1 || modules::get_module ( "gamelog" ) != 1 );
-#
-# 	my ( $result, %player ) = playerData::getPlayerData ( $args{nick} );
-# 	if ( $result == 1 )
-# 	{
-# 		if ( $player{'openArea'} )
-# 		{
-# 			RenRem::RenRemCMD ( "ppage $player{id} The area '$player{openArea}' has been closed!" );
-# 			brIRC::ircmsg ( "09Page sent to $player{name} --> The area '$player{openArea}' has been closed!", $args{'ircChannelCode'} );
-# 			playerData::setKeyValue ( $player{id}, "openArea", "" );
-# 			return;
-# 		}
-#
-# 		RenRem::RenRemCMD ( "ppage $player{id} You did not have an area open to begin with!" );
-# 		brIRC::ircmsg ( "09Page sent to $player{name} --> You did not have an area open to begin with!", $args{'ircChannelCode'} );
-# 	}
-# }
 
 
 

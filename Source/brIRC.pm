@@ -845,6 +845,9 @@ sub colourise
 {
   my $colour = shift;
   my $message = shift;
+  
+  # \todo validate colour matches either ##,## or ##, enforce two digits to prevent run-on if
+  #       the message starts with a number
 
   return "$colour$message";
 }
