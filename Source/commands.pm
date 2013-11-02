@@ -2497,57 +2497,50 @@ sub admin_message
 
 sub ids
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	# IRC only
-	if ( $args{nicktype} != 1 )
-		{ return; }
+  # IRC only
+  if ( $args{nicktype} != 1 )
+    { return; }
 
-	eval
-	{
-		my @noddies;
-		my @gdiguys;
+  eval
+  {
+    my @noddies;
+    my @gdiguys;
 
-		if ( serverStatus::getCurrentPlayers() == 0 )
-		{
-			brIRC::ircmsg ( "There are no players ingame at this time.", $args{'ircChannelCode'} );
-			return;
-		}
+    if ( serverStatus::getCurrentPlayers() == 0 )
+    {
+      brIRC::ircmsg ( "There are no players ingame at this time.", $args{'ircChannelCode'} );
+      return;
+    }
 
-		my %playerlist = playerData::getPlayerList();
-		while ( my ( $id, $player ) = each ( %playerlist ) )
-		{
-			my $pname = modules::parseModName ( $player->{'name'}, 1 );
+    my %playerlist = playerData::getPlayerList();
+    while ( my ( $id, $player ) = each ( %playerlist ) )
+    {
+      my $pname = modules::parseModName ( $player->{'name'}, 1 );
 
-			# Append id to name
-			$pname .= " ($player->{'id'})";
+      # Append id to name
+      $pname .= " ($player->{'id'})";
 
-			# Pad name length to 28 characters
-			my $minlength = 28;
-			for ( my $i = 1; $i <= $minlength - length($pname); $i++ )
-				{ $pname .= " "; }
+      # Pad name length to 28 characters
+      my $minlength = 28;
+      for ( my $i = 1; $i <= $minlength - length($pname); $i++ )
+        { $pname .= " "; }
 
-			push (@noddies, $pname) if ($player->{'side'} eq "NOD" || $player->{'side'} eq "Sov");
-			push (@gdiguys, $pname) if ($player->{'side'} eq "GDI" || $player->{'side'} eq "All");
+      push (@noddies, $pname) if ($player->{'side'} eq "NOD" || $player->{'side'} eq "Sov");
+      push (@gdiguys, $pname) if ($player->{'side'} eq "GDI" || $player->{'side'} eq "All");
+    }
 
-		}
-
-		for ( my $i=0; $i <= scalar(@gdiguys)-1; $i = $i+4 )
-		{
-			if ( $main::currentMod eq "APB" )
-				{ brIRC::ircmsg ( "12Allies: $gdiguys[$i] $gdiguys[$i+1] $gdiguys[$i+2] $gdiguys[$i+3]", $args{'ircChannelCode'} ); }
-			else
-				{ brIRC::ircmsg ( "08GDI: $gdiguys[$i] $gdiguys[$i+1] $gdiguys[$i+2] $gdiguys[$i+3]", $args{'ircChannelCode'}); }
-		}
-		for ( my $i = 0; $i <= scalar(@noddies)-1; $i = $i+5 )
-		{
-			if ( $main::currentMod eq "APB" )
-				{ brIRC::ircmsg ( "04Soviet: $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'} ); }
-			else
-				{ brIRC::ircmsg ( "04Nod: $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'}); }
-		}
-	}
-	or modules::display_error($@);
+    for ( my $i=0; $i <= scalar(@gdiguys)-1; $i = $i+4 )
+    {
+      brIRC::ircmsg(brTeams::colourise(1,brIRC::bold(brTeams::get_name(1).':')." $gdiguys[$i] $gdiguys[$i+1] $gdiguys[$i+2] $gdiguys[$i+3]", $args{'ircChannelCode'} ));
+    }
+    for ( my $i = 0; $i <= scalar(@noddies)-1; $i = $i+5 )
+    {
+      brIRC::ircmsg(brTeams::colourise(0,brIRC::bold(brTeams::get_name(0).':')." $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'} ));
+    }
+  }
+  or modules::display_error($@);
 }
 
 
@@ -2555,64 +2548,58 @@ sub ids
 # Shows the scripts version of each player ingame
 sub scripts
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	# IRC only
-	if ( $args{nicktype} != 1 )
-		{ return; }
+  # IRC only
+  if ( $args{nicktype} != 1 )
+    { return; }
 
-	eval
-	{
-		if ( modules::get_module("bhs") )
-		{
-			my @noddies;
-			my @gdiguys;
+  eval
+  {
+    if ( modules::get_module("bhs") )
+    {
+      my @noddies;
+      my @gdiguys;
 
-			if ( serverStatus::getCurrentPlayers() == 0 )
-			{
-				brIRC::ircmsg ( "There are no players ingame at this time.", $args{'ircChannelCode'} );
-				return;
-			}
+      if ( serverStatus::getCurrentPlayers() == 0 )
+      {
+        brIRC::ircmsg ( "There are no players ingame at this time.", $args{'ircChannelCode'} );
+        return;
+      }
 
-			my %playerlist = playerData::getPlayerList();
-			while ( my ( $id, $player ) = each ( %playerlist ) )
-			{
-				my $pname = modules::parseModName ( $player->{'name'}, 1 );
+      my %playerlist = playerData::getPlayerList();
+      while ( my ( $id, $player ) = each ( %playerlist ) )
+      {
+        my $pname = modules::parseModName ( $player->{'name'}, 1 );
 
-				# Append scripts version to name
-				$pname .= " (".sprintf("%.2f", $player->{'scriptsVersion'} ).")";
+        # Append scripts version to name
+        $pname .= " (".sprintf("%.2f", $player->{'scriptsVersion'} ).")";
 
-				# Pad name length to 28 characters
-				my $minlength = 28;
-				for ( my $i = 1; $i <= $minlength - length($pname); $i++ )
-					{ $pname .= " "; }
+        # Pad name length to 28 characters
+        my $minlength = 28;
+        for ( my $i = 1; $i <= $minlength - length($pname); $i++ )
+          { $pname .= " "; }
 
-				push (@noddies, $pname) if ($player->{'side'} eq "NOD" || $player->{'side'} eq "Sov");
-				push (@gdiguys, $pname) if ($player->{'side'} eq "GDI" || $player->{'side'} eq "All");
+        push (@noddies, $pname) if ($player->{'side'} eq "NOD" || $player->{'side'} eq "Sov");
+        push (@gdiguys, $pname) if ($player->{'side'} eq "GDI" || $player->{'side'} eq "All");
 
-			}
+      }
 
-			for ( my $i=0; $i <= scalar(@gdiguys)-1; $i = $i+4 )
-			{
-				if ( $main::currentMod eq "APB" )
-					{ brIRC::ircmsg ( "12Allies: $gdiguys[$i] $gdiguys[$i+1] $gdiguys[$i+2] $gdiguys[$i+3]", $args{'ircChannelCode'} ); }
-				else
-					{ brIRC::ircmsg ( "08GDI: $gdiguys[$i] $gdiguys[$i+1] $gdiguys[$i+2] $gdiguys[$i+3]", $args{'ircChannelCode'}); }
-			}
-			for ( my $i = 0; $i <= scalar(@noddies)-1; $i = $i+5 )
-			{
-				if ( $main::currentMod eq "APB" )
-					{ brIRC::ircmsg ( "04Soviet: $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'} ); }
-				else
-					{ brIRC::ircmsg ( "04Nod: $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'}); }
-			}
-		}
-		else
-		{
-			brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
-		}
-	}
-	or modules::display_error($@);
+      for ( my $i=0; $i <= scalar(@gdiguys)-1; $i = $i+4 )
+      {
+        brIRC::ircmsg(brTeams::colourise(1,brIRC::bold(brTeams::get_name(1).':')." $gdiguys[$i] $gdiguys[$i+1] $gdiguys[$i+2] $gdiguys[$i+3]", $args{'ircChannelCode'} ));
+      }
+      for ( my $i = 0; $i <= scalar(@noddies)-1; $i = $i+5 )
+      {
+        brIRC::ircmsg(brTeams::colourise(0,brIRC::bold(brTeams::get_name(0).':')." $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'} ));
+      }
+    }
+    else
+    {
+      brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+    }
+  }
+  or modules::display_error($@);
 }
 
 sub setbw
@@ -2733,58 +2720,44 @@ sub getbw
 
 sub showbw
 {
-	my ( $kernel, $session, $heap, $args ) = @_[ KERNEL, SESSION, HEAP, ARG0 ];
-	my %args = %{$args};
+  my $heap = @_[HEAP];
+  my %args = %{$_[ ARG0 ]};
 
-	if ( $heap->{'name'} )		# Name specified, look up their bandwidth
-	{
-		my ( $result, %player ) = playerData::getPlayerData ( $heap->{'name'} );
-		if ( $result == 1 )
-		{
-			my $id	= $player{'id'};
-			my $side  = $player{'side'};
+  if ( $heap->{'name'} )  # Name specified, look up their bandwidth
+  {
+    my ( $result, %player ) = playerData::getPlayerData ( $heap->{'name'} );
+    if ( $result == 1 )
+    {
+      if ( $heap->{outputType} eq 'irc' )
+      {
+        my $pname = brTeams::colourise($player{'teamid'}, modules::parseModName($player{'name'}, 1));
+        brIRC::ircmsg ( "$pname has their bandwidth set to $player{'bandwidth'}", $args{'ircChannelCode'} );
+      }
+      else
+      {
+        my $pname = modules::parseModName($player{'name'}, 0);
+        RenRem::RenRemCMD ( "msg [BR] $pname has their bandwidth set to $player{'bandwidth'}" );
+      }
+    }
+  }
+  else        # No name specified, list all players - IRC only
+  {
+    brIRC::ircmsg ( "Bandwidth settings:", $args{'ircChannelCode'} );
+    my @bwoutput;
 
-			my $pname = modules::parseModName ( $player{'name'}, 1 );
+    my %playerlist = playerData::getPlayerList();
+    while ( my ( $id, $player ) = each ( %playerlist ) )
+    {
+      my $pname = brTeams::colourise($player{'teamid'}, modules::parseModName($player{'name'}, 1));
+      push ( @bwoutput, "$pname: $player->{bandwidth}" );		# Store player in the array
+    }
 
-			if ( $heap->{outputType} eq 'irc' )
-			{
-				$pname = "04" . $pname . "" if ( $side eq "NOD" || $side eq "Sov" );
-				$pname = "08" . $pname . "" if ( $side eq "GDI" );
-				$pname = "12" . $pname . "" if ( $side eq "All" );
-
-				brIRC::ircmsg ( "$pname has their bandwidth set to $player{'bandwidth'}", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				RenRem::RenRemCMD ( "msg [BR] $pname has their bandwidth set to $player{'bandwidth'}" );
-			}
-		}
-	}
-	else					# No name specified, list all players
-	{
-		brIRC::ircmsg ( "Bandwidth settings:", $args{'ircChannelCode'} );
-		my @bwoutput;
-
-		my %playerlist = playerData::getPlayerList();
-		while ( my ( $id, $player ) = each ( %playerlist ) )
-		{
-			my $id	= $player->{'id'};
-			my $side  = $player->{'side'};
-
-			my $pname = modules::parseModName ( $player->{'name'}, 1 );
-			$pname = "04" . $pname if ( $side eq "NOD" || $side eq "Sov" );
-			$pname = "08" . $pname if ( $side eq "GDI" );
-			$pname = "12" . $pname if ( $side eq "All" );
-
-			push ( @bwoutput, "$pname: $player->{bandwidth}" );		# Store player in the array
-		}
-
-		# Output players in groups of 4 to the IRC
-		for ( my $i=0; $i<=scalar(@bwoutput)-1;$ i+=4 )
-		{
-			brIRC::ircmsg ( "$bwoutput[$i]   $bwoutput[$i+1]   $bwoutput[$i+2]   $bwoutput[$i+3]", $args{'ircChannelCode'} );
-		}
-	}
+    # Output players in groups of 4 to the IRC
+    for ( my $i=0; $i<=scalar(@bwoutput)-1;$ i+=4 )
+    {
+      brIRC::ircmsg ( "$bwoutput[$i]   $bwoutput[$i+1]   $bwoutput[$i+2]   $bwoutput[$i+3]", $args{'ircChannelCode'} );
+    }
+  }
 }
 
 
@@ -3858,12 +3831,14 @@ sub endVote
 	# vote thread so that it can close properly.
 	$kernel->post( "voteThread" => "clearAlias" );
 
-	my $gdi_yes_votes = ( $voters{'GDI_yes'} ) ? $voters{'GDI_yes'} : 0;
-	my $gdi_no_votes = ( $voters{'GDI_no'} ) ? $voters{'GDI_no'} : 0;
-	my $nod_yes_votes = ( $voters{'NOD_yes'} ) ? $voters{'NOD_yes'} : 0;
-	my $nod_no_votes = ( $voters{'NOD_no'} ) ? $voters{'NOD_no'} : 0;
+  my $gdi_yes_votes = ( $voters{'team#1_yes'} ) ? $voters{'GDI_yes'} : 0;
+  my $gdi_no_votes = ( $voters{'team#1_no'} ) ? $voters{'GDI_no'} : 0;
+  my $nod_yes_votes = ( $voters{'team#0_yes'} ) ? $voters{'NOD_yes'} : 0;
+  my $nod_no_votes = ( $voters{'team#0_no'} ) ? $voters{'NOD_no'} : 0;
 
-	RenRem::RenRemCMD ( "msg [BR] Voting period over, tallying votes...   GDI; $gdi_yes_votes Yes, $gdi_no_votes No   Nod; $nod_yes_votes Yes, $nod_no_votes No" );
+	RenRem::RenRemCMD('msg [BR] Voting period over, tallying votes...   '
+                    .brTeams::get_name(1)."; $gdi_yes_votes Yes, $gdi_no_votes No"
+                    .brTeams::get_name(0)."; $nod_yes_votes Yes, $nod_no_votes No");
 
 	my $totalVoters = $gdi_yes_votes + $gdi_no_votes + $nod_yes_votes + $nod_no_votes;
 	my $totalPlayers = serverStatus::getCurrentPlayers();
@@ -3936,18 +3911,18 @@ sub endVote
 # When a user votes yes or no it gets passed here
 sub CastVote
 {
-	my $vote	= shift;
-	my $voter	= shift;
+  my $vote  = shift;
+  my $voter = shift;
 
-	$voters{$voter} = $vote;
+  $voters{$voter} = $vote;
 
-	# Get hash of voter so we can check their team
-	my ( $result, %player ) = playerData::getPlayerData ( $voter );
-	if ( $result == 1 )
-	{
-		my $voteText = ( $vote == 1 ) ? 'yes' : 'no';
-		$voters{"$player{'side'}_$voteText"}++;				# EG gdi_yes, nod_no
-	}
+  # Get hash of voter so we can check their team
+  my ( $result, %player ) = playerData::getPlayerData ( $voter );
+  if ( $result == 1 )
+  {
+    my $voteText = ( $vote == 1 ) ? 'yes' : 'no';
+    $voters{'team#'.$player{'teamid'}.'_'.$voteText}++;   # team#0_yes, team#1_no etc
+  }
 }
 
 
