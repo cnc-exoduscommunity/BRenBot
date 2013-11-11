@@ -258,9 +258,9 @@ sub parse_line
   );
 
   my %plugins = plugin::get_plugin_gamelog_regexes();
-  while ( my($plugin, %regexes) = each(%plugins) )
+  while ( my($plugin, $regexes) = each(%plugins) )
   {
-    while (my ($regex, $event) = each %regexes)
+    while (my ($regex, $event) = each %{$regexes})
     {
       if ( $line =~ m/$regex/i )
         { $main::poe_kernel->post("plugin_".$plugin => $event => \%args); }
