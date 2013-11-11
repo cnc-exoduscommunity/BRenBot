@@ -986,9 +986,9 @@ sub ParseLogInput
   );
 
   my %plugins = plugin::get_plugin_renlog_regexes();
-  while ( my($plugin, %regexes) = each(%plugins) )
+  while ( my($plugin, $regexes) = each(%plugins) )
   {
-    while (my ($regex, $event) = each %regexes)
+    while (my ($regex, $event) = each %{$regexes})
     {
       if ( $rawline =~ m/$regex/i )
         { $main::poe_kernel->post("plugin_".$plugin => $event => \%args); }

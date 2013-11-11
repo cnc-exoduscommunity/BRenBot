@@ -32,10 +32,14 @@ our %config;
 # Define additional events in the POE session
 our %additional_events =
 (
-  'recommend'   => 'recommend',
-  'n00b'        => 'recommend',     # Same code for both functions
-  'recignore'   => 'recignore',
-  'recallow'    => 'recallow',
+  'recommend'   				=> 'recommend',
+  'n00b'        				=> 'recommend',     # Same code for both functions
+  'recignore'   				=> 'recignore',
+  'recallow'    				=> 'recallow',
+  'gamelog_building_killed' 	=> 'gamelog_building_killed',
+  'gamelog_vehicle_killed' 		=> 'gamelog_vehicle_killed',
+  'gamelog_building_repair' 	=> 'gamelog_building_repair',
+  'gamelog_vehicle_repair'		=> 'gamelog_vehicle_repair',
 );
 
 my $tpLastUsed = 0;   # Global variable used to track last used time for !teamplayers/!shown00bs
