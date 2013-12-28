@@ -47,8 +47,7 @@ sub init
 			renew_wheel => sub					# Resets the wheel
 			{
 				# Get name of logfile
-				my $name = $brconfig::config_fdslogpath . modules::get_date_time( "renlog_MM-DD-YYYY.txt" ); }
-
+				my $name = $brconfig::config_fdslogpath . modules::get_date_time( "renlog_MM-DD-YYYY.txt" );
 
 				# Check if the file exists, if it does then tail it
 				modules::console_output ( "Looking for RenLog at $name...", 1 );
@@ -531,7 +530,7 @@ sub ParseLogInput
 
 		## BRINVITE
 		#[21:32:34] [Page] n00bsvr01: (Blazer@IRC): test
-		if ($brconfig::config_botmode eq "WIN32" and $line =~ /\[Page\] (.*): (letmein|WWDECLINE)/i)
+		if ($line =~ /\[Page\] (.*): (letmein|WWDECLINE)/i)
 		{
 			handleInvite($1,$2);
 		}
@@ -696,19 +695,16 @@ sub ParseLogInput
 			$joiner =~ s/'/''/g;
 
 			# Check if they had an invitation, if they did remove it
-			if ($brconfig::config_botmode eq "WIN32")
-			{
-				if ( check_invite($joiner) eq $joiner )
-				{
-					brIRC::ircmsg( "[BR] $joiner had an invitation, tearing it up." );
-					del_invite( $joiner );
-				}
+      if ( check_invite($joiner) eq $joiner )
+      {
+        brIRC::ircmsg( "[BR] $joiner had an invitation, tearing it up." );
+        del_invite( $joiner );
+      }
 
-				clean_invite; #check for old invitations
-			}
+      clean_invite; #check for old invitations
 
 			# Check if their name is all spaces
-			elsif ( $joiner =~ m/[\s+]$/ )
+			if ( $joiner =~ m/[\s+]$/ )
 			{
 				# Schedule the player to be kicked in 2 seconds (needs player_info to be updated FIRST)
 				POE::Session->create

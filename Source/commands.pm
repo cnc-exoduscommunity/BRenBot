@@ -1582,10 +1582,7 @@ sub postrule
 			{
 				my $message = $brconfig::messages[$linenum-1];
 
-				if ($brconfig::config_botmode eq "WIN32")
-				{
-					$message=substr($message,0,228); #limit length to <249 chars to prevent fds crash
-				}
+				$message=substr($message,0,228); #limit length to <249 chars to prevent fds crash
 
 				RenRem::RenRemCMD("msg $message");
 				return;
@@ -1762,7 +1759,7 @@ sub sndt
 
   eval
   {
-    if (!$args{'arg1'} || !$args{'arg2'}))
+    if (!$args{'arg1'} || !$args{'arg2'})
     {
       show_syntax_error(@_);
       return;
@@ -3068,17 +3065,6 @@ sub reboot
 			else
 			{
 				brIRC::ircmsg ( "Usage: !reboot NOW -CASE SENSITIVE! TO AVOID ACCIDENTAL TRIGGERING", $args{'ircChannelCode'} );
-			}
-		}
-		elsif ( $brconfig::config_botmode ne "WIN32" )
-		{
-			if ( $args{nicktype} != 1 )
-			{
-				RenRem::RenRemCMD( "msg Sorry, The reboot command is only available on Win32 servers." );
-			}
-			else
-			{
-				brIRC::ircmsg ( "Sorry, The reboot command is only available on Win32 servers.", $args{'ircChannelCode'} );
 			}
 		}
 		else

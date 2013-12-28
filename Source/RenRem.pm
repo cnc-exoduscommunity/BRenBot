@@ -7,8 +7,6 @@ use POE;
 
 use brconfig;
 
-my $chill = 0;
-
 my $renRemSocket = 0;
 
 sub initRenRemSocket_win32
@@ -123,55 +121,20 @@ sub RenRemDecodeData ($$) {
 	return join '', map { chr } @msgbuf[8 .. $#msgbuf];
 }
 
-
-
 sub win32_renrem
 {
-	if ( $renRemSocket == 0 ) { initRenRemSocket_win32(); }
+  if ( $renRemSocket == 0 ) { initRenRemSocket_win32(); }
 
-	# Special thanks to Scorpio9a And Silent_Kane for cracking the RenRem protocol.
-	# Special thanks to Jeff T. Parsons aka bynari (Jeff.Parsons@Webgeeks.co.uk) for porting the bulk of the RenRem code to Perl.
-	# Adapted to brenbot by Charles Jones aka Blazer0x
-	my $command=shift;
-	my $encrypted_password=RenRemEncodeData($brconfig::config_renrem_password,$brconfig::config_renrem_password);
-	my $encrypted_command = RenRemEncodeData($command,$brconfig::config_renrem_password);
-# 	my $ip = $brconfig::config_renrem_host;
-# 	my $port = $brconfig::config_renrem_port;
-# 	my $handle = IO::Socket::INET->new( Proto => 'udp', PeerAddr => $ip, PeerPort => $port ) or die "socket: $@";
+  # Special thanks to Scorpio9a And Silent_Kane for cracking the RenRem protocol.
+  # Special thanks to Jeff T. Parsons aka bynari (Jeff.Parsons@Webgeeks.co.uk) for porting the bulk of the RenRem code to Perl.
+  # Adapted to brenbot by Charles Jones aka Blazer0x
+  my $command=shift;
+  my $encrypted_password=RenRemEncodeData($brconfig::config_renrem_password,$brconfig::config_renrem_password);
+  my $encrypted_command = RenRemEncodeData($command,$brconfig::config_renrem_password);
 
-	#$handle->send($encrypted_password);
-	#$handle->send($encrypted_command);
-	$renRemSocket->send($encrypted_password);
-	$renRemSocket->send($encrypted_command);
-	#print "DEBUG: Encrypted RenRem Command Sent.\n";
+  $renRemSocket->send($encrypted_password);
+  $renRemSocket->send($encrypted_command);
 }
-
-sub linux_renrem
-{
-	# Written by mac@onehsell...thanks Mac!
-	# sends linux renegade console command to mac's renrem TCP server
-	my $command = shift;
-
-	POE::Session->create
-	( inline_states =>
-		{ _start => sub
-			{
-				#print "Sending $command\n";
-				$_[KERNEL]->post("renrem", "send_command", $command); # call other session's function reset
-
-				if ($command =~ m/^msg\s(.+)/g)
-				{
-					brIRC::ircmsg ( "Host: $1", 1 );
-				}
-
-				if ($command =~ m/^amsg\s(.+)/g)
-				{
-					brIRC::ircmsg ( "Host (amsg): $1", 1 );
-				}
-			},
-		} # end of inline states
-	);
-}	# End of linux_renrem
 
 sub RenRemCMDtimed
 {
@@ -196,22 +159,15 @@ sub RenRemCMDtimed
 
 sub RenRemCMD
 {
-	my $message = shift;
-	$chill=1;	# To make sure we arent/wont be doing anything else until we are done with this sub.
+  my $message = shift;
 
-	$message =~ s///g;
-	$message =~ s/\d*(,\d*)//g;
+  $message =~ s///g;
+  $message =~ s/\d*(,\d*)//g;
+  
+  # Limit line length to prevent FDS crash
+  $message=substr($message,0,249);
 
-	if ($brconfig::config_botmode eq "WIN32")
-	{
-		win32_renrem($message);
-	}
-	else
-	{
-		linux_renrem($message);
-	}
-
-	$chill=0;
+  win32_renrem($message);
 }
 
 1;

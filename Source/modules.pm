@@ -999,30 +999,6 @@ sub get_date_time
 	return $string;
 }
 
-sub get_linux_date_time
-{
-	my $string = $_[0];
-
-	my ($second,$minute,$hour,$day,$month,$year,$weekday,$yearday,$dst_flag)=localtime(time);
-
-	my $year_short = substr ( $year, 2 );
-
-	if ($second < 10) {$second ="0".$second;}
-	if ($hour   < 10) {$hour   ="0".$hour;}
-	if ($minute < 10) {$minute ="0".$minute;}
-
-#	The actual substition of the matched strings for values.
-	$string =~ s/YYYY/$year/;
-	$string =~ s/YY/$year_short/;
-	$string =~ s/DD/$day/;
-	$string =~ s/MM/$month/;
-	$string =~ s/ss/$second/;
-	$string =~ s/hh/$hour/;
-	$string =~ s/mm/$minute/;
-
-	return $string;
-}
-
 sub get_past_date_time
 # This routine gets the current date, and spits out
 # the proper current logfile name we should be opening.

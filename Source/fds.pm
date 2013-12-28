@@ -6,6 +6,8 @@
 package fds;
 use strict;
 
+use POE;
+
 use brconfig;
 use brTeams;
 use playerData;
@@ -90,7 +92,7 @@ sub play_sound_team($$)
 ##
 # --------------------------------------------------------------------------------------------------
 
-# Displayes a coloured message to all players in the server
+# Displays a coloured message to all players in the server
 sub send_coloured_message($$$$;$)
 {
   my ($r,$g,$b,$message,$sender) = (@_);
@@ -98,11 +100,11 @@ sub send_coloured_message($$$$;$)
   return 0 if ( $brconfig::serverScriptsVersion < 2.6 );
 
   $message = '('+$sender+"): $message" if ( defined($sender) );
-  send_command("cmsg $red,$green,$blue $message");
+  send_command("cmsg $r,$g,$b $message");
   return 1;
 }
 
-# Displayes a coloured message to a specific player
+# Displays a coloured message to a specific player
 sub send_coloured_message_player($$$$$;$)
 {
   my ($r,$g,$b,$message,$player,$sender) = (@_);
@@ -111,12 +113,12 @@ sub send_coloured_message_player($$$$$;$)
   return 0 if ( $result != 1 || $player{'scriptsVersion'} < 2.6 || $brconfig::serverScriptsVersion < 2.6 );
 
   $message = '('+$sender+"): $message" if ( defined($sender) );
-  send_command("cmsgp $player{id} $red,$green,$blue $message");
+  send_command("cmsgp $player{id} $r,$g,$b $message");
   play_sound_player('yo1.wav', $player{'id'});
   return 1;
 }
 
-# Displayes a coloured message to each player on a team
+# Displays a coloured message to each player on a team
 sub send_coloured_message_team($$$$$;$)
 {
   my ($r,$g,$b,$message,$team,$sender) = (@_);
@@ -126,6 +128,8 @@ sub send_coloured_message_team($$$$$;$)
   my $teamid = brTeams::get_id_from_name($team);
   $message = '('+$sender+"): $message" if ( defined($sender) );
   
-  send_command("cmsgt $teamid $red,$green,$blue $message") if ( $player->{'scriptsVersion'} >= 2.6 );
+  send_command("cmsgt $teamid $r,$g,$b $message");
   play_sound_team('yo1.wav', $teamid);
 }
+
+1;

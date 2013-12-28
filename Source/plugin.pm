@@ -1009,9 +1009,9 @@ sub plugin::team_get_players { return playerData::getPlayersByTeam(@_); }
 ###################################################
 
 # Plays a 2D sound effect for the entire server
-sub play_sound_for_player
+sub play_sound
 {
-  my $player = shift;
+  my $sound = shift;
 
   return fds::play_sound($sound);
 }
