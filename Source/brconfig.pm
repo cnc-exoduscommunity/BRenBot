@@ -11,7 +11,6 @@ our $starttime;
 our $serverScriptsVersion                 = '0.0';
 our $serverScriptsRevision                = '0';
 our $configfile                           = "brenbot.cfg";
-our $config_botmode;
 
 # IRC basic settings
 our $config_botname;
@@ -209,8 +208,6 @@ sub ReadConfig
 	{
 		if ( $_ !~ m/^\#/ && $_ !~ m/^\s+$/ )		# If the line starts with a hash or is blank ignore it
 		{
-			if (/^\s*BotMode\s*=\s*(.+)/i)								{ $config_botmode = $1; chomp $config_botmode; }
-
 			# IRC basic settings
 			if (/^\s*BotName\s*=\s*(.+)/i)								{ $config_botname = $1; chomp $config_botname; }
 			if (/^\s*BotFullName\s*=\s*(.+)/i)							{ $config_botfullname = $1; chomp $config_botfullname; }
@@ -311,47 +308,28 @@ sub ReadConfig
 	$config_error .= "FDSConfigFile " if (!$config_fdsconfigfile);
 	$config_error .= "FDSLogFilePath " if (!$config_fdspath);
 
-	if (!$config_botmode)
-	{
-		$config_botmode = "LFDS";
-	}
+  if ( ($^O ne "MSWin32") )
+  {
+    modules::console_output("[Config] ERROR: This version of BRenBot does not support the LFDS");
+    sleep(10);
+    exit;
+  }
 
-	if ( ($config_botmode ne "LFDS")  && ($config_botmode ne "WIN32") )
-	{
-		modules::console_output ( "[Config] ERROR: BotMode must be either LFDS or WIN32!" );
-		sleep ( 10 );
-		exit;
-	}
+  $config_error .= "Qauth " if (length($config_q_auth) == 0);
+  if ($config_q_auth == 1)
+  {
+    $config_error .= "Qusername " if (!$config_q_username);
+    $config_error .= "Qpassword " if (!$config_q_password);
+  }
 
-	if ( ($config_botmode eq "LFDS") && ($^O eq "MSWin32") )
-	{
-		modules::console_output ( "[Config] ERROR: BotMode = LFDS and running Windows? Eh. No. n00b." );
-		sleep ( 10 );
-		exit;
-	}
+  if ($config_error)
+  {
+    modules::console_output ( "[Config] ERROR: Missing config file option(s): $config_error" );
+    sleep ( 10 );
+    exit;
+  }
 
-	if ( ($config_botmode eq "WIN32") && ($^O eq "linux") )
-	{
-		modules::console_output ( "[Config] ERROR: BotMode = WIN32 and running Linux? Eh. No. n00b." );
-		sleep ( 10 );
-		exit;
-	}
-
-	$config_error .= "Qauth " if (length($config_q_auth) == 0);
-	if ($config_q_auth == 1)
-	{
-		$config_error .= "Qusername " if (!$config_q_username);
-		$config_error .= "Qpassword " if (!$config_q_password);
-	}
-
-	if ($config_error)
-	{
-		modules::console_output ( "[Config] ERROR: Missing config file option(s): $config_error" );
-		sleep ( 10 );
-		exit;
-	}
-
-	close $fh;
+  close $fh;
 }
 
 
@@ -592,26 +570,28 @@ sub readMods
 # Looks for ssgm.ini, and if found gets any settings we need from it
 sub read_ssgm_settings
 {
-	my $ssgmini = 0;
-	
-	if ( -e $config_fdspath . "ssgm.ini" )
-	{
-		if ( -e $config_fdspath . "tt.cfg" )
-			{ $ssgm_version = 4; }
-		else
-			{ $ssgm_version = 2; }
-		$ssgmini = $config_fdspath . "ssgm.ini";
-	}
-	elsif ( -e $config_fdspath . "ssaow.ini" )
-	{
-		$ssgm_version = 1;
-		$ssgmini = $config_fdspath . "ssaow.ini";
-	}
-	elsif ( -e $config_fdspath . "ssapb.ini" )
-	{
-		$ssgm_version = 1;
-		$ssgmini = $config_fdspath . "ssapb.ini";
-	}
+  my $ssgmini = 0;
+
+  if ( -e $config_fdspath . "ssgm.ini" )
+  {
+    if ( -e $config_fdspath . "tt.cfg" )
+    {
+      $ssgm_version = ( -e $config_fdspath . "shared.dll" ) ? 4.1 : 4;
+    }
+    else
+      { $ssgm_version = 2; }
+    $ssgmini = $config_fdspath . "ssgm.ini";
+  }
+  elsif ( -e $config_fdspath . "ssaow.ini" )
+  {
+    $ssgm_version = 1;
+    $ssgmini = $config_fdspath . "ssaow.ini";
+  }
+  elsif ( -e $config_fdspath . "ssapb.ini" )
+  {
+    $ssgm_version = 1;
+    $ssgmini = $config_fdspath . "ssapb.ini";
+  }
   else
   {
     $ssgm_version = 0;

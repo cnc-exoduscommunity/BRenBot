@@ -10,7 +10,6 @@ use POE::Session;
 use XML::Simple;
 use POSIX qw( ceil floor );
 
-use bhs;
 use brconfig;
 
 

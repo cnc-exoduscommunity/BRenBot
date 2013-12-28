@@ -6,11 +6,9 @@ use POE::Kernel;
 use POE::Session;
 use POE qw/Wheel::FollowTail/;
 
-## mac LFDS start ##
 use POE::Component::Client::TCP;
 use POE::Filter::Stream;
 use IO::Socket;
-## mac LFDS stop ##
 
 use strict;
 
@@ -34,7 +32,6 @@ use serverStatus;
 use brdatabase;
 use playerData;
 use gamelog;
-use bhs;
 use commands;
 use brIRC;
 use renlog;
@@ -86,10 +83,10 @@ sub joinstuff
 			if ( $authed == 1 || $authed == 2 && !$brconfig::config_moderators_force_auth )
 				{ ShowModJoinMessage( $player{'name'} ); }
 
-			# BHS.dll version checking stuff
-			if ( modules::get_module( "bhs" ) )
+			# Scripts version checking stuff
+			if ( $brconfig::serverScriptsVersion >= 1.3 )
 			{
-				# If minimum scripts version is specified, or this map requires bhs.dll, trigger check in 5
+				# If minimum scripts version is specified, or this map requires scripts.dll, trigger check in 5
 				# seconds. Note that the playerData module takes care of requesting their scripts version
 				if ( $brconfig::config_minimum_scripts_version > 0 || $brconfig::config_force_bhs_dll_map == 1 )
 				{
@@ -194,71 +191,6 @@ sub get_uptime()
 }
 
 
-
-
-###################################################
-####
-## Connect to RenRem
-####
-###################################################
-
-# linux renrem session
-if ( $brconfig::config_botmode eq "LFDS" )
-{
-	modules::console_output ( "Starting up renrem thread..." );
-	POE::Component::Client::TCP->new
-	(
-		( InlineStates =>
-			{	send_command => sub
-				{
-					my ( $kernel, $heap, $input ) = @_[ KERNEL, HEAP, ARG0 ];
-					if ( $heap->{connected} )
-					{
-						$_[HEAP]->{server}->put( "$input\n" );
-					}
-					else
-					{
-						modules::console_output ( "Connection to renrem not possible. Can't send $input" );
-					}
-				}
-			}
-		), # end of inlinestates
-		RemoteAddress => $brconfig::config_renrem_host,
-		RemotePort    => $brconfig::config_renrem_port,
-		#BindAddress   => $brconfig::config_server_ip,
-		Filter        => "POE::Filter::Stream",
-		Connected     => sub
-		{
-			$_[HEAP]->{banner_buffer} = [];
-		},
-		ConnectError => sub
-		{
-			my ( $kernel, $heap, $syscall, $errorcode, $error ) = @_[ KERNEL, HEAP, ARG0, ARG1, ARG2 ];
-			modules::console_output ( "Can\'t connect to LFDS Wrapper!\nsyscall: $syscall\nerrorcode: $errorcode\nerror: $error" );
-			$_[KERNEL]->delay("reconnect" => 5);
-		},
-		ServerError => sub
-		{
-			my ( $kernel, $heap, $syscall, $errorcode, $error ) = @_[ KERNEL, HEAP, ARG0, ARG1, ARG2 ];
-			modules::console_output ( "Disconnected from LFDS Wrapper..\nsyscall: $syscall\nerrorcode: $errorcode\nerror: $error" );
-			$_[KERNEL]->delay("reconnect" => 5);
-		},
-		ServerInput => sub
-		{
-			my ( $kernel, $heap, $input ) = @_[ KERNEL, HEAP, ARG0 ];
-			push @{ $heap->{banner_buffer} }, $input;
-
-			if ($input =~ "password")
-			{
-				$_[HEAP]->{server}->put("$brconfig::config_renrem_password\n");    # sends enter
-			}
-			elsif ($input =~ "accepted") {}
-		},
-		Alias => "renrem"
-	);
-} # end of if botmode = LFDS
-
-
 ###################################################
 ####
 ## Main startup, load all configuration settings
@@ -268,7 +200,6 @@ if ( $brconfig::config_botmode eq "LFDS" )
 serverStatus::init();
 modules::load_modules();
 modules::check_modules();
-bhs::check_bhs_library();
 
 if ( $brconfig::gamelog_in_ssgm != 1 && modules::get_module ( "gamelog" ) )
 	{ gamelog::init(1); }
@@ -346,7 +277,6 @@ POE::Session->create
 		{
 			# Call events to trigger new logfiles as required
 			$_[KERNEL]->post("renlog_tail", "renew_wheel");
-			$_[KERNEL]->post("tailbhs", "renew_wheel");
 			$renlog::renew_ssgm = 1;
 		},
 	},

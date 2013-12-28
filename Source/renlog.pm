@@ -46,12 +46,8 @@ sub init
 
 			renew_wheel => sub					# Resets the wheel
 			{
-				# Get name of logfile (Either Wind0ze or Linux mode)
-				my $name;
-				if ( $brconfig::config_botmode eq "LFDS" )
-					{ $name = $brconfig::config_fdslogpath . modules::get_linux_date_time( "renlog_MM-DD-YYYY.txt" ); }
-				else
-					{ $name = $brconfig::config_fdslogpath . modules::get_date_time( "renlog_MM-DD-YYYY.txt" ); }
+				# Get name of logfile
+				my $name = $brconfig::config_fdslogpath . modules::get_date_time( "renlog_MM-DD-YYYY.txt" ); }
 
 
 				# Check if the file exists, if it does then tail it
@@ -232,7 +228,7 @@ sub check_banlist
 
 			modules::console_output ( "player_id $player{id} is BANNED" );
 
-			if ( modules::get_module("bhs") )
+			if ($brconfig::serverScriptsVersion >= 2.0)
 				{ RenRem::RenRemCMD( "pamsg $player{id} You have been BANNED on $date by $banner for: $reason" ); }
 
 			# If we are using SSGM 4.0 then we need to add this ban to it's bans list
@@ -290,9 +286,6 @@ sub ChatMSG
 			$playermsg  = $5;
 			$playername = $4;
 		}
-
-		# Check if the message is coming from linux bhs_tail. If not, drop it, because we dont want duplicate chat messages
-		next if ( (modules::get_module("bhs") ) && ($brconfig::config_botmode eq "LFDS") );
 
 
 		# Check if this is a team message
@@ -602,30 +595,17 @@ sub ParseLogInput
 				RenRem::RenRemCMD( "page $1 [BR] Paging commands is NOT allowed!" );
 				brIRC::ircmsg ( "9Page Sent to $1 --> [BR] Paging commands is NOT allowed!", "A" );
 			}
-			else
+			elsif ( ($playermsg !~ m/^\!set (.+?) (.+)/i) && ($playermsg !~ m/^!msg/) )
 			{
-				# Saw a !command
-				# if bhs module is enabled, and its tailing the bhs_renlog logfile
-				# ignore this! (linux only)
-				if ( (modules::get_module("bhs") ) && ($brconfig::config_botmode eq "LFDS") )
-				{
-					next;
-				}
-
-				# print "DEBUG:Detected a command by $playername.  Command is $1 and args are $2\n";
-				# if (ValidCMD($playername,$1,$2)) { #See if they are allowed to execute said command }
-				# print "DEBUG:ValidCMD passed...calling ParseArg($playermsg)\n";
-				if ( ($playermsg !~ m/^\!set (.+?) (.+)/i) && ($playermsg !~ m/^!msg/) )
-				{
-					if ( $playername ne 'Host' )
-					{
-						# do not allow !set module on/off inside the game
-						# Also ignore commands from host
-						eval { commands::parsearg($playermsg, $playername, "N") };
-						modules::display_error($@) if $@;
-					}
-				}
-			}
+        # Saw a !command
+        if ( $playername ne 'Host' )
+        {
+          # do not allow !set module on/off inside the game
+          # Also ignore commands from host
+          eval { commands::parsearg($playermsg, $playername, "N") };
+          modules::display_error($@) if $@;
+        }
+      }
 		}
 
 		if ($line =~ m/Now Playing (.+)/i)
@@ -757,12 +737,6 @@ sub ParseLogInput
 		# A player has switched teams
 		if ( $line =~ m/^Host: (.+?) changed teams.$/ )
 		{
-			# When bhs and linux mode, skip this
-			if ( (modules::get_module("bhs") ) && ($brconfig::config_botmode eq "LFDS") )
-			{
-				next;
-			}
-
 			$line="11$line";
 			brIRC::ircmsg( "$line" );
 

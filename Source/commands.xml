@@ -206,7 +206,6 @@
     <enabled value="1"/>
     <group>irc_admin</group>
     <group>irc_public</group>
-    <module>bhs</module>
     <hideInHelp value="1"/>
   </command>
   <command name="pamsg">
@@ -215,7 +214,6 @@
     <help value="Sends a private Admin Message to a user"/>
     <enabled value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
     <hideInHelp value="1"/>
  </command>
  <command name="tpage">
@@ -224,7 +222,6 @@
     <help value="Pages entire team (specify Nod or GDI)"/>
     <enabled value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
     <hideInHelp value="1"/>
   </command>
   <command name="forcetc">
@@ -235,7 +232,6 @@
     <group>ingame</group>
     <group>irc_admin</group>
     <hideInHelp value="0"/>
-    <module>bhs</module>
   </command>
   <command name="admin_message">
     <permission level="3"/>
@@ -313,7 +309,6 @@
     <help value="Shows scripts version of all players"/>
     <enabled value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
     <hideInHelp value="0"/>
   </command>
   <command name="ids">
@@ -516,7 +511,6 @@
     <hideInHelp value="1"/>
     <alias>mines</alias>
     <alias>mlimit</alias>
-    <module>bhs</module>
   </command>
   <command name="vehiclelimit">
     <permission level="1"/>
@@ -528,7 +522,6 @@
     <group>ingame</group>
     <hideInHelp value="1"/>
     <alias>vlimit</alias>
-    <module>bhs</module>
   </command>
   <command name="about">
     <permission level="3"/>
@@ -608,7 +601,6 @@
     <enabled value="1"/>
     <hideInHelp value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
   </command>
 
   <command name="cmsgp">
@@ -618,7 +610,6 @@
     <enabled value="1"/>
     <hideInHelp value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
   </command>
 
   <command name="cmsgt">
@@ -628,7 +619,6 @@
     <enabled value="1"/>
     <hideInHelp value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
   </command>
 
 
@@ -641,32 +631,29 @@
   <command name="snda">
     <permission level="3"/>
     <syntax value="!snda &lt;soundfile.wav&gt;"/>
-    <help value="Plays a sound heard by all players. Filenames of soundfiles in always.dat should be used."/>
+    <help value="Plays a sound heard by all players. Filenames of sound files in always.dat should be used."/>
     <enabled value="1"/>
     <hideInHelp value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
     <alias>broadcast</alias>
   </command>
 
   <command name="sndp">
     <permission level="3"/>
     <syntax value="!sndp &lt;user&gt; &lt;soundfile.wav&gt;"/>
-    <help value="Plays a sound heard (only) by user. Filenames of soundfiles in always.dat should be used."/>
+    <help value="Plays a sound heard (only) by user. Filenames of sound files in always.dat should be used."/>
     <enabled value="1"/>
     <hideInHelp value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
   </command>
 
   <command name="sndt">
     <permission level="3"/>
     <syntax value="!snda &lt;team&gt; &lt;soundfile.wav&gt;"/>
-    <help value="Plays a sound heard by entire team. Filenames of soundfiles in always.dat should be used. Team Nod or 0, Team GDI or 1."/>
+    <help value="Plays a sound heard by entire team. Filenames of sound files in always.dat should be used. Team Nod or 0, Team GDI or 1."/>
     <enabled value="1"/>
     <hideInHelp value="1"/>
     <group>irc_admin</group>
-    <module>bhs</module>
   </command>
 
 

@@ -201,7 +201,7 @@ sub check_kicks
 
     RenRem::RenRemCMD( "msg [BR] $player{name} was KICKED $kickday at $kicktime by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.$reasonSuffix );
 
-    if ( get_module( "bhs" ) )
+    if ($brconfig::serverScriptsVersion >= 2.0)
       { RenRem::RenRemCMD( "pamsg $player{id} You were KICKED $kickday at $kicktime by ".$array[0]->{'kicker'}." for: ".$array[0]->{'reason'}.". You may return to the server in ".((86400-(time()-$array[0]->{'timestamp'}))/60)." minutes" ); }
 
     RenRem::RenRemCMD( "kick $player{id}" );
@@ -418,18 +418,17 @@ sub get_module_description
 ## in the database, and adds them if they are not found
 sub check_modules
 {
-	my %modulesList =
-	(
-		teammessages => "Displays team (f3) chat messages in IRC",
-		gamespy_players => "Broadcast this server to the GameSpy Arcade server browser",
-		gamelog => "Enables support for the SSGM gamelog",
-		bhs => "Support for Tiberian Technologies / Blackhand Studios FDS library (ppage, pamsg etc)",
-		new_gi => "!gi shows info on one line instead of five lines",
-		map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit and map rules.",
-		ssgmlog => "Support for SSGM extended logging (Beacon, Game Results, BW alerts etc)",
-		autobalance => "Enables the autobalance module, which attempts to make teams even when a new map loads.",
-		BRenBot_dll => "Enables support for extended console commands inside BRenBot.dll"
-	);
+  my %modulesList =
+  (
+    teammessages => "Displays team (f3) chat messages in IRC",
+    gamespy_players => "Broadcast this server to the GameSpy Arcade server browser",
+    gamelog => "Enables support for the SSGM gamelog",
+    new_gi => "!gi shows info on one line instead of five lines",
+    map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit and map rules.",
+    ssgmlog => "Support for SSGM extended logging (Beacon, Game Results, BW alerts etc)",
+    autobalance => "Enables the autobalance module, which attempts to make teams even when a new map loads.",
+    BRenBot_dll => "Enables support for extended console commands inside BRenBot.dll"
+  );
 
 	while ( (my $k, my $v) = each %modulesList )
 	{
@@ -1089,25 +1088,9 @@ sub strftimestamp
 # Gets the SERVERS ip address
 sub get_ip
 {
-	my $config_ip;
-	my $config_botmode = $brconfig::config_botmode;
-
-	if ($config_botmode eq "LFDS")
-	{
-		my $ip = `/sbin/ifconfig eth0`;
-		if ( $ip =~ m/inet ad(.+?):(.+?)\s/i )
-		{
-			$config_ip = $2;
-		}
-	}
-	else
-	{
-		my $ip = `ipconfig`;
-		$ip =~ /IP Address.+?(\d+.\d+.\d+.\d+)/;
-		$config_ip=$1;
-	}
-
-	return $config_ip;
+  my $ip = `ipconfig`;
+  $ip =~ /IP Address.+?(\d+.\d+.\d+.\d+)/;
+  return $1;
 }
 
 
@@ -1161,13 +1144,12 @@ sub pagePlayer
 	my ( $result, %player ) = playerData::getPlayerData ( $playername );
 	if ( $result == 1 )
 	{
-		# CMSG supported if player and server have bhs.dll >= 2.6
-		if ( $brconfig::enableCmsg && modules::get_module( "bhs" )
-			&& $player{'scriptsVersion'} >= 2.6 && $brconfig::serverScriptsVersion >= 2.6 )
+		# CMSG supported if player and server have scripts >= 2.6
+		if ( $brconfig::enableCmsg && $player{'scriptsVersion'} >= 2.6 && $brconfig::serverScriptsVersion >= 2.6 )
 		{
 			RenRem::RenRemCMD ( "cmsgp $player{id} 0,255,0 \(PM from $sender): $message" );
 		}
-		elsif ( modules::get_module( "bhs" ) )
+		elsif ($brconfig::serverScriptsVersion >= 1.3)
 		{
 			RenRem::RenRemCMD ( "ppage $player{id} \(PM from $sender): $message" );
 		}
@@ -1304,7 +1286,7 @@ sub IsNumeric
 sub do_autobalance
 {
 	# Is autobalance enabled?
-	if ( !modules::get_module( "autobalance" ) || !modules::get_module( "bhs" ) ) { return; }
+	if ( !modules::get_module( "autobalance" ) || !($brconfig::serverScriptsVersion >= 2.0) ) { return; }
 
 	# Attempts to automatically balance the teams 5 seconds after the map has loaded
 	POE::Session->create

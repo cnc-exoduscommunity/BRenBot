@@ -8,7 +8,6 @@ use POE qw/Wheel::FollowTail/;
 use POE::Kernel;					# Needed for successful pp compile
 use POE::Session;					# Needed for successful pp compile
 
-use bhs;
 use brconfig;
 use modules;
 
@@ -178,15 +177,7 @@ sub start
 	elsif ( $brconfig::ssgm_version > 0 )
 	{
 		# Get filename for the ssgm logfile
-		my $filename;
-		if ( $brconfig::config_botmode eq "LFDS" )
-		{
-			$filename = $brconfig::config_fdslogpath . $brconfig::ssgmLogPrefix . "_" . modules::get_linux_date_time( "MM-DD-YYYY.txt" );
-		}
-		else
-		{
-			$filename = $brconfig::config_fdslogpath . $brconfig::ssgmLogPrefix . "_" . modules::get_date_time( "MM-DD-YYYY.txt" );
-		}
+		my $filename = $brconfig::config_fdslogpath . $brconfig::ssgmLogPrefix . "_" . modules::get_date_time( "MM-DD-YYYY.txt" );
 
 
 		# If gamelog_in_ssgm setting is enabled, we need to scan the ssgm logfile for
@@ -295,20 +286,11 @@ sub renew_wheel
   # If SSGM is not installed then we can't possibly read its logfiles
   return if ( $brconfig::ssgm_version < 1 );
   
-	# Is SSGM 4.0 installed? If so we don't need to do anything...
-	return if ( $brconfig::ssgm_version >= 4 );
+  # Is SSGM 4.0 installed? If so we don't need to do anything...
+  return if ( $brconfig::ssgm_version >= 4 );
 
-	my ( $session, $heap, $input ) = @_[ SESSION, HEAP, ARG0 ];
-	my $name;
-
-	if ($brconfig::config_botmode eq "LFDS")
-	{
-		$name = $brconfig::config_fdslogpath . $brconfig::ssgmLogPrefix . "_" . modules::get_linux_date_time( "MM-DD-YYYY.txt" );
-	}
-	else
-	{
-		$name = $brconfig::config_fdslogpath . $brconfig::ssgmLogPrefix . "_" . modules::get_date_time( "MM-DD-YYYY.txt" );
-	}
+  my ( $session, $heap, $input ) = @_[ SESSION, HEAP, ARG0 ];
+  my $name = $brconfig::config_fdslogpath . $brconfig::ssgmLogPrefix . "_" . modules::get_date_time( "MM-DD-YYYY.txt" );
 
 
 	modules::console_output ( "Looking for SSGM logfile at $name...", 1 );

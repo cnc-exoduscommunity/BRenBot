@@ -1008,13 +1008,21 @@ sub plugin::team_get_players { return playerData::getPlayersByTeam(@_); }
 ####
 ###################################################
 
+# Plays a 2D sound effect for the entire server
+sub play_sound_for_player
+{
+  my $player = shift;
+
+  return fds::play_sound($sound);
+}
+
 # Plays a 2D sound effect for the specified player
 sub play_sound_for_player
 {
   my $player = shift;
   my $sound = shift;
 
-  return bhs::playsndp($sound, $player);
+  return fds::play_sound_player($sound, $player);
 }
 
 # Plays a 2D sound effect for the specified team, by ID, name or abbreviation
@@ -1023,7 +1031,7 @@ sub play_sound_for_team
   my $team = shift;
   my $sound = shift;
 
-  return bhs::playsndp_team($sound, $team);
+  return fds::play_sound_team($sound, $team);
 }
 
 

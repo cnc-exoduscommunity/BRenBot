@@ -15,6 +15,7 @@ use brTeams;
 use gamespy;    # Used by !set command
 use brAuth;
 use RenRem;
+use fds;
 
 
 # Datastore for commands.xml data
@@ -979,12 +980,6 @@ sub set
 			return;
 		}
 
-		if ( lc($module_name) eq "bhs" )
-		{
-			brIRC::ircmsg ( "State of module $module_name cannot be altered using this command, to enable or disable the module please install or delete the relevent dll files from the server.", $args{'ircChannelCode'} );
-			return;
-		}
-
 		if ( $status eq "on" )
 		{
 			brIRC::ircmsg ( "Activated module $module_name.", $args{'ircChannelCode'} );
@@ -1356,7 +1351,7 @@ sub teams
 		if ($nicknames)
 		{
 
-			if (modules::get_module("bhs") )
+			if ($brconfig::serverScriptsVersion >= 2.0)
 			{
 
 				foreach (@changers)
@@ -1628,7 +1623,7 @@ sub ppage
 		if ($args{arg} =~ /^\!ppage\s(.+?)\s(.+)/i)
 		{ #pamsg
 
-			if (modules::get_module("bhs") )
+			if ($brconfig::serverScriptsVersion >= 2.0)
 			{
 				my $pager = $args{nick};
 
@@ -1652,7 +1647,7 @@ sub ppage
 	 		}
 			else
 			{
-				brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 			}
 		}
 	}
@@ -1661,40 +1656,37 @@ sub ppage
 
 sub sndp
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		if (!$args{arg1})
-		{
-			show_syntax_error(@_);
-			return;
-		}
-
-		if (modules::get_module("bhs") )
-		{
-			my $pager = $args{nick};
-
-			my $user = $1;
-			my $snd = $2;
-
-			my ( $result, %player ) = playerData::getPlayerData( $args{'arg1'} );
-			if ( $result == 1 )
-			{
-				RenRem::RenRemCMD("sndp $player{id} $args{arg2}");
-				brIRC::ircmsg ( "9PrivateSound sent to $player{name} --> \($pager): $args{arg2}", $args{'ircChannelCode'} );
-			}
-			else
-			{
-				brIRC::ircmsg ( "Error: $args{arg1} was not found ingame, or is not unique.", $args{'ircChannelCode'} );
-			}
-		}
-		else
-		{
-			brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
-		}
-	}
-	or modules::display_error($@);
+  eval
+  {
+    if (!$args{arg1})
+    {
+      show_syntax_error(@_);
+      return;
+    }
+    
+    my $pager = $args{'nick'};
+    my $sound = $args{'arg2'};
+    
+    my ( $result, %player ) = playerData::getPlayerData($args{'arg1'});
+    if ( $result == 1 )
+    {
+      if ( fds::play_sound_player($sound, $player{'id'}) == 1 )
+      {
+        brIRC::ircmsg ( "9Private sound sent to $player{name} --> \($pager): $sound", $args{'ircChannelCode'} );
+      }
+      else
+      {
+        brIRC::ircmsg("The server does not support this command or the players scripts version is too old", $args{'ircChannelCode'});
+      }
+    }
+    else
+    {
+      brIRC::ircmsg ( "Error: $args{arg1} was not found ingame, or is not unique.", $args{'ircChannelCode'} );
+    }
+  }
+  or modules::display_error($@);
 }
 
 
@@ -1714,7 +1706,7 @@ sub tpage
 		if ($args{arg} =~ /^\!tpage\s(gdi|all|1|nod|sov|0)\s(.+)/i)
 		{
 
-			if (modules::get_module("bhs") )
+			if ($brconfig::serverScriptsVersion >= 2.6)
 			{
 				my $team = $1;
 				my $text = $2;
@@ -1723,15 +1715,13 @@ sub tpage
 				if (! ($text)) { brIRC::ircmsg ( "Usage: !tpage <team> <text>", $args{'ircChannelCode'} ); }
 				else
 				{
-					RenRem::RenRemCMD( "cmsgt $team 0,255,0 \($args{nick} to team $team): $text" );
-					RenRem::RenRemCMD( "sndt $team yo1.wav" );
-					#RenRem::RenRemCMD("tpage $team ($args{nick}) $text");
+          fds::send_coloured_message_team(0,255,0,$team,$text,$args{'nick'});
 					brIRC::ircmsg ( "9TeamPage Sent to Team $team --> \($args{nick}): $text", $args{'ircChannelCode'} );
 				}
 	 		}
 			else
 			{
-				brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+        brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 			}
 		}
 	}
@@ -1741,65 +1731,57 @@ sub tpage
 
 sub snda
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		if (!$args{arg1})
-		{
-			show_syntax_error(@_);
-			return;
-		}
-
-		if (modules::get_module("bhs") )
-		{
-			my $pager = $args{nick};
-			my $snd   = $args{arg1};
-
-			RenRem::RenRemCMD("snda $args{arg1}");
-			brIRC::ircmsg ( "9Global Sound --> \($pager): $args{arg1}", $args{'ircChannelCode'} );
-		}
-		else
-		{
-			brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
-		}
-	}
-	or modules::display_error($@);
+  eval
+  {
+    if (!$args{'arg1'})
+    {
+      show_syntax_error(@_);
+      return;
+    }
+    
+    my $pager = $args{'nick'};
+    my $sound = $args{'arg1'};
+    
+    if ( fds::play_sound($sound) == 1 )
+    {
+      brIRC::ircmsg ( "9Global Sound --> \($pager): $sound", $args{'ircChannelCode'} );
+    }
+    else
+    {
+      brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
+    }
+  }
+  or modules::display_error($@);
 }
 
 sub sndt
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		if (!$args{arg1} || !$args{arg2})
-		{
-			show_syntax_error(@_);
-			return;
-		}
-
-		if (modules::get_module("bhs") )
-		{
-			my $pager = $args{nick};
-
-			my $team = $args{arg1};
-			my $snd  = $args{arg2};
-			if ($team =~ /nod/i) {$team = "0"} #support user specifying NOD instead of 0
-			if ($team =~ /gdi/i) {$team = "1"} #support user specifying GDI instead of 1
-			RenRem::RenRemCMD("sndt $team $args{arg2}");
-			brIRC::ircmsg ( "9TeamSound Sent to Team $team --> \($pager): $args{arg2}", $args{'ircChannelCode'} );
-		}
-		else
-		{
-			brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
-		}
-	}
-	or modules::display_error($@);
+  eval
+  {
+    if (!$args{'arg1'} || !$args{'arg2'}))
+    {
+      show_syntax_error(@_);
+      return;
+    }
+    
+    my $pager = $args{'nick'};
+    my $teamid = brTeams::get_id_from_name($args{'arg1'});
+    my $sound = $args{'arg2'};
+    
+    if ( fds::play_sound_team($sound,$teamid) == 1 )
+    {
+      brIRC::ircmsg ( "9Sound played for team $teamid --> \($pager): $sound", $args{'ircChannelCode'} );
+    }
+    else
+    {
+      brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
+    }
+  }
+  or modules::display_error($@);
 }
 
 
@@ -1820,7 +1802,7 @@ sub pamsg
 		if ($args{arg} =~ /^\!pamsg\s(.+?)\s(.+)/i)
 		{ #pamsg
 
-			if (modules::get_module("bhs") )
+			if ($brconfig::serverScriptsVersion >= 2.0)
 			{
 				my $pager = $args{nick};
 
@@ -1844,7 +1826,7 @@ sub pamsg
 			}
 			else
 			{
-				brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 			}
 		}
 	}
@@ -1870,7 +1852,7 @@ sub page
 			my $text = $2;
 
 
-			if ( modules::get_module( "bhs" ) )
+			if ($brconfig::serverScriptsVersion >= 2.0)
 			{
 				if ( !($user) )
 				{
@@ -1892,7 +1874,7 @@ sub page
 			}
 			else
 			{
-				brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 			}
 		}
 	}
@@ -1940,7 +1922,7 @@ sub forcetc
 		}
 		my $user = $args{arg1};
 
-		if ( modules::get_module("bhs") )
+		if ($brconfig::serverScriptsVersion >= 2.0)
 		{
 
 			my $admin = $args{nick};
@@ -1973,7 +1955,7 @@ sub forcetc
 		}
 		else
 		{
-			brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 		}
 	}
 	or modules::display_error($@);
@@ -1994,7 +1976,7 @@ sub kill
 		}
 		my $user = $args{arg1};
 
-		if ( modules::get_module("bhs") )
+		if ($brconfig::serverScriptsVersion >= 2.0)
 		{
 
 			my $admin = $args{nick};
@@ -2069,7 +2051,7 @@ sub kill
 		}
 		else
 		{
-			brIRC::ircmsg ( "You need to install the bhs.dll library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 		}
 	}
 	or modules::display_error($@);
@@ -2093,7 +2075,7 @@ sub killme
 
 		my $user = $args{nick};
 
-		if ( modules::get_module("bhs") )
+		if ($brconfig::serverScriptsVersion >= 3.0)
 		{
 			my $admin = $args{nick};
 
@@ -2141,7 +2123,7 @@ sub killme
 		}
 		else
 		{
-			brIRC::ircmsg ( "You need to install the bhs.dll library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 		}
 	}
 	or modules::display_error($@);
@@ -2555,7 +2537,7 @@ sub scripts
 
   eval
   {
-    if ( modules::get_module("bhs") )
+    if ($brconfig::serverScriptsVersion >= 1.3)
     {
       my @noddies;
       my @gdiguys;
@@ -2595,7 +2577,7 @@ sub scripts
     }
     else
     {
-      brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
     }
   }
   or modules::display_error($@);
@@ -2608,7 +2590,7 @@ sub setbw
 
 	eval
 	{
-		if ( modules::get_module("bhs") )
+		if ($brconfig::serverScriptsVersion >= 2.0)
 		{
 			if ( $args{arg1} && $args{arg2} && ( $args{arg2} =~ m/^\d+$/ ) )
 			{
@@ -2634,7 +2616,7 @@ sub setbw
 		}
 		else
 		{
-			brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 		}
 	}
 	or modules::display_error($@);
@@ -2651,7 +2633,7 @@ sub getbw
 
 	eval
 	{
-		if ( modules::get_module("bhs") )
+		if ($brconfig::serverScriptsVersion >= 2.0)
 		{
 			if ( $args{'arg1'} )
 			{
@@ -2709,7 +2691,7 @@ sub getbw
 		}
 		else
 		{
-			brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
+			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
 		}
 	}
 	or modules::display_error($@);
@@ -3118,7 +3100,7 @@ sub minelimit
 
 	eval
 	{
-		if (modules::get_module("bhs") )
+		if ($brconfig::serverScriptsVersion >= 2.0)
 		{
 			if ( $args{arg1} =~ m/^\d+$/ &&
 				( ( $args{'nicktype'} == 0 && ( modules::IsHalfMod( $args{'nick'} ) || modules::IsFullMod($args{'nick'} ) || modules::IsAdmin ( $args{'nick'} ) ) )
@@ -3149,7 +3131,7 @@ sub vehiclelimit
 
 	eval
 	{
-		if ( modules::get_module("bhs") )
+		if ($brconfig::serverScriptsVersion >= 2.0)
 		{
 			if ( $args{arg1} =~ m/^\d+$/ &&
 				( ( $args{'nicktype'} == 0 && ( modules::IsHalfMod( $args{'nick'} ) || modules::IsFullMod($args{'nick'} ) || modules::IsAdmin ( $args{'nick'} ) ) )
@@ -3889,19 +3871,17 @@ sub AlreadyVoted
 
 sub cmsg
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
-	if ( !modules::get_module( "bhs" ) )
-	{
-		brIRC::ircmsg ( "You need to enable module bhs and install the bhs library to use this command.", $args{'ircChannelCode'} );
-		return;
-	}
+  if ( $brconfig::serverScriptsVersion >= 2.6 )
+  {
+    brIRC::ircmsg ( "The server does not support this command, script version 2.6 or higher is required", $args{'ircChannelCode'} );
+    return;
+  }
 
-	my $rgbcolor;
-	my $message;
-	my $sendTo;
+  my $rgbcolor;
+  my $message;
+  my $sendTo;
 
 	if ( $args{command} eq "cmsg" )			# Send to all
 	{
@@ -3989,7 +3969,7 @@ sub cmsg
 
 			if ( $args{command} eq "cmsg" )
 			{
-				RenRem::RenRemCMD( "cmsg $red,$green,$blue \($args{nick}): $message" );
+        fds::send_coloured_message($red,$green,$blue,$message,$args{'nick'});
 				brIRC::ircmsg ( "14CMSG: ($args{nick}): $message", $args{'ircChannelCode'} );
 			}
 			elsif ( $args{command} eq "cmsgp" )
@@ -3997,8 +3977,7 @@ sub cmsg
 				my ($result, %player) = playerData::getPlayerData( $sendTo );
 				if ($result == 1)
 				{
-					RenRem::RenRemCMD( "cmsgp $player{id} $red,$green,$blue \($args{nick} to $player{name}): $message" );
-					RenRem::RenRemCMD ( "sndp $player{id} yo1.wav" );
+          fds::send_coloured_message_player($red,$green,$blue,$message,$player{'id'},$args{'nick'});
 					brIRC::ircmsg ( "09CMSG sent to $player{name} --> ($args{nick}): $message", $args{'ircChannelCode'} );
 				}
 				else
@@ -4018,8 +3997,7 @@ sub cmsg
 				else
 				{ return; }
 
-				RenRem::RenRemCMD( "cmsgt $team $red,$green,$blue \($args{nick} to team $team): $message" );
-				RenRem::RenRemCMD( "sndt $team yo1.wav" );
+        fds::send_coloured_message_team($red,$green,$blue,$message,$team,$args{'nick'});
 				brIRC::ircmsg ( "09CMSG sent to team $team --> ($args{nick}): $message", $args{'ircChannelCode'}  );
 			}
 		}
