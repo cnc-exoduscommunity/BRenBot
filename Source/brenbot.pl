@@ -21,7 +21,7 @@ use strict;
 
 # Define these before loading BRenBot modules as they may be used inside those modules
 use constant BR_VERSION         => 1.53;
-use constant BR_BUILD           => 17;
+use constant BR_BUILD           => 18;
 use constant BR_COPYRIGHT_YEAR  => "2003-2013";
 
 # Load BRenBot modules

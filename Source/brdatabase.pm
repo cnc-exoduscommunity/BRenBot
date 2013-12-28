@@ -302,6 +302,12 @@ sub check_database
       execute_query ( "DELETE FROM modules WHERE name = 'recommend'", 1 );
     }
 
+    if ( $dbVersion < 1.53 || ($dbVersion == 1.53 && $dbBuild <= 18) )
+    {
+      print "      Deleting redundant modules...\n";
+      execute_query ( "DELETE FROM modules WHERE name = 'bhs'", 1 );
+    }
+
 	 	# Finally set all the globals to the current version
 	 	set_global ( 'version', main::BR_VERSION );
 	 	set_global ( 'build', main::BR_BUILD );
