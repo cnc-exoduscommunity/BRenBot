@@ -306,6 +306,7 @@ sub check_database
     {
       print "      Deleting redundant modules...\n";
       execute_query ( "DELETE FROM modules WHERE name = 'bhs'", 1 );
+      execute_query ( "DELETE FROM modules WHERE name = 'BRenBot_dll'", 1 );
     }
 
 	 	# Finally set all the globals to the current version

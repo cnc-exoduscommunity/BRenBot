@@ -138,8 +138,6 @@ sub init
 
   modules::loadMapSettings();
   brTeams::read_config();
-
-  checkBrenbotDll();
 }
 
 
@@ -713,24 +711,6 @@ sub read_ssgm_settings
 	{
 		# Not using SSGM or using a version older than 4.0, logs are in FDS root
 		$config_fdslogpath = $config_fdspath;
-	}
-}
-
-
-
-
-
-
-# Check if BRenBot.dll exists, and if so enable support for it
-sub checkBrenbotDll
-{
-	# Set default state
-	modules::set_module( "BRenBot_dll", 0 );
-
-	if ( -f $config_fdspath . "BRenBot.dll")
-	{
-		modules::console_output ( "[Config] BRenBot.dll library found. Enabling support." );
-		modules::set_module( "BRenBot_dll", 1 );
 	}
 }
 

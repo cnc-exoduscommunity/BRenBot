@@ -426,8 +426,7 @@ sub check_modules
     new_gi => "!gi shows info on one line instead of five lines",
     map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit and map rules.",
     ssgmlog => "Support for SSGM extended logging (Beacon, Game Results, BW alerts etc)",
-    autobalance => "Enables the autobalance module, which attempts to make teams even when a new map loads.",
-    BRenBot_dll => "Enables support for extended console commands inside BRenBot.dll"
+    autobalance => "Enables the autobalance module, which attempts to make teams even when a new map loads."
   );
 
 	while ( (my $k, my $v) = each %modulesList )
