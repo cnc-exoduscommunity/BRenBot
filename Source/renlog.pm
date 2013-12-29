@@ -805,7 +805,7 @@ sub ParseLogInput
 		}
 
 		# Record the version of the server
-		if ( $line =~ /^The Version of the server is (.+)/ || $line =~ /^The version of (?:bhs|tt).dll on this machine is (\d+\.\d+)( r%d+)?/i )
+		if ( $line =~ /^The Version of the server is (.+)/ || $line =~ /^The version of (?:bhs|tt|bandtest).dll on this machine is (\d+\.\d+)( r%d+)?/i )
 		{
 			$brconfig::serverScriptsVersion = $1;
 			$brconfig::serverScriptsRevision = $2;
