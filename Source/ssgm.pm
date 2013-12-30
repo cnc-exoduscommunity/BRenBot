@@ -388,7 +388,7 @@ sub parse_line
   {
     while (my ($regex, $event) = each %{$regexes})
     {
-      if ( $line =~ m/$regex/i )
+      if ( $input =~ m/$regex/i )
         { $main::poe_kernel->post("plugin_".$plugin => $event => \%args); }
     }
   }
