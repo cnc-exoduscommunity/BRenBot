@@ -598,7 +598,7 @@ sub read_ssgm_settings
     return;
   }
 
-	modules::console_output ( "[Config] Detected SSGM version $ssgm_version\n" );
+	modules::console_output ( "[Config] Detected SSGM version $ssgm_version" );
 
 
 	# Open ssgm.ini, or bail out
