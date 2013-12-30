@@ -955,7 +955,7 @@ sub ParseLogInput
     'time'    => $time
   );
 
-  my %plugins = plugin::get_plugin_renlog_regexes();
+  my %plugins = plugin::get_plugin_regex_hooks('renlog');
   while ( my($plugin, $regexes) = each(%plugins) )
   {
     while (my ($regex, $event) = each %{$regexes})

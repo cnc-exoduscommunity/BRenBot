@@ -376,6 +376,22 @@ sub parse_line
 		$input =~ s/_GAMELOG\s//gi;			# Trim _Gamelog and one space
 		gamelog::parse_line( $input );		# Send it to the gamelog for processing
 	}
+  
+  # Look for any plugins whose regex hooks match this line
+  my %args = (
+    'line'    => $input,
+    'startup' => $gamelog::startup
+  );
+
+  my %plugins = plugin::get_plugin_regex_hooks('ssgmlog');
+  while ( my($plugin, $regexes) = each(%plugins) )
+  {
+    while (my ($regex, $event) = each %{$regexes})
+    {
+      if ( $line =~ m/$regex/i )
+        { $main::poe_kernel->post("plugin_".$plugin => $event => \%args); }
+    }
+  }
 
 	undef $input;
 }

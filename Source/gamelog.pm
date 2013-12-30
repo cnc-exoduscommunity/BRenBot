@@ -256,7 +256,7 @@ sub parse_line
     'startup' => $startup
   );
 
-  my %plugins = plugin::get_plugin_gamelog_regexes();
+  my %plugins = plugin::get_plugin_regex_hooks('gamelog');
   while ( my($plugin, $regexes) = each(%plugins) )
   {
     while (my ($regex, $event) = each %{$regexes})

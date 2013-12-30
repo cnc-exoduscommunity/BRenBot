@@ -463,29 +463,38 @@ sub register_plugin_events
     $plugins{$plugin_name}{'events'} = $xml->{'events'}->{'event'};
   }
 
-  $plugins{$plugin_name}{'renlog_hooks'} = {};
-  $plugins{$plugin_name}{'gamelog_hooks'} = {};
+  register_plugin_regex_hooks($plugin_name,'renlog',$xml->{'renlog_regex_hooks'}->{'hook'});
+  register_plugin_regex_hooks($plugin_name,'gamelog',$xml->{'gamelog_regex_hooks'}->{'hook'});
+  register_plugin_regex_hooks($plugin_name,'ssgmlog',$xml->{'ssgmlog_regex_hooks'}->{'hook'});
+}
 
-  my $hooks = $xml->{'renlog_regex_hooks'}->{'hook'};
-  if ( $hooks )
+# --------------------------------------------------------------------------------------------------
+
+#** \function register_plugin_regex_hooks ( $$plugin_name, $$category, $$hooks )
+# \brief Parse a set of XML entries for regular expression hooks into the plugin configuration
+#
+# \param[in] $plugin_name
+#   Name of the plugin to register events for
+# \param[in] $category
+#   Name of the category to register these events under
+# \param[in] $hooksXml
+#   The XML node containing the regex nodes to be parsed and registered
+#*
+sub register_plugin_regex_hooks
+{
+  my $plugin_name = shift;
+  my $category = shift . '_hooks';
+  my $hooksXml = shift;
+
+  $plugins{$plugin_name}{$category} = {};
+
+  if ( $hooksXml )
   {
-    while ( my ($event,$regex) = each %{$hooks} )
+    while ( my ($event,$regex) = each %{$hooksXml} )
     {
       if ( defined($regex->{'regex'}) )
       {
-        $plugins{$plugin_name}{'renlog_hooks'}{$regex->{'regex'}} = $event;
-      }
-    }
-  }
-
-  $hooks = $xml->{'gamelog_regex_hooks'}->{'hook'};
-  if ( $hooks )
-  {
-    while ( my ($event,$regex) = each %{$hooks} )
-    {
-      if ( defined($regex->{'regex'}) )
-      {
-        $plugins{$plugin_name}{'gamelog_hooks'}{$regex->{'regex'}} = $event;
+        $plugins{$plugin_name}{$category}{$regex->{'regex'}} = $event;
       }
     }
   }
@@ -516,28 +525,17 @@ sub get_plugin_event
   return @found_plugins;
 }
 
-# Returns a list of plugins which have gamelog regex hooks setup
-sub get_plugin_gamelog_regexes
+# Returns a list of plugins which have regexes setup for the specified category along with the set
+# of regexes that were found
+sub get_plugin_regex_hooks
 {
+  my $category = shift . '_hooks';
+
   my %found_plugins;
   while ( my($plugin, $data) = each(%plugins) )
   {
-    next if ( get_state($plugin) != 1 || !exists $data->{'gamelog_hooks'});
-    $found_plugins{$plugin} = $data->{'gamelog_hooks'};
-  }
-
-  return %found_plugins;
-}
-
-
-# Returns a list of plugins which have renlog regex hooks setup
-sub get_plugin_renlog_regexes
-{
-  my %found_plugins;
-  while ( my($plugin, $data) = each(%plugins) )
-  {
-    next if ( get_state($plugin) != 1 || !exists $data->{'renlog_hooks'});
-    $found_plugins{$plugin} = $data->{'renlog_hooks'};
+    next if ( get_state($plugin) != 1 || !exists $data->{$category});
+    $found_plugins{$plugin} = $data->{$category};
   }
 
   return %found_plugins;
