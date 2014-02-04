@@ -744,7 +744,7 @@ sub ParseLogInput
 			RenRem::RenRemCMD( "player_info" );
 		}
 
-		if ( $line =~ "/^Level loaded OK$/" )
+		if ( $line =~ m/^Level loaded OK$/ )
 		{
 			# New Level has reloaded, need to update Player Array...
 
@@ -775,20 +775,20 @@ sub ParseLogInput
 		}
 
 		# Handle any lines which just get thrown out to the IRC
-		if ( $line =~ /^\w+ not found$/
-			|| $line =~ /^Logging on....$/
-			|| $line =~ /^Logging onto .+ Server$/
-			|| $line =~ /^Failed to log in$/
-			|| $line =~ /^Creating game channel$/
-			|| $line =~ /^Channel created OK$/
-			|| $line =~ /^Terminating game$/ )
+		if ( $line =~ m/^\w+ not found$/
+			|| $line =~ m/^Logging on....$/
+			|| $line =~ m/^Logging onto .+ Server$/
+			|| $line =~ m/^Failed to log in$/
+			|| $line =~ m/^Creating game channel$/
+			|| $line =~ m/^Channel created OK$/
+			|| $line =~ m/^Terminating game$/ )
 		{
 			brIRC::ircmsg( "9$line", "A" );	# Admin channel only
 		}
 
 		# If server crashed clear all player data, or people rejoining quickly
 		# might be mistaken for nick stealers!
-		if ( $line =~ /^Initializing .+ Mode$/ )
+		if ( $line =~ m/^Initializing .+ Mode$/ )
 		{
 			brIRC::ircmsg( "9$line" );	# Show in both channels
 			playerData::clearAllData();
@@ -798,14 +798,14 @@ sub ParseLogInput
 
 
 		# Record player scripts version
-		if ( $line =~ /^The version of player (.+?) is (\d+\.\d+)( r%d+)?/i )
+		if ( $line =~ m/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/i )
 		{
 			playerData::setKeyValue ( $1, "scriptsVersion", $2 );
 			playerData::setKeyValue ( $1, "scriptsRevision", $3 );
 		}
 
 		# Record the version of the server
-		if ( $line =~ /^The Version of the server is (.+)/ || $line =~ /^The version of (?:bhs|tt|bandtest).dll on this machine is (\d+\.\d+)( r%d+)?/i )
+		if ( $line =~ m/^The Version of the server is (.+)/ || $line =~ m/^The version of (?:bhs|tt|bandtest).dll on this machine is (\d+\.\d+)( r%d+)?/i )
 		{
 			$brconfig::serverScriptsVersion = $1;
 			$brconfig::serverScriptsRevision = $2;

@@ -61,11 +61,12 @@ sub init
 			{
 				if ( $lastResponseTime < ($lastRequestTime -30) && $fdsResponding == 1 )
 				{
-					brIRC::ircmsg ( "04Warning: The FDS has not responded to the last two status requests, it may have gone offline." );
+					brIRC::ircmsg ( "04Warning: The FDS has not responded to the last two status requests, it may have gone offline.", "A" );
 					$fdsResponding = 0;
 				}
         elsif ( $lastResponseTime > $lastRequestTime && $fdsResponding == 0 )
         {
+          brIRC::ircmsg ( "03 The FDS is now responding to status requests.", "A" );
           $fdsResponding = 1;
 
           # Check for changes in configuration of the server
