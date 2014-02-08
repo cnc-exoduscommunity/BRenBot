@@ -10,7 +10,7 @@ use Cwd;
 use Class::Unload;
 
 use modules;
-use RenRem;
+use fds;
 
 
 my %plugins;                    # List of all known plugins and data associated with them
@@ -740,7 +740,7 @@ sub get_server_ssgm_version { return $brconfig::ssgm_version; }
 #
 # \param[in] $command
 #   Command line to send to the FDS
-sub RenRemCMD { RenRem::RenRemCMD($_[0]); }
+sub RenRemCMD { fds::send_command($_[0]); }
 
 
 # Send a RenRem command to the FDS after a delay
@@ -749,7 +749,7 @@ sub RenRemCMD { RenRem::RenRemCMD($_[0]); }
 #   Command line to send to the FDS
 # \param[in] $delay
 #   Delay, in seconds, before the command should be sent
-sub RenRemCMDtimed { RenRem::RenRemCMDtimed(@_); }
+sub RenRemCMDtimed { fds::send_command(@_); }
 
 
 # Allows plugins to get the game status
@@ -776,7 +776,7 @@ sub get_map_setting { return modules::get_map_setting(@_); }
 sub serverMsg
 {
   my $msg = shift;
-  RenRemCMD ( "msg $msg" );
+  fds::send_command("msg $msg");
 }
 
 

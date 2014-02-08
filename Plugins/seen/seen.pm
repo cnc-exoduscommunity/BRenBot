@@ -1,326 +1,301 @@
+#**
+# A plugin that reports the last time a specific player was seen in the server, based on the !seen
+# function which existed in BRenBot 1.41 and earlier
 #
-# Seen plugin for BRenBot 1.51 by Daniel Paul
-# Based on the !seen command in BR 1.41 and earlier
-#
-# Version 1.04
-#
+# \author Daniel Paul (danpaul88@yahoo.co.uk)
+# \version 1.05
+#*
+
 package seen;
 
 use POE;
 use plugin;
 
-sub CHANNEL () { plugin::get_irc_channel()  };
+my $currentVersion = '1.05';
+my $loaded_ok = undef;
 
-# define additional events in the POE session
-
-our %additional_events =
-(
-	# !command functions
-	"seen" => "seen",
-	"clearSeen" => "clearSeen"
-);
-
-# BRenBot automatically sets the plugin name
-our $plugin_name;
-
-# BRenBot automatically imports the plugin's config (from the xml file) into %config
-our %config;
-
-our $dbh;						# Database connection
-our $dbVersion;
-our $currentVersion = 1.04;
-
-
-########### Functions for !commands
-
-# Function for displaying all current warnings for players in the server
-sub seen
+# Check bot compatibility
+if ( !defined(plugin::getBrVersion) || plugin::getBrVersion() < 1.53
+  || (plugin::getBrVersion() == 1.53 && plugin::getBrBuild() < 18 ) )
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	my $message;
-	
-	# Check they supplied a name to search for
-	if ( !$args{arg1} )
-	{
-		my $syntaxvalue = $args{settings}->{syntax}->{value};
-		$message = "Usage: $syntaxvalue";
-	}
-	else
-	{
-		my $playerInGame = 0;
-		# Check if the player is in the game
-		if ( $main::version >= 1.51 )
-		{
-			my ( $result, %player ) = plugin::getPlayerData( $args{arg1} );
-			if ( $result == 1 )
-			{
-				$playerInGame = 0;
-				if ( $player{'name'} eq $args{nick} )
-					{ $message = "Go look in the mirror, $args{nick}."; }
-				else
-					{ $message = "$player{'name'} is right with you on this server!"; }
-			}
-		}
-		else
-		{
-			my ( $result, $error, $player ) = plugin::PlayerInGame( $args{arg1} );
-			if ( $result == 1 )
-			{
-				$playerInGame = 0;
-				if ( $player->{'name'} eq $args{nick} )
-					{ $message = "Go look in the mirror, $args{nick}."; }
-				else
-					{ $message = "$player->{'name'} is right with you on this server!"; }
-			}
-		}
-		
-		if ( !$playerInGame )
-		{
-			my ( $seen_result, $timestamp, $name ) = get_seen ( $args{arg1} );
-			
-			if ( $seen_result == 1 )
-			{
-				$message = "$name was last seen on this server ";
-				my $difference = ( time() - $timestamp );
-				
-				# All calculations will assume a month = 30 days, and a year = 365 days
-				my( $years, $months, $weeks, $days, $hours, $minutes ) = ( 0, 0, 0, 0, 0, 0 );
-				
-				while ( $difference > 30758400 )
-				{ $difference -= 30758400; $years++; }
-				if ( $years ) { $message .= "$years years "; }
-				
-				while ( $difference > 2592000 )
-				{ $difference -= 2592000; $months++; }
-				if ( $months ) { $message .= "$months months "; }
-				
-				while ( $difference > 604800 )
-				{ $difference -= 604800; $weeks++; }
-				if ( $weeks ) { $message .= "$weeks weeks "; }
-				
-				while ( $difference > 86400 )
-				{ $difference -= 86400; $days++; }
-				if ( $days ) { $message .= "$days days "; }
-				
-				while ( $difference > 3600 )
-				{ $difference -= 3600; $hours++; }
-				if ( $hours ) { $message .= "$hours hours "; }
-				
-				while ( $difference > 60 )
-				{ $difference -= 60; $minutes++; }
-				if ( $minutes ) { $message .= "$minutes minutes "; }
-				
-				if ( $message ne "$name was last seen on this server " )
-				{
-					$message .= "and $difference seconds ago";
-				}
-				else
-				{
-					$message .= "$difference seconds ago";
-				}
-			}
-			
-			elsif ( $seen_result == 2 )
-			{
-				$message = "More than one match found for \"$args{arg1}\". Please be more precise in your query!";
-			}
-			
-			else
-			{
-				$message = "I do not recall seeing $args{arg1} here...";
-			}
-		}
-	}
-	
-	# Output whatever message we now have
-	if ( $args{nicktype} == 1 ) 
-	{
-		$kernel->post( IRC => privmsg => CHANNEL, "[BR] " . $message );
-	}
-	else
-	{
-		plugin::RenRemCMD( "msg [BR] " . $message );
-	}
+  print ' == Seen Plugin Error ==\n'
+      . 'This version of the plugin is not compatible with BRenBot versions older than 1.53.18\n';
+  return 0;
 }
 
+# --------------------------------------------------------------------------------------------------
 
-########### Event handlers
+# BRenBot supplies these on plugin startup
+our $plugin_name;
+our %config;
+
+# Define additional events in the POE session
+our %additional_events =
+(
+  'seen'        => 'seen',
+  'clearSeen'   => 'clearSeen'
+);
+
+# Forward declarations
+sub get_seen($)
+sub get_time_difference($$)
+
+
+
+
+# --------------------------------------------------------------------------------------------------
+##
+#### Bot Events
+##
+# --------------------------------------------------------------------------------------------------
 
 sub start
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	# Set our current version in the globals table
-	plugin::set_global ( "version_plugin_seen", $currentVersion );
-	
-	# Connect to, and if necessary create, the database
-	my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$dbTime,$ctime,$blksize,$blocks) = stat( 'seen_plugin.dat' );
-	
-	if ( $^O eq "MSWin32" )
-	{
-		$dbh = DBI->connect("dbi:SQLite2:dbname=seen_plugin.dat","","");
-	}
-	else	# Use alternative SQLite driver for linux
-	{
-		$dbh = DBI->connect("dbi:SQLite:dbname=seen_plugin.dat","","");
-	}
-	
-	if( !$dbTime )
-	{
-		print "SEEN PLUGIN :: Database does not exist, creating fresh database\n";
-		
-		$dbh->do(
-			"CREATE TABLE seen
-			(id				INT			PRIMARY KEY
-			, name			CHAR(128)
-			, timestamp		INT)"
-		);
-		
-		
-		$dbh->do(
-			"CREATE TABLE globals
-			(id				INT			PRIMARY KEY
-			, name			TEXT
-			, value			TEXT)"
-		);
-		
-		
-		$dbh->do( "INSERT INTO globals ( name, value ) VALUES ( 'version', '1' )" );
-	}
-	else
-	{
-		# No version checking needed, this is version 1.0 after all...
-	}
+  return ($loaded_ok = 0) if ( db_update() != 1 );
+
+  plugin::set_global("version_plugin_seen", $currentVersion);
+
+  return ($loaded_ok = 1);
 }
 
 
 sub stop
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	
-	# Comamnds to run when BRenBot quits
-	$dbh->disconnect;
-	
 }
 
+
+
+
+# --------------------------------------------------------------------------------------------------
+##
+#### Game Events
+##
+# --------------------------------------------------------------------------------------------------
 
 sub command
 {
-	# trigger on !commands
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	# Any commands from IRC or ingame come here
-	# From here we should trigger the appropriate subroutine
-	if ( $args{command} eq "seen" )
-	{
-		$kernel->yield("seen" => \%args);
-	}
-}
+  return if ($loaded_ok == 0);
 
+  my %args = %{$_[ARG0]};
+  $_[KERNEL]->yield($args{'command'} => \%args);
+}
 
 sub playerjoin
 {
-	# Triggered when a player joins the game
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	# Record their nickname in the database
-	updateTime ( $args{nick} );
+  my %args = %{$_[ARG0]};
+  updateTime ( $args{'nick'} );
 }
-
 
 sub playerleave
 {
-	# Triggered when a player leaves the game
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	# Record their nickname in the database
-	updateTime ( $args{nick} );
+  my %args = %{$_[ARG0]};
+  updateTime ( $args{'nick'} );
 }
 
 
 
 
-########### Other Functions
+# --------------------------------------------------------------------------------------------------
+##
+#### Commands
+##
+# --------------------------------------------------------------------------------------------------
 
-# Function for greeting players when they join the server, if enabled
+# !seen command
+sub seen
+{
+  my %args = %{$_[ARG0]};
+
+  # Check they supplied a name to search for
+  if ( !$args{'arg1'} )
+  {
+    show_syntax_error(@_);
+    return;
+  }
+
+  my $message;
+
+  # Check if the player is in the game
+  my ($result, %player) = plugin::getPlayerData($args{'arg1'});
+  if ($result == 1)
+  {
+    if ($player{'name'} eq $args{'nick'})
+      { $message = "Go look in the mirror, $args{nick}."; }
+    else
+      { $message = "$player{'name'} is right with you on this server!"; }
+  }
+
+  else
+  {
+    my ($seen_result, $timestamp, $name) = get_seen($args{'arg1'});
+
+    if ($seen_result == 1)
+      { $message = "$name was last seen on this server ".get_time_difference(time(),$timestamp)." ago"; }
+
+    elsif ($seen_result == 2)
+      { $message = "More than one match found for \"$args{arg1}\". Please be more precise in your query!"; }
+
+    else
+      { $message = "I do not recall seeing $args{arg1} here..."; }
+  }
+
+  # Output whatever message we now have
+  if ( $args{'nicktype'} == 1 )
+    { plugin::ircmsg($message, $args{'ircChannelCode'}); }
+  else
+    { plugin::serverMsg($message); }
+}
+
+
+
+
+# --------------------------------------------------------------------------------------------------
+##
+#### Utility Functions
+##
+# --------------------------------------------------------------------------------------------------
+
 sub updateTime
 {
-	# Convert to lowercase and strip out any ""
-	my $name = lc(shift);
-	$name =~ s/"/\'/g;
-	
-	# Check if the record exists in the database
-	my ($exists) = $dbh->selectrow_array ( "SELECT timestamp FROM seen WHERE name = \"$name\"" );
-	
-	if( $exists >= 1 )
-	{
-		# Update timestamp
-		$dbh->do( "UPDATE seen SET timestamp = " . time() . " WHERE name = \"$name\"" );
-	}
-	else
-	{
-		# Create new record
-		$dbh->do( "INSERT INTO seen ( timestamp, name ) VALUES ( " . time() . ", \"$name\" )" );
-	}
-}
+  # Convert to lowercase and strip out any ""
+  my $name = lc(shift);
+  $name =~ s/"/\'/g;
 
+  # Check if the record exists in the database
+  my @result = plugin::execute_query("SELECT timestamp FROM seen WHERE LOWER(name) = '$name'");
+  if (scalar(@result) == 1)
+    { plugin::execute_query('UPDATE seen SET timestamp = '.time()." WHERE LOWER(name) = '$name'",1); }
+  else
+    { plugin::execute_query('INSERT INTO seen (timestamp, name) VALUES ('.time().", '$name')",1); }
+}
 
 # Function for getting the last time a specified player was seen
 #
-# PARAM		name		Full or partial name of player to find
+# PARAM   name    Full or partial name of player to find
 #
 # RETURN $result, $timestamp, $name
 # 0 = Not found
 # 1 = Found unique match
 # 2 = Found multiple matches
-sub get_seen
+sub get_seen($)
 {
-	# Convert to lowercase and strip out any ""
-	my $name = lc(shift);
-	$name =~ s/"/\'/g;
+  # Convert to lowercase and strip out any ""
+  my $name = lc(shift);
+  $name =~ s/"/\'/g;
+  
+  # Try an exact match first
+  my @result = plugin::execute_query("SELECT name, timestamp FROM seen WHERE LOWER(name) = '$name'");
+  if (scalar(@result) == 1)
+  {
+    return (1,$result[0]->{'timestamp'},$result[0]->{'name'});
+  }
+  
+  # Try a wildcard match
+  my @result = plugin::execute_query("SELECT name, timestamp FROM seen WHERE LOWER(name) LIKE \"%$name%\"");
+  if (scalar(@result) == 1)
+  {
+    return (1,$result[0]->{'timestamp'},$result[0]->{'name'});
+  }
+  
+  return (scalar(@result)>1) ? 2 : 0;
+}
 
-	
-	my $results = $dbh->selectrow_array ( "SELECT COUNT(*) FROM seen WHERE lower(name) LIKE \"%$name%\"" );
-	if ( $results == 1 )
-	{
-		my $query = $dbh->prepare ( "SELECT name, timestamp FROM seen WHERE lower(name) LIKE \"%$name%\"" );
-		$query->execute();
-		
-		my @row = $query->fetchrow_array;
-		return ( 1, $row[1], $row[0] );
-	}
-	elsif ( $results == 0 )
-	{
-		return 0;
-	}
-	else
-	{
-		my $query = $dbh->prepare ( "SELECT name, timestamp FROM seen WHERE lower(name) LIKE \"%$name%\"" );
-		$query->execute();
-		
-		while ( my @row = $query->fetchrow_array )
-		{
-			if ( lc($row[0]) eq $name )
-			{
-				return ( 1, $row[1], $row[0] );
-			}
-		}
-		return 2;
-	}
+sub get_time_difference($$)
+{
+  my $difference = abs(shift - shift);
+
+  # All calculations will assume a month = 30 days, and a year = 365 days
+  my ($years, $months, $weeks, $days, $hours, $minutes) = (0, 0, 0, 0, 0, 0);
+
+  $years = int($difference/30758400);
+  $difference -= $years*30758400;
+
+  $months = int($difference/2592000);
+  $difference -= $months*2592000;
+
+  return "$years years" . (($months>0) ? " and $months months" : "") if ($years > 0);
+
+  $weeks = int($difference/604800);
+  $difference -= $weeks*604800;
+
+  return "$months months" . (($weeks>0) ? " and $weeks weeks" : "") if ($months > 0);
+
+  $days = int($difference/86400);
+  $difference -= $days*86400;
+
+  return "$weeks weeks" . (($days>0) ? " and $days days" : "") if ($weeks > 0);
+
+  $hours = int($difference/3600);
+  $difference -= $hours*3600;
+
+  return "$days days" . (($hours>0) ? " and $hours hours" : "") if ($days > 0);
+
+  $minutes = int($difference/60);
+  $difference -= $minutes*60;
+
+  $string = "";
+  $string .= "$hours hours" if ($hours > 0);
+  $string .= (($string ne"")?", ":"")."$minutes minutes" if ($minutes > 0);
+  $string .= (($string ne"")?"and ":"")."$difference seconds" if ($difference > 0);
+
+  return $string;
+}
+
+sub show_syntax_error()
+{
+  my %args = %{$_[ ARG0 ]};
+  my $syntax = 'Usage: '.$args{'settings'}->{'syntax'}->{'value'};
+
+  if ( $args{'nicktype'} == 0 )
+    { plugin::pagePlayer( $args{'nick'}, 'BRenBot', $syntax ); }
+  elsif ( $args{'nicktype'} == 1 )
+    { plugin::ircmsg( $syntax, $args{'ircChannelCode'} ); }
+  else
+    { plugin::console_output('A plugin used incorrect command syntax for '.$args{'command'}); }
 }
 
 
-# Return true or the bot will not work properly...
+
+
+# --------------------------------------------------------------------------------------------------
+##
+#### Database configuration
+##
+# --------------------------------------------------------------------------------------------------
+
+sub db_update
+{
+  my $db_version = plugin::get_global ( "version_plugin_seen" );
+  if ( defined($db_version) and $db_version > $currentVersion )
+  {
+    plugin::console_output("[Seen] The database has been modified by a newer version of"
+        ." this plugin. To avoid potential data corruption the plugin will now stop");
+    return 0;
+  }
+
+  # Current table definitions
+  my %tables = (
+    plugin_seen => "CREATE TABLE plugin_seen(id INT PRIMARY KEY, name CHAR(128), timestamp INT)"
+  );
+
+  # Check which tables already exist...
+  my @db_tables = plugin::execute_query( "SELECT name FROM sqlite_master" );
+  foreach (@db_tables)
+    { delete $tables{$_->{'name'}}; }
+
+  # Create any missing tables
+  while ( my($table,$definition) = each %tables )
+  {
+    plugin::console_output("[Seen] Creating missing table " . $table);
+    plugin::execute_query( $definition, 1 );
+    delete $tables{$table};
+  }
+
+
+  # Nothing to update at the moment...
+  return 1;
+}
+
+
+# Plugin loaded OK
 1;

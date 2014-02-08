@@ -17,7 +17,7 @@ my $loaded_ok = undef;
 if ( !defined(plugin::getBrVersion) || plugin::getBrVersion() < 1.53
   || (plugin::getBrVersion() == 1.53 && plugin::getBrBuild() < 18 ) )
 {
-  print ' == Donate Plugin Error ==\n'
+  print ' == Swap Plugin Error ==\n'
       . 'This version of the plugin is not compatible with BRenBot versions older than 1.53.18\n';
   return 0;
 }
@@ -49,7 +49,7 @@ my $swapRequester = 0;
 
 sub start
 {
-  plugin::set_global ("version_plugin_swap", $currentVersion);
+  plugin::set_global("version_plugin_swap", $currentVersion);
 
   return ($loaded_ok = 1);
 }

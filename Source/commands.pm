@@ -3736,10 +3736,10 @@ sub endVote
 	# vote thread so that it can close properly.
 	$kernel->post( "voteThread" => "clearAlias" );
 
-  my $gdi_yes_votes = ( $voters{'team#1_yes'} ) ? $voters{'GDI_yes'} : 0;
-  my $gdi_no_votes = ( $voters{'team#1_no'} ) ? $voters{'GDI_no'} : 0;
-  my $nod_yes_votes = ( $voters{'team#0_yes'} ) ? $voters{'NOD_yes'} : 0;
-  my $nod_no_votes = ( $voters{'team#0_no'} ) ? $voters{'NOD_no'} : 0;
+  my $gdi_yes_votes = ( $voters{'team#1_yes'} ) ? $voters{'team#1_yes'} : 0;
+  my $gdi_no_votes = ( $voters{'team#1_no'} ) ? $voters{'team#1_no'} : 0;
+  my $nod_yes_votes = ( $voters{'team#0_yes'} ) ? $voters{'team#0_yes'} : 0;
+  my $nod_no_votes = ( $voters{'team#0_no'} ) ? $voters{'team#0_no'} : 0;
 
 	RenRem::RenRemCMD('msg [BR] Voting period over, tallying votes...   '
                     .brTeams::get_name(1)."; $gdi_yes_votes Yes, $gdi_no_votes No"
