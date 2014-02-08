@@ -579,17 +579,15 @@ sub LogSearch
 
 sub statsme
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		my ( $result, %player ) = playerData::getPlayerData ( $args{nick} );
-		if ( $result == 1 )
-		{
-			modules::pagePlayer ( $player{'id'}, "BRenBot", "Stats for $player{name}: Kills $player{stats_kills}, Deaths $player{stats_deaths}, Vehicle Repair $player{stats_vehicleRepair}, Building Repair $player{stats_buildingRepair}, Buildings destroyed $player{stats_buildingKills}" );
-		}
-	}
-	or modules::display_error($@);
+  eval
+  {
+    my ( $result, %player ) = playerData::getPlayerData($args{'nick'});
+    return if ( $result != 1 );
+    fds::send_message_player("Stats for $player{name}: Kills $player{stats_kills}, Deaths $player{stats_deaths}, Vehicle Repair $player{stats_vehicleRepair}, Building Repair $player{stats_buildingRepair}, Buildings destroyed $player{stats_buildingKills}", $player{'id'});
+  }
+  or modules::display_error($@);
 }
 
 sub stats
@@ -2418,58 +2416,49 @@ sub auth
 
 sub hostmsg
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		if (!$args{arg1})
-		{
-			show_syntax_error(@_);
-			return;
-		}
-		else
-		{
-			if ( $args{arg} =~ /^\!.+?\s(.+)$/ )
-			{
-				my $msg = $1;
+  eval
+  {
+    if (!$args{'arg1'})
+    {
+      show_syntax_error(@_);
+      return;
+    }
 
-				# Put dots in bye or connect to prevent the
-				# server from filtering them
-				$msg =~ s/bye/by\.e/gi;
-				$msg =~ s/connect/conn\.ect/gi;
+    if ( $args{'arg'} =~ /^\!.+?\s(.+)$/ )
+    {
+      my $msg = $1;
 
-				# Limit message length to <249 chars to prevent fds crash
-				$msg = substr ( $msg, 0, 228 );
-
-				RenRem::RenRemCMD("msg \($args{nick}): $msg");
-			}
-		}
-	}
-	or modules::display_error($@);
+      # Put dots in bye or connect to prevent the
+      # server from filtering them
+      $msg =~ s/bye/by\.e/gi;
+      $msg =~ s/connect/conn\.ect/gi;
+      
+      fds::send_message($msg, $args{'nick'});
+    }
+  }
+  or modules::display_error($@);
 }
 
 sub admin_message
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		if (!$args{arg1})
-		{
-			show_syntax_error(@_);
-			return;
-		}
-		else
-		{
-			if ( $args{arg} =~ /^\!.+?\s(.+)$/ )
-			{
-				my $msg = $1;
-				$msg = substr($msg,0,228); #limit length to <249 chars to prevent fds crash
-				RenRem::RenRemCMD("admin_message \($args{nick}): $msg");
-			}
-		}
-	}
-	or modules::display_error($@);
+  eval
+  {
+    if (!$args{arg1})
+    {
+      show_syntax_error(@_);
+      return;
+    }
+
+    if ( $args{'arg'} =~ /^\!.+?\s(.+)$/ )
+    {
+      fds::send_admin_message($1, $args{'nick'});
+    }
+  }
+  or modules::display_error($@);
 }
 
 

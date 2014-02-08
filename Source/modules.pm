@@ -1112,29 +1112,8 @@ sub parseModName
 # Picks best method of paging based on server and player scripts version
 sub pagePlayer
 {
-	my $playername	= shift;
-	my $sender		= shift;
-	my $message		= shift;
-
-	my ( $result, %player ) = playerData::getPlayerData ( $playername );
-	if ( $result == 1 )
-	{
-		# CMSG supported if player and server have scripts >= 2.6
-		if ( $brconfig::enableCmsg && $player{'scriptsVersion'} >= 2.6 && $brconfig::serverScriptsVersion >= 2.6 )
-		{
-			RenRem::RenRemCMD ( "cmsgp $player{id} 0,255,0 \(PM from $sender): $message" );
-		}
-		elsif ($brconfig::serverScriptsVersion >= 1.3)
-		{
-			RenRem::RenRemCMD ( "ppage $player{id} \(PM from $sender): $message" );
-		}
-		else
-		{
-			RenRem::RenRemCMD ( "page $player{name} \(PM from $sender): $message" );
-		}
-	}
-
-	return $result;
+  my ($player,$sender,$message) = (@_);
+  return fds::send_message_player($message,$player,$sender);
 }
 
 

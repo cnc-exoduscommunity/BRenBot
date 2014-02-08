@@ -71,7 +71,7 @@ our $config_redirect;
 our $config_minimum_scripts_version       = '0';
 our $config_force_bhs_dll_map             = '0';
 our $enable_gamelog_loaded_check          = '1';
-our $enableCmsg                           = '1';    # Enable CMSG paging
+our $enableCmsgPaging                     = '1';    # Enable CMSG paging
 
 # Settings for moderators
 our $config_moderators_force_auth         = '1';
@@ -260,7 +260,7 @@ sub ReadConfig
 			if (/^\s*RedirectPort\s*=\s*(.+)/i)							{$config_redirect_port = $1; }
 			if (/^\s*Minimum_Scripts_Version\s*=\s*(\d+(\.\d+)?)/i)		{$config_minimum_scripts_version = $1; }
 			if (/^\s*Enable_Gamelog_Loaded_Checks\s*=\s*(1|0)/i)		{$enable_gamelog_loaded_check = $1; }
-			if (/^\s*Enable_CMSG_Paging\s*=\s*(0|1)/i)					{ $enableCmsg = $1; }
+			if (/^\s*Enable_CMSG_Paging\s*=\s*(0|1)/i)					{ $enableCmsgPaging = $1; }
 
 			# Settings for moderators
 			if (/^\s*Moderators_Force_Auth\s*=\s*(\d)/i)				{ $config_moderators_force_auth = $1; }

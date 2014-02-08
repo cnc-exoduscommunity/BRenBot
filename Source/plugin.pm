@@ -688,16 +688,22 @@ sub get_playerlist { return playerData::getPlayerList(); }
 #   empty list (any other value of $result)
 sub getPlayerData { return playerData::getPlayerData($_[0]); }
 
-
-# pagePlayer function for plugins
+# send_message_player function for plugins
 #
-# \param[in] $player
-#   Name or ID of player to lookup
-# \param[in] $sender
-#   Message sender
 # \param[in] $message
 #   Message to send
-sub pagePlayer { return modules::pagePlayer ( @_ ); }
+# \param[in] $player
+#   Name or ID of player to send the message to
+# \param[in] $sender
+#   Message sender, optional
+sub send_message_player($$;$) { return fds::send_message_player(shift,shift,shift); }
+
+# \deprecated Use send_message_player instead
+sub pagePlayer
+{
+  my ($player,$sender,$message) = (@_);
+  return send_message_player($message,$player,$sender);
+}
 
 
 # Check moderator status of players, returns 1 for true, 0 for false.
@@ -771,13 +777,24 @@ sub get_map_start_time { return serverStatus::getMapStartTime(); }
 # Get the value of a map setting for the current map
 sub get_map_setting { return modules::get_map_setting(@_); }
 
+# send_message function for plugins - shows a public chat message for all players in the server
+#
+# \param[in] $message
+#   Message to send
+# \param[in] $sender
+#   Message sender, optional
+sub send_message($;$) { return fds::send_message(shift,shift); }
 
-# Server message function for plugins - shows a public chat message for all players in the server
-sub serverMsg
-{
-  my $msg = shift;
-  fds::send_command("msg $msg");
-}
+# send_admin_message function for plugins - shows a popup message box for all players in the server
+#
+# \param[in] $message
+#   Message to send
+# \param[in] $sender
+#   Message sender, optional
+sub send_admin_message($;$) { return fds::send_admin_message(shift,shift); }
+
+# \deprecated use send_message
+sub serverMsg { fds::send_message(shift); }
 
 
 
@@ -1007,30 +1024,19 @@ sub plugin::team_get_players { return playerData::getPlayersByTeam(@_); }
 ###################################################
 
 # Plays a 2D sound effect for the entire server
-sub play_sound
-{
-  my $sound = shift;
-
-  return fds::play_sound($sound);
-}
+sub play_sound($) { return fds::play_sound(shift); }
 
 # Plays a 2D sound effect for the specified player
-sub play_sound_for_player
-{
-  my $player = shift;
-  my $sound = shift;
-
-  return fds::play_sound_player($sound, $player);
-}
+sub play_sound_player($$) { return fds::play_sound_player(shift,shift); }
 
 # Plays a 2D sound effect for the specified team, by ID, name or abbreviation
-sub play_sound_for_team
-{
-  my $team = shift;
-  my $sound = shift;
+sub play_sound_team($$) { return fds::play_sound_team(shift,shift); }
 
-  return fds::play_sound_team($sound, $team);
-}
+# \deprecated Use play_sound_player
+sub play_sound_for_player($$) { return fds::play_sound_player(shift,shift); }
+
+# \deprecated Use play_sound_team
+sub play_sound_for_team($$) { return fds::play_sound_team(shift,shift); }
 
 
 

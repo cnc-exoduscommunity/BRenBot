@@ -96,7 +96,7 @@ sub donate
   if ( $args{'nicktype'} != 0 )
   {
     if ( $args{'nicktype'} == 2 )
-      { brIRC::ircmsg( 'You need to be ingame to use this command.', $args{'ircChannelCode'} ); }
+      { plugin::ircmsg( 'You need to be ingame to use this command.', $args{'ircChannelCode'} ); }
     return;
   }
 
@@ -120,38 +120,38 @@ sub donate
   }
 
   # Check donation requirements...
-  my ($result1, %donator) = playerData::getPlayerData($args{'nick'}, 1);
+  my ($result1, %donator) = plugin::getPlayerData($args{'nick'}, 1);
   return if ($result1 != 1);
 
-  my ($result2, %donatee) = playerData::getPlayerData($teammate);
+  my ($result2, %donatee) = plugin::getPlayerData($teammate);
   if ($result2 != 1)
   {
-    modules::pagePlayer( $donator{'id'}, 'BRenBot', $teammate.' was not found in the server or is not unique' );
+    plugin::pagePlayer( $donator{'id'}, 'BRenBot', $teammate.' was not found in the server or is not unique' );
     return;
   }
 
   if ( $donator{'id'} == $donatee{'id'} )
   {
-    modules::pagePlayer( $donator{'id'}, 'BRenBot', 'You cannot donate money to yourself' );
+    plugin::pagePlayer( $donator{'id'}, 'BRenBot', 'You cannot donate money to yourself' );
     return;
   }
 
   if ( $donator{'teamid'} != $donatee{'teamid'} )
   {
-    modules::pagePlayer( $donator{'id'}, 'BRenBot', 'You can only donate money to players on your own team' );
+    plugin::pagePlayer( $donator{'id'}, 'BRenBot', 'You can only donate money to players on your own team' );
     return;
   }
 
   if ( $credits < 1 )
   {
-    modules::pagePlayer( $donator{'id'}, 'BRenBot', 'You cannot donate negative money' );
+    plugin::pagePlayer( $donator{'id'}, 'BRenBot', 'You cannot donate negative money' );
     return;
   }
 
   # Do we care about this one anymore? It caused nothing but problems in the past...
   #if ( !gamelog::isPlayerLoaded( $donatee{'name'} ) )
   #{
-  #  modules::pagePlayer( $donatee{'id'}, "BRenBot", "$donatee{name} has not done with loading this map yet.");
+  #  plugin::pagePlayer( $donatee{'id'}, "BRenBot", "$donatee{name} has not done with loading this map yet.");
   #}
 
   # Check for a donation limit on the current map
@@ -174,7 +174,7 @@ sub teamdonate
   if ( $args{'nicktype'} != 0 )
   {
     if ( $args{'nicktype'} == 2 )
-      { brIRC::ircmsg( 'You need to be ingame to use this command.', $args{'ircChannelCode'} ); }
+      { plugin::ircmsg( 'You need to be ingame to use this command.', $args{'ircChannelCode'} ); }
     return;
   }
 
@@ -194,12 +194,12 @@ sub teamdonate
   my $credits = $args{'arg1'};
 
   # Check donation requirements...
-  my ($result1, %donator) = playerData::getPlayerData( $args{'nick'}, 1 );
+  my ($result1, %donator) = plugin::getPlayerData( $args{'nick'}, 1 );
   return if ( $result1 != 1 );
 
   if ( $credits < 1 )
   {
-    modules::pagePlayer( $donator{'id'}, 'BRenBot', 'You cannot donate negative money' );
+    plugin::pagePlayer( $donator{'id'}, 'BRenBot', 'You cannot donate negative money' );
     return;
   }
 
@@ -239,7 +239,7 @@ sub check_donate_limit($)
   if ( $donatelimit != 0 && $maptime < $donatelimit*60)
   {
     my $remaining = $donatelimit - int($maptime/60);
-    modules::pagePlayer( $donator_id, 'BRenBot', 'Donations are not allowed on '.plugin::get_map()." in the first $donatelimit minutes. You have to wait $remaining more minutes" );
+    plugin::pagePlayer( $donator_id, 'BRenBot', 'Donations are not allowed on '.plugin::get_map()." in the first $donatelimit minutes. You have to wait $remaining more minutes" );
     return 0;
   }
 
