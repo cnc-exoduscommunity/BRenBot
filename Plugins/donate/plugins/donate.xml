@@ -25,7 +25,6 @@
     <help value="Donates money from your account to another user's account"/>
     <enabled value="1"/>
     <group>ingame</group>
-    <module>bhs</module>
     <hideInHelp value="0"/>
     <alias>d</alias>
   </command>
@@ -36,7 +35,6 @@
     <help value="Donates money from your account to all of your teammates"/>
     <enabled value="1"/>
     <group>ingame</group>
-    <module>bhs</module>
     <hideInHelp value="0"/>
     <alias>td</alias>
   </command>

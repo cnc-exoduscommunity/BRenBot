@@ -27,8 +27,8 @@
     <cvar name="halfModCanCancelSwaps" value="1"/>
     <!-- Can full moderators cancel other players swaps? -->
     <cvar name="fullModCanCancelSwaps" value="1"/>
-    
-    
+
+
     <!-- Can IRC half ops cancel swaps? -->
     <cvar name="ircHalfOpCanCancelSwaps" value="1"/>
     <!-- Can IRC ops cancel swaps? -->

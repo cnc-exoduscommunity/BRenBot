@@ -1,10 +1,10 @@
 #**
 # This plugin contains the donate functionality that used to exist in BRenBot prior to version
-# 1.53.15. It allows players to donate some of their credits to a specific team member or to
-# all players on their team in equal portions.
+# 1.53.15. It allows players to donate some of their credits to a specific team member or to all
+# players on their team in equal portions.
 #
 # \author Daniel Paul (danpaul88@yahoo.co.uk)
-# \version 1.0
+# \version 1.02
 #*
 
 package donate;
@@ -12,7 +12,7 @@ package donate;
 use POE;
 use plugin;
 
-my $currentVersion = '1.01';
+my $currentVersion = '1.02';
 my $loaded_ok = undef;
 
 # Check bot compatibility
@@ -156,8 +156,8 @@ sub donate
 
   # Check for a donation limit on the current map
   return if !check_donate_limit($donator{'id'});
-  
-  
+
+
   # OK, passed all the checks, go ahead and do the donation!
   plugin::pagePlayer( $donator{'id'}, 'BRenBot', "You have donated $credits credits to $donatee{name}!" );
   plugin::pagePlayer( $donatee{'id'}, 'BRenBot', "$donator{name} has donated $credits to you!" );
@@ -242,7 +242,7 @@ sub check_donate_limit($)
     modules::pagePlayer( $donator_id, 'BRenBot', 'Donations are not allowed on '.plugin::get_map()." in the first $donatelimit minutes. You have to wait $remaining more minutes" );
     return 0;
   }
-  
+
   return 1;
 }
 

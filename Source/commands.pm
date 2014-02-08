@@ -1368,7 +1368,7 @@ sub teams
 
 					}
 				}
-			} # end of bhs
+			} # end of >= 2.0
 			else
 			{
 				RenRem::RenRemCMD("msg [BR] Teams are uneven! These players will be kicked in 1 minute: $nicknames");
@@ -1400,7 +1400,7 @@ sub teams
 							}
 					}
 				);
-			} # end of non bhs
+			} # end of < 2.0
 		} # end of nicknames
 		else
 		{

@@ -1109,7 +1109,7 @@ sub parseModName
 ####
 ###################################################
 
-# Picks best method of paging based on server's bhs.dll, and players bhs.dll
+# Picks best method of paging based on server and player scripts version
 sub pagePlayer
 {
 	my $playername	= shift;
