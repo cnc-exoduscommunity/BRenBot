@@ -82,12 +82,16 @@ sub command
 
 sub playerjoin
 {
+  return if ($loaded_ok == 0);
+  
   my %args = %{$_[ARG0]};
   updateTime ( $args{'nick'} );
 }
 
 sub playerleave
 {
+  return if ($loaded_ok == 0);
+  
   my %args = %{$_[ARG0]};
   updateTime ( $args{'nick'} );
 }

@@ -77,6 +77,8 @@ sub command
 
 sub playerleave
 {
+  return if ($loaded_ok == 0);
+  
   my %args = %{@_[ ARG0 ]};
 
   # If leaver ID = swapRequester then shutdown swap
