@@ -949,6 +949,16 @@ sub display_plugin_error
   modules::console_output ( "[PLUGIN] Error in plugin $plugin - $error" );
 }
 
+# Converts a UNIX timestamp into a data and/or time string representation
+#
+# $format
+#   The formatting string to apply to the timestamp
+# $timestamp
+#   The timestamp to format
+# $localtime
+#   Optional, whether to format the timestamp in local time. Defaults to 1 (true)
+sub strftimestamp($$;$) { return modules::strftimestamp(shift,shift,shift // 1); }
+
 
 
 
