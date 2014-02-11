@@ -37,8 +37,8 @@ our %additional_events =
 );
 
 # Forward declarations
-sub get_seen($)
-sub get_time_difference($$)
+sub get_seen($);
+sub get_time_difference($$);
 
 
 
