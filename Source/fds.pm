@@ -97,7 +97,7 @@ sub send_message($;$)
 {
   my ($message,$sender) = (@_);
 
-  $message = '('+$sender+"): $message" if ( defined($sender) );
+  $message = '('.$sender."): $message" if ( defined($sender) );
   send_command("msg $message");
   return 1;
 }
@@ -107,7 +107,7 @@ sub send_admin_message($;$)
 {
   my ($message,$sender) = (@_);
 
-  $message = '('+$sender+"): $message" if ( defined($sender) );
+  $message = '('.$sender."): $message" if ( defined($sender) );
   send_command("admin_message $message");
   return 1;
 }
@@ -120,7 +120,7 @@ sub send_message_player($$;$)
   my ($result, %playerdata) = playerData::getPlayerData($player);
   return 0 if ( $result != 1 );
 
-  $message = '('+$sender+"): $message" if (defined($sender));
+  $message = '('.$sender."): $message" if (defined($sender));
   return 1 if ($brconfig::enableCmsgPaging && send_coloured_message_player(0,255,0,$message,$playerdata{'id'},$sender));
 
   # CMSG paging not enabled or not supported so fall back on older methods
@@ -139,7 +139,7 @@ sub send_coloured_message($$$$;$)
 
   return 0 if ( $brconfig::serverScriptsVersion < 2.6 );
 
-  $message = '('+$sender+"): $message" if ( defined($sender) );
+  $message = '('.$sender."): $message" if ( defined($sender) );
   send_command("cmsg $r,$g,$b $message");
   return 1;
 }
@@ -152,7 +152,7 @@ sub send_coloured_message_player($$$$$;$)
   my ($result, %playerdata) = playerData::getPlayerData($player);
   return 0 if ( $result != 1 || $playerdata{'scriptsVersion'} < 2.6 || $brconfig::serverScriptsVersion < 2.6 );
 
-  $message = '('+$sender+"): $message" if ( defined($sender) );
+  $message = '('.$sender."): $message" if ( defined($sender) );
   send_command("cmsgp $playerdata{id} $r,$g,$b $message");
   play_sound_player('yo1.wav', $playerdata{'id'});
   return 1;
@@ -166,7 +166,7 @@ sub send_coloured_message_team($$$$$;$)
   return 0 if ( $brconfig::serverScriptsVersion < 2.6 );
 
   my $teamid = brTeams::get_id_from_name($team);
-  $message = '('+$sender+"): $message" if ( defined($sender) );
+  $message = '('.$sender."): $message" if ( defined($sender) );
 
   send_command("cmsgt $teamid $r,$g,$b $message");
   play_sound_team('yo1.wav', $teamid);
