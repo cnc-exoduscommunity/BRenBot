@@ -1190,9 +1190,15 @@ sub display_vehicles_printTeam
   my $ircChannelCode = shift;
 
   my $message = "";
+  my $vehicleCount = keys %{$teamvehicles};
+  my $currentIteration = 0; 
   foreach (keys %{$teamvehicles})
   {
-    $message .= " $teamvehicles->{$_} $_,";
+    $message .= " $teamvehicles->{$_} $_";
+    $currentIteration++;
+    if ( $currentIteration < $vehicleCount ) { # append comma if we have vehicles left in the list
+    	$message .= ',';
+    }
   }
 
   # If there are no vehicles then use "None" for the message string
