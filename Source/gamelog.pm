@@ -1294,16 +1294,14 @@ sub vehicle_created_gamelog
     return if (1 != $brconfig::gamelog_show_vehicle_purchase || 1 == $startup);
 
     my $vehicle_object = $_[HEAP]->{'veh_object'};
-    my $side = $vehicle_object->{'team'};
-    my $irc_message;
-    my $translated_preset = translatePreset( $vehicle_object->{preset} );
+    my $translated_preset = translatePreset($vehicle_object->{'preset'});
 
-    if ($side == 0 and defined $last_purchase_nod)
+    if ($vehicle_object->{'team'} == 0 and defined $last_purchase_nod)
     {
       brIRC::ircmsg(brIRC::colourise(9,'[Vehicle Purchase] ').brTeams::colourise(0, $last_purchase_nod.' purchased a '.$translated_preset), 'A');
       undef $last_purchase_nod;
     }
-    elsif (defined $last_purchase_gdi)
+    elsif ($vehicle_object->{'team'} == 1 and defined $last_purchase_gdi)
     {
       brIRC::ircmsg(brIRC::colourise(9,'[Vehicle Purchase] ').brTeams::colourise(1, $last_purchase_gdi.' purchased a '.$translated_preset), 'A');
       undef $last_purchase_gdi;
