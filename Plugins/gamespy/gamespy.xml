@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+
+<plugin name="gamespy">
+
+  <!-- Configuration settings for the plugin, change the values of these to suit your server -->
+  <config>
+
+    <!-- List of master servers to send broadcasts to, enter these as IP:Port pairs. Comment out
+    this setting if you do not want to broadcast to any master servers -->
+    <cvar name="master_servers">
+      <value>master.gamespy.com:27900</value>
+    </cvar>
+
+    <!-- UDP port to listen on for GSA queries from clients. This value must be unique on the host
+    server from all other game servers or applications and must be allowed through any firewalls -->
+    <cvar name="query_port" value="23500"/>
+
+    <!-- This setting contains additional custom values to be broadcast to the master server, enter
+    these as Key=Value pairs. The key must contain only alphanumeric characters and no spaces -->
+    <cvar name="custom_info">
+      <value>Website=www.renforums.com</value>
+      <!--<value>IRC=irc.myserver.com</value>-->
+      <!--<value>Teamspeak=ts.mytsserver.com</value>-->
+      <!--<value>Ventrilo=myventserver.com</value>-->
+    </cvar>
+  </config>
+</plugin>

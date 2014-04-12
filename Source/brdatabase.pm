@@ -309,11 +309,17 @@ sub check_database
       execute_query ( "DELETE FROM modules WHERE name = 'BRenBot_dll'", 1 );
     }
 
-	 	# Finally set all the globals to the current version
-	 	set_global ( 'version', main::BR_VERSION );
-	 	set_global ( 'build', main::BR_BUILD );
+    if ( $dbVersion < 1.54 || ($dbVersion == 1.54 && $dbBuild <= 1) )
+    {
+      print "      Deleting redundant modules...\n";
+      execute_query ( "DELETE FROM modules WHERE name = 'gamespy_players'", 1 );
+    }
 
-	 	modules::console_output ( "Database update to ".main::BR_VERSION." (build ".main::BR_BUILD.") complete." );
+    # Finally set all the globals to the current version
+    set_global ( 'version', main::BR_VERSION );
+    set_global ( 'build', main::BR_BUILD );
+
+    modules::console_output ( "Database update to ".main::BR_VERSION." (build ".main::BR_BUILD.") complete." );
  	}
 }
 

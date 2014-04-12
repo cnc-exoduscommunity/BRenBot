@@ -10,30 +10,29 @@ use POE;
 use RenRem;
 
 # Variables for holding the server status
-my $serverMode			= "WOL";
-my $currentMap			= "last round";
-my $currentMapNum		= -1;
-my $mapStartTime		= 0;
-my $lastMap				= "last round";
-my $maxPlayers			= 0;
-my $gdiPlayers			= 0;
-my $gdiPoints			= 0;
-my $nodPlayers			= 0;
-my $nodPoints			= 0;
-my $timeRemaining		= 0;
-my $sfps				= 0;
-my $radarmode			= -1; # radarmode
+my $serverMode        = "WOL";
+my $currentMap        = "last round";
+my $currentMapNum     = -1;
+my $mapStartTime      = 0;
+my $lastMap           = "last round";
+my $maxPlayers        = 0;
+my $gdiPlayers        = 0;
+my $gdiPoints         = 0;
+my $nodPlayers        = 0;
+my $nodPoints         = 0;
+my $timeRemaining     = 0;
+my $sfps              = 0;
+my $radarmode         = -1; # radarmode
 
 # Variables for the status refresh loop
 my $lastRequestTime   = 0;
 my $lastResponseTime  = 0;
 my $fdsResponding     = 0;
 
-# Other misc data about the server, mostly used by RG and GSA
-my $gameTitle			= "";
-my $defaultMaxPlayers	= 0;
-my $isPassworded		= 0;
-my $startMap			= "N/A";
+# Other misc data about the server
+my $defaultMaxPlayers = 0;
+my $isPassworded      = 0;
+my $startMap          = "N/A";
 
 
 ###################################################
@@ -185,12 +184,6 @@ sub updateStatus_Nod
 	$lastResponseTime = time();
 }
 
-# Update game title
-sub updateGameTitle
-{
-	$gameTitle = shift;
-}
-
 # Update default max players
 sub updateDefaultMaxPlayers
 {
@@ -219,7 +212,7 @@ sub updateStartMap
 # Returns array of all data
 sub getGameStatus
 {
-	return ( $serverMode, $currentMap, $gdiPlayers, $gdiPoints, $nodPlayers, $nodPoints, ($nodPlayers+$gdiPlayers), $maxPlayers, $timeRemaining, $sfps );
+  return ( $serverMode, $currentMap, $gdiPlayers, $gdiPoints, $nodPlayers, $nodPoints, ($nodPlayers+$gdiPlayers), $maxPlayers, $timeRemaining, $sfps );
 }
 
 # Returns current server mode
@@ -292,12 +285,6 @@ sub getCurrentPlayers
 sub getMaxPlayers
 {
 	return $maxPlayers;
-}
-
-# Returns game title
-sub getGameTitle
-{
-	return $gameTitle;
 }
 
 # Returns default max players

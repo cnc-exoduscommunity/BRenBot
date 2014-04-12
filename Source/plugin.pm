@@ -159,7 +159,7 @@ sub load_plugin
     { return 0; }
 
   # OK, plugin exists and is not already loaded, so lets see if we can load it...
-  modules::console_output ( "[PLUGIN] Loading plugin $plugin_name... ", 1 );
+  modules::console_output ( "[Plugin] Loading plugin $plugin_name... ", 1 );
 
 
   # Load the plugin XML file first - this is the most likely part to fail
@@ -208,7 +208,7 @@ sub load_plugin
   }
 
   # Build additional events string
-  my $additional_events;
+  my $additional_events = "";
   while (my ($key, $value) = each %additional_events)
   {
     $additional_events .= " $key => sub { plugin_event('$plugin_name','$value',\@_); }, \n";
@@ -268,7 +268,7 @@ sub load_plugin
   eval "\n".$poe;
   if ($@)
   {
-    modules::console_output( "[PLUGIN] $plugin_name failed to start! Error: $@" );
+    modules::console_output( "[Plugin] $plugin_name failed to start! Error: $@" );
     set_state( $plugin_name, 2 );
     unload_plugin( $plugin_name );
     return 2;
@@ -296,7 +296,7 @@ sub unload_plugin
   if ( $plugin_state != 1 && $plugin_state != 2 )
     { return; }
 
-  modules::console_output ( "[PLUGIN] Unloading plugin $plugin_name" );
+  modules::console_output ( "[Plugin] Unloading plugin $plugin_name" );
 
   my $plugin_session = $poe_kernel->alias_resolve('plugin_'.$plugin_name);
   if ( defined($plugin_session) )
@@ -322,7 +322,7 @@ sub unload_plugin
         my $error = unimport_plugin($plugin_name);
         if ($error)
         {
-          modules::console_output ( "[PLUGIN] Failed to unload $plugin_name.pm: $error" );
+          modules::console_output ( "[Plugin] Failed to unload $plugin_name.pm: $error" );
           set_state ( $plugin_name, 2 );
         }
 
@@ -374,7 +374,7 @@ sub plugin_start
 
   if ( $@ )
   {
-    modules::console_output ( "[PLUGIN] Failed to pass configuration data to plugin $plugin_name!" );
+    modules::console_output ( "[Plugin] Failed to pass configuration data to plugin $plugin_name!" );
     unload_plugin($plugin_name);
     return;
   }
@@ -436,7 +436,7 @@ sub plugin_event
   eval '$result = '.$plugin_name.'::'.$plugin_event.'(@_);';
   if ( $@ )
   {
-    modules::console_output ( '[PLUGIN] Plugin '.$plugin_name.'::'.$plugin_event.' failed: '.$@ );
+    modules::console_output ( '[Plugin] Plugin '.$plugin_name.'::'.$plugin_event.' failed: '.$@ );
     return 0;
   }
 
@@ -762,6 +762,46 @@ sub RenRemCMDtimed { fds::send_command(@_); }
 sub getGameStatus { return serverStatus::getGameStatus(); }
 
 
+# Get the port number used to connect to the server
+sub server_get_gameport { return $brconfig::server_gameport; }
+
+
+# Get the name, or title, of the server
+sub server_get_name { return $brconfig::server_name; }
+
+
+# Get the maximum number of players in the server
+sub server_get_max_players { return serverStatus::getMaxPlayers(); }
+
+
+# Get the current number of players in the server
+sub server_get_current_players { return serverStatus::getCurrentPlayers(); }
+
+
+# Get a value indicating whether the server is password protected or not
+sub server_has_password { return serverStatus::getIsPassworded(); }
+
+
+# Check if this server enforces that the driver is always the gunner
+sub server_enforces_driver_gunner { return $brconfig::server_rules{'driver_gunner'}; }
+
+
+# Check if this server allows players to change team
+sub server_allows_team_changing { return $brconfig::server_rules{'team_changing'}; }
+
+
+# Check if this server allows friendly fire
+sub server_allows_friendly_fire { return $brconfig::server_rules{'friendly_fire'}; }
+
+
+# Gets the amount of starting credits granted by this server
+sub server_get_starting_credits { return $brconfig::server_rules{'credits'}; }
+
+
+# Get the total number of seconds left in the current match
+sub match_get_time_remaining { return serverStatus::getTime(); }
+
+
 # Get the current map
 #
 # \return The name of the current map being played in the server
@@ -792,9 +832,6 @@ sub send_message($;$) { return fds::send_message(shift,shift); }
 # \param[in] $sender
 #   Message sender, optional
 sub send_admin_message($;$) { return fds::send_admin_message(shift,shift); }
-
-# \deprecated use send_message
-sub serverMsg { fds::send_message(shift); }
 
 
 
@@ -946,7 +983,7 @@ sub display_plugin_error
   my $plugin = shift;
   my $error = shift;
 
-  modules::console_output ( "[PLUGIN] Error in plugin $plugin - $error" );
+  modules::console_output ( "[Plugin] Error in plugin $plugin - $error" );
 }
 
 # Converts a UNIX timestamp into a data and/or time string representation
@@ -1074,7 +1111,8 @@ sub is_on_renguard { return 1; }
 # \deprecated Use getPlayerData and use the value of the scriptsVersion key within their data hash
 sub get_bhs_version { return playerData::getKeyValue ( shift, "scriptsVersion"); }
 
-1;
+# \deprecated use send_message instead
+sub serverMsg { fds::send_message(shift); }
 
 
 
@@ -1133,3 +1171,5 @@ sub core_override_playerleave_message($$)
   $core_function_overrides{'playerleave_msg'} = { 'plugin_name' => $plugin_name, 'plugin_event' => $plugin_event };
   return 1;
 }
+
+1;

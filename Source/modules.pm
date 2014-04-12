@@ -421,7 +421,6 @@ sub check_modules
   my %modulesList =
   (
     teammessages => "Displays team (f3) chat messages in IRC",
-    gamespy_players => "Broadcast this server to the GameSpy Arcade server browser",
     gamelog => "Enables support for the SSGM gamelog",
     new_gi => "!gi shows info on one line instead of five lines",
     map_settings => "Allows customising server settings on a per-map basic. Includes time limit, mine limit, vehicle limit and map rules.",

@@ -34,17 +34,6 @@ our $config_q_password;
 our $irc_operUser                         = "";
 our $irc_operPass                         = "";
 
-# GSA Settings
-our $config_gamespyqueryport;
-our $config_generate_gamespy_queries      = 0;
-our $config_broadcast_to_gamespy          = 0;
-our $config_gamespy_ip                    = 0;
-our $config_gamespy_gameport;
-our $config_gamespy_broadcast_website     = '';
-our $config_gamespy_broadcast_irc         = '';
-our $config_gamespy_broadcast_teamspeak   = '';
-our $config_gamespy_broadcast_ventrilo    = '';
-
 
 # Filename Settings
 our $config_autoannouncefile              = "autoannounce.cfg";
@@ -66,8 +55,6 @@ our $config_renrem_host                   = "127.0.0.1";
 our $config_renrem_port;
 our $config_renrem_password;
 
-our $config_redirect_port;
-our $config_redirect;
 our $config_minimum_scripts_version       = '0';
 our $config_force_bhs_dll_map             = '0';
 our $enable_gamelog_loaded_check          = '1';
@@ -104,8 +91,11 @@ our $gamelog_in_ssgm                      = 0;      # If this is set to 1 we don
 our $ssgmLogPrefix                        = "ssgm"; # Prefix for the ssgm logs
 
 # Server settings - read from svrcfg_cnc.ini
+our $server_name;
 our $server_timelimit                     = 0;      # If this is 0 we shouldn't enforce the 3 second restriction on setnextmap
 our %server_rules;
+our $server_gameport                      = 0;
+our $server_gamespy_gameport              = 0;
 
 
 
@@ -172,18 +162,13 @@ sub read_server_configuration
 
 		if ($_ =~ m/GameSpyGamePort\s*=\s*(\d+)/)
 		{
-			$config_gamespy_gameport = $1;
+			$server_gamespy_gameport = $1;
 		}
 
-		if ($_ =~ m/Port\s*=\s*(\d+)/)
-		{
-			# If we don't have a GSA gameport set use this port, if we later
-			# find a GSA entry it will overwrite this setting.
-			if ( !$config_gamespy_gameport)
-			{
-				$config_gamespy_gameport = $1;
-			}
-		}
+    if ($_ =~ m/Port\s*=\s*(\d+)/)
+    {
+      $server_gameport = $1;
+    }
 	}
 
 
@@ -231,16 +216,6 @@ sub ReadConfig
 			if ( /^\s*operAuthUser\s*=\s*(\S+)/i )						{ $irc_operUser = $1; }
 			if ( /^\s*operAuthPass\s*=\s*(\S+)/i )						{ $irc_operPass = $1; }
 
-			# GSA Settings
-			if (/^\s*Generate_Gamespy_Queries\s*=\s*(.+)/i)				{$config_generate_gamespy_queries = $1; }
-			if (/^\s*Broadcast_Server_To_Gamespy\s*=\s*(.+)/i)			{$config_broadcast_to_gamespy = $1; }
-			if (/^\s*Gamespy_IP\s*=\s*(.+)/i)							{$config_gamespy_ip = $1; }
-			if (/^\s*GameSpyQueryPort\s*=\s*(\S+)/i)					{$config_gamespyqueryport = $1; }
-			if (/^\s*GameSpy_Broadcast_Website\s*=\s*(.+)/i)			{$config_gamespy_broadcast_website = $1; }
-			if (/^\s*GameSpy_Broadcast_IRC\s*=\s*(.+)/i)				{$config_gamespy_broadcast_irc = $1; }
-			if (/^\s*GameSpy_Broadcast_Teamspeak\s*=\s*(.+)/i)			{$config_gamespy_broadcast_teamspeak = $1; }
-			if (/^\s*GameSpy_Broadcast_Ventrilo\s*=\s*(.+)/i)			{$config_gamespy_broadcast_ventrilo = $1; }
-
 			# Filename Settings
 			if (/^\s*AutoAnnounceFile\s*=\s*(\S+)/i)					{ $config_autoannouncefile = $1; }
 			if (/^\s*MessagesFile\s*=\s*(\S+)/i)						{ $config_messagesfile = $1; }
@@ -256,8 +231,6 @@ sub ReadConfig
 			if (/^\s*AutoAnnounceInterval\s*=\s*(\d+)/i)				{$config_autoannounceinterval = $1; }
 			if (/^\s*EnableLadderLookup\s*=\s*(0|1)/i)					{$config_enableladderlookup = $1; }
 			if (/^\s*VehicleKick\s*=\s*(0|1)/i)							{$config_vehiclekick = $1; }
-			if (/^\s*Redirect\s*=\s*(.+)/i)								{$config_redirect = $1; }
-			if (/^\s*RedirectPort\s*=\s*(.+)/i)							{$config_redirect_port = $1; }
 			if (/^\s*Minimum_Scripts_Version\s*=\s*(\d+(\.\d+)?)/i)		{$config_minimum_scripts_version = $1; }
 			if (/^\s*Enable_Gamelog_Loaded_Checks\s*=\s*(1|0)/i)		{$enable_gamelog_loaded_check = $1; }
 			if (/^\s*Enable_CMSG_Paging\s*=\s*(0|1)/i)					{ $enableCmsgPaging = $1; }
@@ -287,13 +260,6 @@ sub ReadConfig
 			if (/^\s*Voting_Allow_Kick \s*=\s*(\d)/i)					{ $config_voting_allow_kick = $1; }
 		}
 	}
-  
-  
-  # Make GSA strings safe to broadcast (strip out \ characters)
-  $config_gamespy_broadcast_website =~ s!\\!/!g;
-  $config_gamespy_broadcast_irc =~ s!\\!/!g;
-  $config_gamespy_broadcast_teamspeak =~ s!\\!/!g;
-  $config_gamespy_broadcast_ventrilo =~ s!\\!/!g;
 
 
 	# Give errors on variables which MUST be provided by the config file, and cannot
@@ -352,10 +318,10 @@ sub readServerSettings
 	open ( ServerConfigFile, $config_fdsconfigfile );
 	while ( <ServerConfigFile> )
 	{
-		if ( /^bGameTitle\s*=\s*(.+)/ )
-		{
-			serverStatus::updateGameTitle ( $1 );
-		}
+    if ( /^bGameTitle\s*=\s*(.+)/ )
+    {
+      $server_name = $1;
+    }
 
 		# svrcfg_cnc.ini map definitions are only used prior to SSGM 4.0
 		if ( $ssgm_version < 4 && /^MapName(\d\d)\s*=\s*(\S+)/ )

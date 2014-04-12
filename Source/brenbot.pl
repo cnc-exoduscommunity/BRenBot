@@ -20,8 +20,8 @@ use strict;
 # sub POE::Kernel::TRACE_FILENAME () { 'memoryleakdebug.txt' }
 
 # Define these before loading BRenBot modules as they may be used inside those modules
-use constant BR_VERSION         => 1.53;
-use constant BR_BUILD           => 20;
+use constant BR_VERSION         => 1.54;
+use constant BR_BUILD           => 1;
 use constant BR_COPYRIGHT_YEAR  => "2003-2014";
 
 # Load BRenBot modules
@@ -38,7 +38,6 @@ use renlog;
 use results;
 use plugin;
 use ssgm;
-use gamespy;
 use brAuth;
 
 # Disable buffering on STDIN / STDOUT
@@ -211,12 +210,6 @@ if ( modules::get_module( "ssgmlog" ) )
 RenRem::RenRemCMD ( "game_info" );
 RenRem::RenRemCMD ( "player_info" );
 RenRem::RenRemCMD ( "sversion" );
-
-# Load GSA if necessary
-if ( modules::get_module( "gamespy_players" ) != 0 )
-{
-  gamespy::init();
-}
 
 # Load modules
 modules::AutoAnnounce_Init();

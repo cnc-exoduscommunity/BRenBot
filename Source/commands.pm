@@ -12,7 +12,6 @@ use brconfig;
 use modules;
 use brIRC;
 use brTeams;
-use gamespy;    # Used by !set command
 use brAuth;
 use RenRem;
 use fds;
@@ -994,11 +993,6 @@ sub set
 			{
 				ssgm::start();
 			}
-
-			if ( $module_name eq "gamespy_players" )
-			{
-				gamespy::init();
-			}
 		}
 		if ( $status eq "off" )
 		{
@@ -1014,11 +1008,6 @@ sub set
 			if ( $module_name eq "ssgmlog" )
 			{
 				$kernel->post( "ssgm_tail" => "stop_ssgmlog" );
-			}
-
-			if ( $module_name eq "gamespy_players" )
-			{
-				gamespy::shutdown();
 			}
 		}
 
