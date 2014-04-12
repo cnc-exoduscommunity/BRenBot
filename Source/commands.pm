@@ -3837,140 +3837,110 @@ sub cmsg
 {
   my %args = %{$_[ ARG0 ]};
 
-  if ( $brconfig::serverScriptsVersion >= 2.6 )
+  eval
   {
-    brIRC::ircmsg ( "The server does not support this command, script version 2.6 or higher is required", $args{'ircChannelCode'} );
-    return;
+    my ($colour, $message, $sendTo);
+
+    if ($args{'command'} eq 'cmsg')           # Send to all
+    {
+      $args{'arg'} =~ /^\!cmsg\s(\S+|\d{1,3},\d{1,3},\d{1,3})\s(.*)/i;
+      $colour = $1;
+      $message = $2;
+    }
+    elsif ($args{'command'} eq 'cmsgp')       # Send to player
+    {
+      $args{'arg'} =~ /^\!cmsgp\s(\S+|\d{1,3},\d{1,3},\d{1,3})\s(\S+)\s(.*)/i;
+      $colour = $1;
+      $sendTo = $2;
+      $message = $3;
+    }
+    elsif ($args{'command'} eq 'cmsgt')       # Send to team
+    {
+      $args{'arg'} =~ /^\!cmsgt\s(\S+|\d{1,3},\d{1,3},\d{1,3})\s(\S+)\s(.*)/i;
+      $colour = $1;
+      $sendTo = $2;
+      $message = $3;
+    }
+
+    if (!defined $message)
+    {
+      show_syntax_error(@_);
+      return;
+    }
+
+    my ($red,$green,$blue) = cmsg_colourToRgb($colour);
+    if (!defined $red || !defined $green || !defined $blue)
+    {
+      brIRC::ircmsg("Error: Unknown colour $colour. Valid colours: Red, Green, Blue, Purple, Orange, White, Black", $args{'ircChannelCode'});
+      return;
+    }
+
+    if ($args{'command'} eq 'cmsg')
+    {
+      if (1 != fds::send_coloured_message($red,$green,$blue,$message,$args{'nick'}))
+      {
+        brIRC::ircmsg('The server does not support this command, script version 2.6 or higher is required', $args{'ircChannelCode'});
+        return;
+      }
+      
+      brIRC::ircmsg ("14CMSG: ($args{nick}): $message", $args{'ircChannelCode'});
+    }
+    elsif ($args{'command'} eq 'cmsgp')
+    {
+      my ($result, %player) = playerData::getPlayerData($sendTo);
+      if ($result != 1)
+      {
+        brIRC::ircmsg("$sendTo was not found in the player list or is not unique.", $args{'ircChannelCode'});
+        return;
+      }
+
+      if (1 != fds::send_coloured_message_player($red,$green,$blue,$message,$player{'id'},$args{'nick'}))
+      {
+        brIRC::ircmsg('The server does not support this command, script version 2.6 or higher is required', $args{'ircChannelCode'});
+        return;
+      }
+
+      brIRC::ircmsg ( "09CMSG sent to $player{name} --> ($args{nick}): $message", $args{'ircChannelCode'} );
+    }
+    elsif ( $args{command} eq "cmsgt" )
+    {
+      my $team = btTeams::get_id_from_name($2);
+      if (!defined $team)
+      {
+        brIRC::ircmsg("Team name $sendTo not recognised", $args{'ircChannelCode'});
+        return;
+      }
+
+      if (1 != fds::send_coloured_message_team($red,$green,$blue,$message,$team,$args{'nick'}))
+      {
+        brIRC::ircmsg('The server does not support this command, script version 2.6 or higher is required', $args{'ircChannelCode'});
+        return;
+      }
+      
+      brIRC::ircmsg('09CMSG sent to '.brTeams::get_name($team)." team --> ($args{nick}): $message", $args{'ircChannelCode'});
+    }
+  }
+  or modules::display_error($@);
+}
+
+sub cmsg_colourToRgb
+{
+  my $colour = lc(shift);
+  if ($colour =~ m/^(\d{1,3}),(\d{1,3}),(\d{1,3})$/)
+  {
+    return ($1,$2,$3) if (255 >= $1 && 255 >= $2 && 255 >= $3);
+    return undef;
   }
 
-  my $rgbcolor;
-  my $message;
-  my $sendTo;
+  return (255, 0, 0) if $colour eq 'red';
+  return (30, 144, 255) if $colour eq 'blue';
+  return (112, 219, 147) if $colour eq 'green';
+  return (138, 43, 226) if $colour eq 'purple';
+  return (255, 127, 0) if $colour eq 'orange';
+  return (255, 255, 255) if $colour eq 'white';
+  return (0, 0, 0) if $colour eq 'black';
 
-	if ( $args{command} eq "cmsg" )			# Send to all
-	{
-		$args{arg} =~ /^\!cmsg\s(\S*)\s(.*)/i;
-		$rgbcolor = $1;
-		$message = $2;
-	}
-	elsif ( $args{command} eq "cmsgp" )		# Send to player
-	{
-		$args{arg} =~ /^\!cmsgp\s(\S*)\s(\S+)\s(.*)/i;
-		$rgbcolor = $1;
-		$sendTo = $2;
-		$message = $3;
-	}
-	elsif ( $args{command} eq "cmsgt" )		# Send to team
-	{
-		$args{arg} =~ /^\!cmsgt\s(\S*)\s(gdi|all|1|nod|sov|0)\s(.*)/i;
-		$rgbcolor = $1;
-		$sendTo = $2;
-		$message = $3;
-	}
-	else
-	{
-		return;
-	}
-
-	if ( $rgbcolor && $message && ( $args{command} eq "cmsg" || $sendTo ) )
-	{
-		eval
-		{
-			my $red;
-			my $green;
-			my $blue;
-
-			if ( $rgbcolor =~ m/^(\d{1,3}),(\d{1,3}),(\d{1,3})$/ )
-			{
-				if ( $1 > 255 || $2 > 255 || $3 > 255 )
-				{
-					brIRC::ircmsg ( "Error: Colour values cannot exceed 255.", $args{'ircChannelCode'} );
-					return;
-				}
-				else
-				{
-					$red = $1;
-					$green = $2;
-					$blue = $3;
-				}
-			}
-			else
-			{
-				if ( $rgbcolor =~ m/^red$/i )
-				{
-					$red = 255; $green = 0; $blue = 0;
-				}
-				elsif ( $rgbcolor =~ m/^blue$/i )
-				{
-					$red = 30; $green = 144; $blue = 255;
-				}
-				elsif ( $rgbcolor =~ m/^green$/i )
-				{
-					$red = 112; $green = 219; $blue = 147;
-				}
-				elsif ( $rgbcolor =~ m/^purple$/i )
-				{
-					$red = 138; $green = 43; $blue = 226;
-				}
-				elsif ( $rgbcolor =~ m/^orange$/i )
-				{
-					$red = 255; $green = 127; $blue = 0;
-				}
-				elsif ( $rgbcolor =~ m/^white$/i )
-				{
-					$red = 255; $green = 255; $blue = 255;
-				}
-				elsif ( $rgbcolor =~ m/^black$/i )
-				{
-					$red = 0; $green = 0; $blue = 0;
-				}
-				else
-				{
-					brIRC::ircmsg ( "Error: Unknown colour $rgbcolor. Valid colours: Red, Green, Blue, Purple, Orange, White, Black", $args{'ircChannelCode'} );
-					return;
-				}
-			}
-
-			if ( $args{command} eq "cmsg" )
-			{
-        fds::send_coloured_message($red,$green,$blue,$message,$args{'nick'});
-				brIRC::ircmsg ( "14CMSG: ($args{nick}): $message", $args{'ircChannelCode'} );
-			}
-			elsif ( $args{command} eq "cmsgp" )
-			{
-				my ($result, %player) = playerData::getPlayerData( $sendTo );
-				if ($result == 1)
-				{
-          fds::send_coloured_message_player($red,$green,$blue,$message,$player{'id'},$args{'nick'});
-					brIRC::ircmsg ( "09CMSG sent to $player{name} --> ($args{nick}): $message", $args{'ircChannelCode'} );
-				}
-				else
-				{
-					brIRC::ircmsg ( "$sendTo was not found in the player list, or is not unique.", $args{'ircChannelCode'} );
-				}
-			}
-			elsif ( $args{command} eq "cmsgt" )
-			{
-				my $team;
-				if ( lc($sendTo) eq "gdi" || lc($sendTo) eq "all" || $sendTo eq "1" )
-				{ $team = 1;}
-
-				elsif ( lc($sendTo) eq "nod" || lc($sendTo) eq "sov" || $sendTo eq "0" )
-				{ $team = 0;}
-
-				else
-				{ return; }
-
-        fds::send_coloured_message_team($red,$green,$blue,$message,$team,$args{'nick'});
-				brIRC::ircmsg ( "09CMSG sent to team $team --> ($args{nick}): $message", $args{'ircChannelCode'}  );
-			}
-		}
-		or modules::display_error($@);
-	}
-	else
-	{
-		show_syntax_error(@_);
-	}
+  return undef;
 }
 
 

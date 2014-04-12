@@ -438,7 +438,7 @@ sub is_banned_for_flooding
   my $count=0;
   foreach (@flood)
   {
-    if ($_->{'ip'} == $remote_addr and ++$count >= 50)
+    if ($_->{'ip'} eq $remote_addr and ++$count >= 50)
     {
       push (@bans, $remote_addr);
       plugin::console_output('[GSA] Banned '.inet_ntoa($remote_addr).' for flooding the query handler');
