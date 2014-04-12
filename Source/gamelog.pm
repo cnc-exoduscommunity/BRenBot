@@ -1289,42 +1289,27 @@ sub vehicle_purchase_renlog
 
 sub vehicle_created_gamelog
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
+  eval
+  {
+    return if (1 != $brconfig::gamelog_show_vehicle_purchase || 1 == $startup);
 
-	eval
-	{
-		if ( $brconfig::gamelog_show_vehicle_purchase != 1 || $startup == 1 )
-		{ return; }
+    my $vehicle_object = $_[HEAP]->{'veh_object'};
+    my $side = $vehicle_object->{'team'};
+    my $irc_message;
+    my $translated_preset = translatePreset( $vehicle_object->{preset} );
 
-		my $vehicle_object = $heap->{veh_object};
-		my $side = $vehicle_object->{team};
-		my $irc_message;
-		my $translated_preset = translatePreset( $vehicle_object->{preset} );
-
-		if ($side == 0) #nod
-		{
-			if ($last_purchase_nod)
-			{
-				$irc_message = "04" . $last_purchase_nod . " purchased a " . $translated_preset;
-				undef $last_purchase_nod;
-			}
-		}
-		else #gdi
-		{
-			if ($last_purchase_gdi)
-			{
-				$irc_message = "08" . $last_purchase_gdi . " purchased a " . $translated_preset;
-				undef $last_purchase_gdi;
-			}
-		}
-
-		if ( $irc_message )
-		{
-			brIRC::ircmsg( "3[Vehicle Purchase] " . $irc_message, "A" );
-		}
-	}
-	or modules::display_error($@);
+    if ($side == 0 and defined $last_purchase_nod)
+    {
+      brIRC::ircmsg(brIRC::colourise(9,'[Vehicle Purchase] ').brTeams::colourise(0, $last_purchase_nod.' purchased a '.$translated_preset), 'A');
+      undef $last_purchase_nod;
+    }
+    elsif (defined $last_purchase_gdi)
+    {
+      brIRC::ircmsg(brIRC::colourise(9,'[Vehicle Purchase] ').brTeams::colourise(1, $last_purchase_gdi.' purchased a '.$translated_preset), 'A');
+      undef $last_purchase_gdi;
+    }
+  }
+  or modules::display_error($@);
 }
 
 
