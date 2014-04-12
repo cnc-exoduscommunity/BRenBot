@@ -31,9 +31,7 @@ our $plugin_name;
 our %config;
 
 # Define additional events in the POE session
-our %additional_events =
-(
-);
+our %additional_events = ();
 
 my $queryid = 10;
 my @flood;
@@ -50,7 +48,7 @@ my @bans;
 
 sub start
 {
-  return ($loaded_ok = 0) if (1 != check_config());
+  return ($loaded_ok = 0) if (1 != load_config());
 
   # Set our current version in the globals table
   plugin::set_global ( "version_plugin_gamespy", $currentVersion );
@@ -219,9 +217,12 @@ sub master_heartbeat_stop
   $_[KERNEL]->alarm_remove_all();
   if (defined($_[HEAP]->{'socket_handle'}))
   {
-    my $heartbeat = "\\heartbeat\\".$config{'query_port'}."\\gamename\\ccrenegade\\statechanged\\2";
-    send($_[HEAP]->{'socket_handle'}, $heartbeat, 0, $_[HEAP]->{'server_endpoint'});
-    
+    if (defined($_[HEAP]->{'server_endpoint'}))
+    {
+      my $heartbeat = "\\heartbeat\\".$config{'query_port'}."\\gamename\\ccrenegade\\statechanged\\2";
+      send($_[HEAP]->{'socket_handle'}, $heartbeat, 0, $_[HEAP]->{'server_endpoint'});
+    }
+
     $_[KERNEL]->select_read($_[HEAP]->{'socket_handle'});
     undef $_[HEAP]->{'socket_handle'};
     delete $_[HEAP]->{'socket_handle'};
@@ -333,7 +334,7 @@ sub generate_players
 # --------------------------------------------------------------------------------------------------
 
 # Checks the plugin configuration settings are valid
-sub check_config
+sub load_config
 {
   if (!defined($config{'query_port'}) || $config{'query_port'} !~ m/^\d+$/)
   {
@@ -351,8 +352,23 @@ sub check_config
 
     foreach (@{$rawMasterServers})
     {
-      $server = check_config_parse_master_server($_);
+      $server = load_config_parse_master_server($_);
       push(@{$config{'master_servers'}}, $server) if defined $server;
+    }
+  }
+
+  # We want to ensure $config always contains an array, regardless of how many entries there are
+  my $rawCustomInfo = $config{'custom_info'};
+  $config{'custom_info'} = ();
+
+  if (defined($rawCustomInfo))
+  {
+    $rawCustomInfo = [$rawCustomInfo] if (ref $rawCustomInfo ne 'ARRAY');
+
+    foreach (@{$rawCustomInfo})
+    {
+      $customInfo = load_config_parse_custom_info($_);
+      push(@{$config{'custom_info'}}, $customInfo) if defined $customInfo;
     }
   }
   
@@ -361,7 +377,7 @@ sub check_config
 
 # Checks a master server entry is correctly formed in the configuration and parses it from IP:Port
 # into a hash of {ip=>ip,port=>port}
-sub check_config_parse_master_server
+sub load_config_parse_master_server
 {
   my $config_entry = shift;
 
@@ -386,10 +402,19 @@ sub check_config_parse_master_server
   return $masterServer;
 }
 
-sub check_config_parse_custom_info
+sub load_config_parse_custom_info
 {
-  ## Strip out illegal characters in value
-  ##$config_gamespy_broadcast_website =~ s!\\!/!g;
+  my $config_entry = shift;
+
+  if ($config_entry =~ m/^([a-z0-9_]+)\s*=\s*(.+)$/i)
+  {
+    my $value = $2;
+    $value =~ s!\\!/!g; # Replace any instances of \ with / since \ is the GSA protocol delimiter
+    return {'key' => $1, 'value' => $value};
+  }
+
+  plugin::console_output('[GSA] Config Warning: Ignoring badly formed custom info entry '.$config_entry);
+  return undef;
 }
 
 # Checks if a specified remote endpoint has been banned for flooding the server with queries
