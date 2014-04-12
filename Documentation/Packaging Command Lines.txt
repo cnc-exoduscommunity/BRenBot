@@ -15,7 +15,7 @@ but remember to update the version numbers as appropriate.
 
 BRenBot 1.x
 
-pp -o brenbot.exe -M POE/Filter.pm -M POE/Filter/Stream.pm -M POE/Component/Server/TCP.pm -M XML/LibXML/Sax.pm -l libexpat-1_.dll -l libxml2-2_.dll -l libiconv-2_.dll -l liblzma-5_.dll -l zlib1_.dll brenbot.pl
+pp -o brenbot.exe -M POE/Filter.pm -M POE/Filter/Stream.pm -M XML/LibXML/Sax.pm -l libexpat-1_.dll -l libxml2-2_.dll -l libiconv-2_.dll -l liblzma-5_.dll -l zlib1_.dll brenbot.pl
 
 OR
 
