@@ -688,6 +688,17 @@ sub get_playerlist { return playerData::getPlayerList(); }
 #   empty list (any other value of $result)
 sub getPlayerData { return playerData::getPlayerData($_[0]); }
 
+
+# Sets a key value on a player data record
+#
+# \param[in] $player
+#   Name or ID of player to set a key value upon
+# \param[in] $key
+#   The key to set a value for
+# \param[in] $vaule
+#   The value to set on the key
+sub player_set_key_value($$$) { playerData::setKeyValue(@_); }
+
 # send_message_player function for plugins
 #
 # \param[in] $message
@@ -949,6 +960,21 @@ sub call_command
 
   eval { commands::parsearg($command, $callername, "Y") };
   modules::display_error($@) if $@;
+}
+
+
+# Instructs BRenBot to carry out a ban check on a specified player. Any plugin which provides serial
+# hashes to the bot should call this after calling player_set_key_value to update the 'serial' key
+#
+# \param[in] $player
+#   Name or ID of player to check the ban status of. Partial names are not accepted for this command
+#
+# \return
+#   1 if the player is currently banned or kicked from the server, 0 otherwise
+sub perform_ban_check($)
+{
+  my $player = shift;
+  return (renlog::check_banlist($player) || modules::check_kicks($player)) ? 1 : 0;
 }
 
 

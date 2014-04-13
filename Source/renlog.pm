@@ -214,39 +214,37 @@ sub fakeUser
 # Checks the banlist to see if the specified player is banned
 sub check_banlist
 {
-#	print "DEBUG: Checkbanlist\n";
-	my $name = shift;
+  my ($result, %player) = playerData::getPlayerData(shift, 1);
+  if (1 == $result)
+  {
+    my ($banresult, $reason, $banner, $date) = modules::is_banned($player{'name'});
+    if ($banresult)
+    {
+      return 1 if 1 == $player{'banned'};
 
-	my ( $result, $reason, $banner, $date ) = modules::is_banned( $name );
-	if ( $result && playerData::getKeyValue ( $name, "banned" ) != 1 )
-	{
-		my ( $result2, %player ) = playerData::getPlayerData ( $name );
-		if ( $result2 == 1 )
-		{
-			RenRem::RenRemCMD( "msg [BR] $player{name} has been BANNED on $date by $banner for: $reason" );
+      modules::console_output("player_id $player{id} is BANNED");
+      RenRem::RenRemCMD("msg [BR] $player{name} has been BANNED on $date by $banner for: $reason");
 
-			modules::console_output ( "player_id $player{id} is BANNED" );
+      if ($brconfig::serverScriptsVersion >= 2.0)
+        { RenRem::RenRemCMD( "pamsg $player{id} You have been BANNED on $date by $banner for: $reason" ); }
 
-			if ($brconfig::serverScriptsVersion >= 2.0)
-				{ RenRem::RenRemCMD( "pamsg $player{id} You have been BANNED on $date by $banner for: $reason" ); }
+      # If we are using SSGM 4.0 then we need to add this ban to it's bans list
+      if ($brconfig::ssgm_version >= 4)
+      {
+        RenRem::RenRemCMD('ban '.$player{'id'}." Banned on $date by $banner for $reason");
+      }
 
-			# If we are using SSGM 4.0 then we need to add this ban to it's bans list
-			if ( $brconfig::ssgm_version >= 4 )
-			{
-				RenRem::RenRemCMD ( 'ban '.$player{'id'}." Banned on $date by $banner for $reason" );
-			}
+      # Otherwise remove them from the server the old fashioned way
+      else
+      {
+        RenRem::RenRemCMD ('kick '.$player{'id'});
+      }
+      playerData::setKeyValue($player{'id'}, "banned", 1);
+      return 1;
+    }
+  }
 
-			# Otherwise remove them from the server the old fashioned way
-			else
-			{
-				RenRem::RenRemCMD ( 'kick '.$player{'id'} );
-			}
-			playerData::setKeyValue ( $player{'id'}, "banned", 1 );
-			return 1;
-		}
-	}
-
-	return 0;
+  return 0;
 }
 
 

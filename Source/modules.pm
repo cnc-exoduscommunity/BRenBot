@@ -270,15 +270,15 @@ sub ban_player
 #   Player          Name to be banned from the server
 #   banner          Name of the person who banned them
 #   Reason          Reason for them being banning them from the server
-#   Serial          Serial hash to be banned from the server
 #   IP              IP Address to be banned from the server
+#   Serial          Serial hash to be banned from the server
 sub record_ban
 {
-	my $name = shift;					$name =~ s/'/''/g;
-	my $banner = shift;					$banner =~ s/'/''/g;
-	my $reason = shift;					$reason =~ s/'/''/g;
+	my $name = shift;           $name =~ s/'/''/g;
+	my $banner = shift;         $banner =~ s/'/''/g;
+	my $reason = shift;         $reason =~ s/'/''/g;
 	my $ip = shift;
-	my $serial = shift;
+	my $serial = shift;         $serial =~ s/'/''/g;
 
 	my $timestamp = time();
 	brdatabase::execute_query ( "INSERT INTO bans ( name, ip, serial, banner, reason, timestamp ) VALUES ( '$name', '$ip', '$serial', '$banner', '$reason', '$timestamp' )", 1 );
@@ -316,8 +316,8 @@ sub is_banned
   my $name = shift;					$name =~ s/'/''/g;
 
   # Data should already be in the playerData array - Exact match only
-  my ( $result, %player ) = playerData::getPlayerData ( $name, 1 );
-  return if ( $result != 1 );
+  my ($result, %player) = playerData::getPlayerData($name, 1);
+  return 0 if (1 != $result);
 
 
   # Generate query string

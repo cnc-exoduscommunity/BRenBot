@@ -309,7 +309,7 @@ sub check_database
       execute_query ( "DELETE FROM modules WHERE name = 'BRenBot_dll'", 1 );
     }
 
-    if ( $dbVersion < 1.54 || ($dbVersion == 1.54 && $dbBuild <= 1) )
+    if ( $dbVersion < 1.54 || ($dbVersion == 1.54 && $dbBuild < 1) )
     {
       print "      Deleting redundant modules...\n";
       execute_query ( "DELETE FROM modules WHERE name = 'gamespy_players'", 1 );
