@@ -262,7 +262,7 @@ sub parse_line
   my $time = "";
 
   # Strip timestamp from input
-  if ($line =~ m/^\[(?:\d{2}):(?:\d{2}):(?:\d{2})\]\s?(.+)\r?\n?/i)
+  if ($line =~ m/^\[(\d{2}:\d{2}:\d{2})\]\s?(.+)\r?\n?/i)
   {
     $time = $1;
     $line = $2;
@@ -271,7 +271,7 @@ sub parse_line
   $line =~ s/	/ /g;   # replace any TABS with a space
   $line =~ s/^ //;    #eat leading spaces
 
-  #modules::console_output ( "[Renlog] DEBUG: Parsing input ==>$line<==\n" );
+  modules::console_output("[Renlog] DEBUG: Parsing input ==>$line<==");
 
   # Skip level loading messages ([00:52:01] Load 0% complete[00:52:01] Load 0% complete....)
   return if ($line =~ m/^Load \d+\% Complete/i);
@@ -281,16 +281,19 @@ sub parse_line
   # any names with spaces in since we are banning those now (see check_playername)
   if ($line =~ m/^(\[Team\]\s)?([^\s:]+):\s(.+)/i)
   {
+    modules::console_output("[Renlog] DEBUG: Chat message");
     handle_chat($2, $3, (defined($1) and $1 eq "[Team]") ? 1 : 0);
   }
 
   elsif ($line =~ m/^\[Page\]\s([^:]+):\s(.+)$/)
   {
+    modules::console_output("[Renlog] DEBUG: Page");
     handle_page($1, $2);
   }
 
   else
   {
+    modules::console_output("[Renlog] DEBUG: Other input");
     handle_input($line);
   }
 
