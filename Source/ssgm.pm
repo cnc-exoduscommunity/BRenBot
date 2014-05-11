@@ -298,28 +298,19 @@ sub renew_wheel
 	{
 		modules::console_output ( 'Found', 3 );
 
-		if ($midnight == 1)
-		{
-			brIRC::ircmsg( "[BR] Switching to new SSGM logfile...");
-			$heap->{wheel} = POE::Wheel::FollowTail->new(
-			     Filename   => "$name",
-			     InputEvent => 'got_line',
-			     ErrorEvent => 'got_error',
-			     #Seek       => 0,
-			     );
-			$heap->{first} = 0;
-
-			$midnight = 0;
-		}
-		else
-		{
-			$heap->{wheel} = POE::Wheel::FollowTail->new(
-			     Filename   => "$name",
-			     InputEvent => 'got_line',
-			     ErrorEvent => 'got_error',
-			     );
-			$heap->{first} = 0;
-		}
+    if ($midnight == 1)
+    {
+      brIRC::ircmsg( "[BR] Switching to new SSGM logfile...");
+      $midnight = 0;
+    }
+    
+    $heap->{wheel} = POE::Wheel::FollowTail->new(
+         Filename   => "$name",
+         InputEvent => 'got_line',
+         ErrorEvent => 'got_error',
+         #Seek       => 0,
+         );
+    $heap->{first} = 0;
 
 		modules::set_module( "ssgmlog", 1 );
 		if ( $brconfig::gamelog_in_ssgm == 1 && ( modules::get_module ( "gamelog" ) ) )

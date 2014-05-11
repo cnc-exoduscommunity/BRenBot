@@ -12,12 +12,17 @@ use commands;
 use brdatabase;
 use brAuth;
 
-our @invitelist;		# List of players waiting for an invite
-my %joiners;			# List of players who have joined since the last player info
-our $renew_ssgm			= 0;
+my %joiners;                # List of players who have joined since the last player info
+our $renew_ssgm     = 0;
 
-my $logPlayerInfo 		= 0;	# Used to parse player_info commands
-my $readGameDefs		= 0;	# Used to indicate when we are recieving a list of SSGM4.0 gamedefs
+my $logPlayerInfo   = 0;    # Used to parse player_info commands
+my $readGameDefs    = 0;    # Used to indicate when we are recieving a list of SSGM4.0 gamedefs
+
+# Forward declarations
+sub handle_page($$);
+sub handle_chat($$$);
+sub handle_hostmsg($);
+sub handle_input($);
 
 
 # Subroutine to initialize renlog file tail session, if appropriate (EG: Not using SSGM 4.0 or higher)
@@ -247,704 +252,47 @@ sub check_banlist
   return 0;
 }
 
+# --------------------------------------------------------------------------------------------------
 
-
-# Processes chat messages, and outputs them to IRC
-#
-# Chat Messages Look like this: [23:58:36] flawliss9: BAD LAG
-# Team Messages Look like this: [23:58:36] [Team]: flawliss9: BAD LAG
-#
-sub ChatMSG
+# Got a line from the renlog
+sub parse_line
 {
-	my $line = shift;
-	my $teamMessage = 0;
+  my $rawline = shift;          # Keep this in a seperate variable for plugins etc
+  my $line = $rawline;
+  my $time = "";
 
-	# Extract chat name and message text, colorize it.
+  # Strip timestamp from input
+  if ($line =~ m/^\[(?:\d{2}):(?:\d{2}):(?:\d{2})\]\s?(.+)\r?\n?/i)
+  {
+    $time = $1;
+    $line = $2;
+  }
+
+  $line =~ s/	/ /g;   # replace any TABS with a space
+  $line =~ s/^ //;    #eat leading spaces
+  
+  #modules::console_output ( "[Renlog] DEBUG: Parsing input ==>$line<==\n" );
+
+  # Skip level loading messages ([00:52:01] Load 0% complete[00:52:01] Load 0% complete....)
+  return if ($line =~ m/^Load \d+\% Complete/i)
+
   # 10 Sept 2012: Added extra protection by explicitly disallowing : in the username of the player
   # sending the chat message to help prevent abuse of the ambiguous logging format. Also ignoring
   # any names with spaces in since we are banning those now (see check_playername)
-	#if ( $line =~ m~\[(..):(..):(..)\]\s+(.+?):\s(.+)~ )
-	if ( $line =~ m/^\[(\d{2}):(\d{2}):(\d{2})\]\s(\[Team\]\s)?([^\s:]+):\s(.+)/i )
-	{
-		# Prevent bugs/command abuse caused by players with : in their name
-		if ( "$5$6" =~ m/^Player\s.+\s(joined|left)\sthe\sgame$/
-		 || "$5$6" =~ m/^.+:\s!\s.+\swas\skicked$/ )
-		{ return; }
-
-		#print "1 is $1\n	2 is $2\n	3 is $3\n	4 is $4\n	5 is $5\n	6 is $6\n	7 is $7\n";
-		my $playername = $5;
-		my $playermsg  = $6;
-
-    # \todo
-    #   What is the purpose of this? The regex should parse it properly in the first place? Might
-    #   be suitable for removing at some point...
-		if ($playermsg =~ m~\[(..):(..):(..)\]\s+(.+?):\s(.+)~)
-		{
-			$playermsg  = $5;
-			$playername = $4;
-		}
-
-
-		# Check if this is a team message
-		if ( $4 and $4 eq "[Team] " )
-      { $teamMessage = 1; }
-
-		if ( $5 ne "Host" && $5 !~ m/^\[Page\]/i )
-		{
-			# Get data for person who chatted
-			my ( $result, %player ) = playerData::getPlayerData ( $playername );
-			if ( $result == 1 )
-			{
-        # Format mod and admin names
-        my $pname = modules::parseModName($playername, 1);
-
-        # F2 chat
-        if ( $teamMessage == 0 )
-        {
-          brIRC::ircmsg(brTeams::colourise($player{'teamid'},$pname).": $playermsg");
-        }
-
-        # F3 chat, if teammessages is enabled
-        elsif ( $teamMessage && modules::get_module( "teammessages" ) )
-        {
-          my $message = "06\[Team\]".brTeams::colourise($player{'teamid'},"$pname: $playermsg");
-          brIRC::ircmsg($message, ($brconfig::irc_showTeamMessages_PublicChan == 1) ? "P" : "B" );
-        }
-
-
-				# Run plugins for public chat messages
-				my @plugins = plugin::get_plugin_event("text");
-				my %args;
-
-				$args{id}			= $player{'id'};
-				$args{nick}			= $playername;
-				$args{nicktype}		= 0;
-				$args{message}		= $playermsg;
-				$args{messagetype}	= ( $teamMessage ) ? "team" : "public";
-				$args{team}			= $player{'side'};
-
-				foreach (@plugins)
-				{
-					my $plugin = $_;
-					my $alias  = "plugin_" . $plugin;
-
-					$main::poe_kernel->post($alias => "text" => \%args);
-				}
-			}
-		}
-	}
-} # End of ChatMSG sub
-
-
-
-sub add_invite
-{
-	my $name = shift;
-	my $timestamp = time();
-	my %invhash = (
-					name => $name,
-					timestamp => $timestamp,
-				  );
-
-	push (@invitelist, \%invhash);
-	brIRC::ircmsg( "$name added to invite list." );
-	RenRem::RenRemCMD( "page $name You will be auto-invited when a slot opens (moderators first)" );
-}
-
-sub del_invite
-{
-	my $name = shift;
-	my $counter=0;
-	foreach (@invitelist)
-	{
- 		my %hash=%$_;
- 		if ( $hash{'name'} eq $name )
- 		{
-			splice(@invitelist,$counter,1); #remove them from array and shrink the array
-			brIRC::ircmsg( "$name removed from the invite list." );
-			return; # We found them, no need to iterate through the rest of the array.
-		}
-	$counter++;
-	}
-}
-
-sub do_invite
-{
-	my $name=shift;
-#	print "DEBUG: DO-INVITE: $name\n";
-	RenRem::RenRemCMD("page $name <WWINVITE>");
-	brIRC::ircmsg( "Sent $name an invite page." );
-}
-
-sub clean_invite
-{
-	foreach (@invitelist)
-	{
-		my %hash=%$_;
- 		my $timestamp=$hash{'timestamp'};
- 		my $name=$hash{'name'};
- 		if (time() >= ($timestamp+900))
- 		{ #see if their invitation (15 minutes) has expired
- 			#brIRC::ircmsg( "Found old invitation for $name" );
-			del_invite($name); # Delete them
-			return;
-		}
-	}
-}
-
-sub check_invite
-{
-	my $name = shift;
-#	print "DEBUG-checkinvite...\n";
-	foreach (@invitelist) {
- 	my %hash=%$_;
-		if ( $hash{'name'} eq $name ) { # See if they are on invite list
-#			print "DEBUG-Checkinvite: found $name on the list\n";
-			return($name); # Return the name found
-		}
-	}
-
-	return '';
-}
-
-sub mass_invite
-{
-	if ( serverStatus::getCurrentPlayers() < serverStatus::getMaxPlayers() )
-	{
-#		brIRC::ircmsg( "[BR] There are playing positions available, inviting anyone queued...");
-		foreach ( @invitelist )
-		{
- 			my %hash=%$_;
-# 			print "DEBUG: MASS-INVITE: $hash{'name'}\n";
- 			do_invite($hash{'name'});
-		}
-	}
-}
-
-sub ParseLogInput
-{
-	my $rawline = shift;	# Keep this in a seperate variable for plugins etc
-	my $line = $rawline;
-	my $time = "";
-	
-	# Strip timestamp from input
-	if ( $line =~ m/^\[(\d\d:\d\d:\d\d)\]\s?(.+)\r?\n?/i )
-	{
-		$time = $1;
-		$line = $2;
-	}
-	
-	#modules::console_output ( "[Renlog] DEBUG: Parsing input ==>$line<==\n" );
-
-	# Start of game defs?
-	if ( $line =~ m/Available game definitions:/ )
-	{
-		#modules::console_output ( "[Renlog] DEBUG: Start of map defs.\n )";
-		$readGameDefs = 1;
-		@brconfig::installedMaps = ();
-	}
-	elsif ( $readGameDefs == 1 )
-	{
-		if ($line eq " ")
-		{
-			#modules::console_output ( "[Renlog] DEBUG: End of map defs.\n )";
-			$readGameDefs = 0;
-		}
-		else
-		{
-			#modules::console_output ( "[Renlog] DEBUG: Got map $line\n )";
-			push (@brconfig::installed_maps, $line);
-		}
-	}
-
-	# Skip level loading messages ([00:52:01] Load 0% complete[00:52:01] Load 0% complete....)
-	elsif ( $line =~ m/Load \d+\% Complete/i )
-	{}
-
-
-	else
-	{
-		# Reply from mapnum command
-		if ( $line =~ m/The Current Map Number is (\d+)/i )
-		{
-			serverStatus::updateMapNum ( $1 );
-		}
-
-		# Start of the reply from the game_info command
-		if ($line =~ m/(.+?) mode active/g)
-		{
-			serverStatus::updateMode ( $1 );
-		}
-
-		if ( $line =~ /Map : (.+)/ )
-		{
-			serverStatus::updateMap ( $1 );
-		}
-
-		if ($line =~ /Time : (.+)/)
-		{
-			serverStatus::updateTimeRemaining ( $1 );
-		}
-
-		if ($line =~ /Fps : (.+)/)
-		{
-			serverStatus::updateSFPS ( $1 );
-		}
-
-    if ($line =~ /(GDI|All) : (.+?)\/(.+?) players\s+ (.+?) points/)
-    {
-      serverStatus::updateStatus_GDI ( $2, $4, $3 );
-    }
-
-    if ($line =~ /(NOD|Sov) : (.+?)\/(.+?) players\s+ (.+?) points/)
-    {
-      serverStatus::updateStatus_Nod ( $2, $4, $3 );
-    }
-
-		$line =~ s/^\[\d\d:\d\d:\d\d\]//g; # do away with timestamps
-
-		# First line of output from player_info command
-		if ( $line =~ /Id\s+Name/ )
-			{ $logPlayerInfo = 1; }
-
-		if ( $line =~ "No players" )
-			{ $logPlayerInfo = 0; }
-
-		# Last line of output from player_info command
-		if ($line =~ "Total current bandwidth")
-		{
-			$logPlayerInfo = 0;
-			checkPlayerlist();
-		}
-
-		# Player data line from a player_info command
-		if ( $logPlayerInfo )
-			{ parsePlayerInfoInput($line); }
-
-
-
-		$line =~ s/	/ /g;	# repace TABS with a space
-		$line =~ s/^ //;	#eat leading spaces
-
-		## BRINVITE
-		#[21:32:34] [Page] n00bsvr01: (Blazer@IRC): test
-		if ($line =~ /\[Page\] (.*): (letmein|WWDECLINE)/i)
-		{
-			handleInvite($1,$2);
-		}
-
-		if ($line =~ m/\[Page\]\s(.+?):\s\!auth\s(.*)/g)
-		{
-			my $pager = $1;
-			my $pass  = $2;
-			
-			if ( !$pass )
-				{ RenRem::RenRemCMD( "page $pager [BR] Usage: !auth <pass>" ); }
-			
-			else
-			{
-				my $authResult = brAuth::AuthenticateByPassword($pager,$pass);
-				if ( $authResult == 1 )
-				{
-					RenRem::RenRemCMD("page $pager [BR] Authentication was successful!");
-					brIRC::ircmsg( "[BR] Authentication for $pager was successful.", "A" );
-				}
-				elsif ( $authResult == 0 )
-				{
-					RenRem::RenRemCMD( "page $pager [BR] Wrong password!" );
-					brIRC::ircmsg( "[BR] $pager gave an invalid password.", "A" );
-				}
-				elsif ( $authResult == 2 )
-				{
-					RenRem::RenRemCMD( "page $pager [BR] You are already authenticated." );
-				}
-				elsif ( $authResult == 3 )
-				{
-					RenRem::RenRemCMD( "page $pager [BR] Your nickname is not registered. Register it first." );
-				}
-				elsif ( $authResult == 4 )
-				{
-					brIRC::ircmsg( "9[Page] $pager tried to !auth from outside the game!", "A" );
-					RenRem::RenRemCMD( "page $pager [BR] $pager your auth-exploit has been logged and will be reviewed." );
-				}
-			}
-
-			$line = "";
-		}
-
-		if ( $line =~ s/\[Page\]/9\[Page\]/g )
-		{
-			if ( $line !~ /WWDECLINE/ )		# Skip WWDECLINE messages, these are processed elsewhere
-			{
-				# Highlight Pages
-				brIRC::ircmsg( "$line", "A" );
-			}
-		}
-
-
-		if ( $line =~ /^(\[Team\]\s|)(.+):\s(\!.+)$/i )
-		{
-			my $playername	= $2;
-			my $playermsg	= $3;
-
-			if ( $playername =~ /^9\[Page\]\s(.+)/i )
-			{
-				RenRem::RenRemCMD( "page $1 [BR] Paging commands is NOT allowed!" );
-				brIRC::ircmsg ( "9Page Sent to $1 --> [BR] Paging commands is NOT allowed!", "A" );
-			}
-			elsif ( ($playermsg !~ m/^\!set (.+?) (.+)/i) && ($playermsg !~ m/^!msg/) )
-			{
-        # Saw a !command
-        if ( $playername ne 'Host' )
-        {
-          # do not allow !set module on/off inside the game
-          # Also ignore commands from host
-          eval { commands::parsearg($playermsg, $playername, "N") };
-          modules::display_error($@) if $@;
-        }
-      }
-		}
-
-		if ($line =~ m/Now Playing (.+)/i)
-		{# Soundtrack player
-			my $song = $1;
-			my $game = $2;
-			brIRC::ircmsg( "9[Soundtrack Player] Now Playing $1" );
-		}
-
-
-		if ($line =~ m/^Player (.+?) left the game$/)
-		{
-			# Player left, need to update Player Array...
-      my ( $result, %player ) = playerData::getPlayerData ( $1 );
-			if ( $result != 1 )
-			{
-				$player{'name'} = $1;
-			}
-      
-      if ( !plugin::call_core_override('playerleave_msg', $1) )
-        { brIRC::ircmsg( brIRC::colourise(11,"$1 left the game from team ").brTeams::get_colourised_name($player{'side'}) ); }
-
-			my @plugins = plugin::get_plugin_event( "playerleave" );
-			my %args;
-
-			$args{'id'} = $player{'id'};
-			$args{'nick'} = $player{'name'};
-			$args{'name'} = $player{'name'};
-			$args{'teamid'} = $player{'teamid'};
-			$args{'ip'} = $player{'ip'};
-
-			foreach (@plugins)
-			{
-				my $plugin = $_;
-				my $alias = "plugin_" . $plugin;
-				$main::poe_kernel->post($alias => "playerleave" => \%args);
-			}
-
-			$#plugins = -1;
-
-			$player{'name'} =~ s/'/''/g;
-
-			clean_invite; # BRINVITE
-			mass_invite;
-			RenRem::RenRemCMD( "game_info" );
-			RenRem::RenRemCMD( "player_info" );
-
-			# Remove all the data we are storing about them
-			playerData::clearPlayerData ( $player{'id'} );
-		}
-
-		# A player joined the game
-		if ( $line =~ m/^Player (.*?) joined the game$/ )
-		{
-			my $joiner = $1;
-
-			$joiners{lc($joiner)} = 1;
-			#brIRC::ircmsg( "11$line" );   // Now done in joinstuff
-
-			# Check if a player with that name is already ingame
-			my $tmp_nick = $joiner;
-			$tmp_nick =~ s/\s+$//g; # remove all trailing spaces
-
-			my ( $result, %player ) = playerData::getPlayerData( $tmp_nick, 1 );
-			if ( $result == 1 )
-			{
-				# If !pi picked them up before we did let them off (2 seconds max)
-				if ( ( time() - $player{'joinTime'} ) >= 3 )		# Ingame for 3 seconds or more
-				{
-					# Schedule the player to be kicked in 2 seconds (needs player_info to be updated FIRST)
-					POE::Session->create
-					( inline_states =>
-						{
-							_start => sub
-							{
-								$_[HEAP]->{next_alarm_time} = int( time() ) + 2;
-								$_[HEAP]->{name} = $tmp_nick;
-								$_[HEAP]->{id} = $player{id};
-								$_[KERNEL]->alarm( fakeUser => $_[HEAP]->{next_alarm_time} );
-							},
-							fakeUser => sub
-								{ fakeUser ( $_[HEAP]->{name}, $_[HEAP]->{id} ); }
-						}
-					);
-				}
-			}
-
-			$joiner =~ s/'/''/g;
-
-			# Check if they had an invitation, if they did remove it
-      if ( check_invite($joiner) eq $joiner )
-      {
-        brIRC::ircmsg( "[BR] $joiner had an invitation, tearing it up." );
-        del_invite( $joiner );
-      }
-
-      clean_invite; #check for old invitations
-
-			# Check if their name is all spaces
-			if ( $joiner =~ m/[\s+]$/ )
-			{
-				# Schedule the player to be kicked in 2 seconds (needs player_info to be updated FIRST)
-				POE::Session->create
-				( inline_states =>
-					{
-						_start => sub
-						{
-							$_[HEAP]->{next_alarm_time} = int( time() ) + 2;
-							$_[HEAP]->{name} = $joiner;
-							$_[KERNEL]->alarm( fakeUser => $_[HEAP]->{next_alarm_time} );
-						},
-						fakeUser => sub
-							{ fakeUser ( $_[HEAP]->{name} ); }
-					}
-				);
-			}
-
-			# Update game status
-			RenRem::RenRemCMD( "player_info" );
-			RenRem::RenRemCMD( "game_info" );
-      
-		} # end of joined the game
-
-
-
-		# A player has switched teams
-		if ( $line =~ m/^Host: (.+?) changed teams.$/ )
-		{
-			$line="11$line";
-			brIRC::ircmsg( "$line" );
-
-			# Mark the player as having changed teams
-			playerData::setKeyValue ( $1, "changedTeam", 1 );
-
-			# Update game data
-			RenRem::RenRemCMD( "game_info" );
-			RenRem::RenRemCMD( "player_info" );
-		}
-
-		if ( $line =~ m/^Level loaded OK$/ )
-		{
-			# New Level has reloaded, need to update Player Array...
-
-			brIRC::ircmsg( "9$line", "A" );
-			brconfig::readServerSettings(); # Re-read the server settings
-
-			# Apply map settings
-			modules::applyMapSettings(1);
-
-			my @plugins = plugin::get_plugin_event( "mapload" );
-
-			my %args;
-			$args{'map'} = serverStatus::getMap();
-
-			foreach ( @plugins )
-			{
-				my $plugin = $_;
-				my $alias = "plugin_" . $plugin;
-				$main::poe_kernel->post($alias => "mapload" => \%args);
-			}
-
-			# Process autobalance (if it is enabled)
-			modules::do_autobalance();
-
-			# Update game information
-			RenRem::RenRemCMD( "game_info" );
-			RenRem::RenRemCMD( "player_info" );
-		}
-
-		# Handle any lines which just get thrown out to the IRC
-		if ( $line =~ m/^\w+ not found$/
-			|| $line =~ m/^Logging on....$/
-			|| $line =~ m/^Logging onto .+ Server$/
-			|| $line =~ m/^Failed to log in$/
-			|| $line =~ m/^Creating game channel$/
-			|| $line =~ m/^Channel created OK$/
-			|| $line =~ m/^Terminating game$/ )
-		{
-			brIRC::ircmsg( "9$line", "A" );	# Admin channel only
-		}
-
-		# If server crashed clear all player data, or people rejoining quickly
-		# might be mistaken for nick stealers!
-		if ( $line =~ m/^Initializing .+ Mode$/ )
-		{
-			brIRC::ircmsg( "9$line" );	# Show in both channels
-			playerData::clearAllData();
-			RenRem::RenRemCMD ( "sversion" );
-			brconfig::GetAvailableMaps();
-		}
-
-
-		# Record player scripts version
-		if ( $line =~ m/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/i )
-		{
-			playerData::setKeyValue ( $1, "scriptsVersion", $2 );
-			playerData::setKeyValue ( $1, "scriptsRevision", $3 );
-		}
-
-		# Record the version of the server
-		if ( $line =~ m/^The Version of the server is (.+)/ || $line =~ m/^The version of (?:bhs|tt|bandtest).dll on this machine is (\d+\.\d+)( r%d+)?/i )
-		{
-			$brconfig::serverScriptsVersion = $1;
-			$brconfig::serverScriptsRevision = $2;
-		}
-
-
-		# Record player bandwidth
-		if ($line =~ /Current Bandwidth for player (.*?) is (.+)/)
-			{ playerData::setKeyValue ( $1, "bandwidth", $2 ); }
-
-
-		if ($line =~ /is required for this map/)
-		{
-			$brconfig::config_force_bhs_dll_map = 1;
-
-			# Check players already ingame
-			my %playerData = playerData::getPlayerList();
-			while ( my ( $id, $player ) = each ( %playerData ) )
-			{
-				# Only check them if they have been ingame longer than 4 seconds
-				# Players who have just joined might not have had chance to respond
-				if ( length ( $player->{'scriptsVersion'} ) == 0 && ( ( time() - $player->{'joinTime'} ) > 4 ) )
-				{
-					modules::kick_player ( $player->{'id'}, 'BRenBot', 'Scripts version 1.3 or higher is required to play on this map (pre 1.3 installed)' );
-				}
-			}
-		}
-
-		if ($line =~ /Loading level (.+)/)
-		{
-			brIRC::ircmsg( "9$line" );
-			serverStatus::updateMap ( $1 );
-
-			if ( $renew_ssgm == 1 )
-			{
-				$ssgm::midnight = 1;
-				$poe_kernel->post("ssgm_tail", "renew_wheel");
-				$renew_ssgm = 0;
-			}
-
-			$brconfig::config_force_bhs_dll_map = 0;
-
-			# Schedule game results to run in 1 second
-      POE::Session->create
-      ( inline_states =>
-        {
-          _start => sub
-          {
-            $_[HEAP]->{next_alarm_time} = int( time() ) + 1;
-            $_[KERNEL]->alarm( do_results => $_[HEAP]->{next_alarm_time} );
-          },
-          do_results => \&results::ProcessGameResults
-        }
-      );
-
-			# Issue a mapnum command to ensure the map number is updated
-			RenRem::RenRemCMD ( "mapnum" );
-
-			# Restore original map rotation if someone used !setnextmap during the last game
-			my $nextmapChanged = brdatabase::get_global('nextmap_changed');
-			if ( $nextmapChanged )
-			{
-				modules::console_output ( "Restoring original map rotation..." );
-				
-				if ( $nextmapChanged == 1 )
-				{
-					my $backup;
-
-					open (FDSfile, "svrcfg_cnc.ini.old") or modules::console_output ( "Error reading backup map rotation file!" );
-					while (<FDSfile>) { $backup .= $_; }
-					close (FDSfile);
-
-					open (FDSfile, ">$brconfig::config_fdsconfigfile") or modules::console_output ( "Error writing map configuration file!" );
-					print FDSfile $backup;
-					close (FDSfile);
-
-					undef $backup;
-				}
-				elsif ( $nextmapChanged == 4 )
-				{
-					# Read the ID and mapname that were changed
-					my $mapid = brdatabase::get_global('nextmap_changed_id');
-					my $mapname = brdatabase::get_global('nextmap_changed_mapname');
-					
-					modules::console_output ( "Restoring map at index $mapid to $mapname." );
-					RenRem::RenRemCMD ( "mlistc $mapid $mapname" );
-
-					# Update the rotation
-					foreach (@brconfig::maplist)
-					{
-						if ( $_->{'id'} == $mapid )
-						{
-							$_->{'mapname'} = $mapname;
-							last;
-						}
-					}
-				}
-				brdatabase::set_global('nextmap_changed', '0')
-			}
-		}
-
-		#Highlight Host msgs
-		if ( $line =~ m/^Host:/ )
-		{
-			my $ircLine = $line;
-			$ircLine =~ s/^Host:/14Host:/gi;
-			brIRC::ircmsg( "$ircLine" );
-		}
-
-		$_ = $line; # Matches below only work on $_ variable.
-		#  if (/committed suicide./g) {$line="$line";brIRC::ircmsg(  "$line");}
-
-		# Vehicle purchase
-		if ( m/(.+) purchased a vehicle/i )
-		{
-			my ( $result, %player ) = playerData::getPlayerData( $1 );
-			if ( $result == 1 )
-			{
-				if ( $brconfig::gamelog_show_vehicle_purchase == 1 )
-				{
-					if ( !modules::get_module( "gamelog" ) )
-						{ brIRC::ircmsg( "3[Vehicle Purchase]: ".brTeams::colourise($player{'teamid'},$player{'name'}), "A" ); }
-					else
-						{ gamelog::vehicle_purchase_renlog( $player{'name'} ); }
-				}
-
-				if ( $brconfig::config_vehiclekick == 1 )
-				{
-					modules::kick_player ( $player{'id'}, 'BRenBot', 'Purchasing a vehicle in an infantry only server' );
-				}
-			}
-		}
-
-		if ( /Connection broken to client./g ) { brIRC::ircmsg( "$line" ); }
-
-		if ( /was kicked/g ) { brIRC::ircmsg( "$line" ); }
-	}
-
-  
-  
-  
+  if ( $line =~ m/^(\[Team\]\s)?([^\s:]+):\s(.+)/i )
+  {
+    handle_chat($2, $3, defined($1) and $1 eq "[Team]");
+  }
+
+  elsif ($line =~ m/^\[Page\]\s([^:]+):\s(.+)$/)
+  {
+    handle_page($1, $2);
+  }
+
+  else
+  {
+    handle_input($line);
+  }
 
   # Look for any plugins whose regex hooks match this line
   my %args = (
@@ -959,59 +307,574 @@ sub ParseLogInput
     while (my ($regex, $event) = each %{$regexes})
     {
       if ( $rawline =~ m/$regex/i )
-        { $main::poe_kernel->post("plugin_".$plugin => $event => \%args); }
+      {
+        eval { $main::poe_kernel->post("plugin_".$plugin => $event => \%args); }
+          or modules::display_error($@);
+      }
     }
   }
 }
 
+# --------------------------------------------------------------------------------------------------
 
-# Got a line from the renlog
-sub parse_line
+sub handle_page($$)
 {
-	my $line = shift;
-	ChatMSG( $line );
-	ParseLogInput( $line."\n" );
+  my ($pager, $message) = @_;
+
+  # !auth commands contain passwords so we handle them first without printing to IRC or console
+  if ($message =~ m/^!auth\s+(.*)$/i)
+  {
+    my $pass = $1;
+
+    if (!$pass)
+    {
+      RenRem::RenRemCMD("page $pager [BR] Usage: !auth <pass>");
+      return;
+    }
+
+    my $authResult = brAuth::AuthenticateByPassword($pager, $pass);
+    if (1 == $authResult)
+    {
+      RenRem::RenRemCMD("page $pager [BR] Authentication was successful!");
+      brIRC::ircmsg( "[BR] Authentication for $pager was successful.", "A" );
+    }
+    elsif (0 == $authResult)
+    {
+      RenRem::RenRemCMD( "page $pager [BR] Wrong password!" );
+      brIRC::ircmsg( "[BR] $pager gave an invalid password.", "A" );
+    }
+    elsif (2 == $authResult)
+    {
+      RenRem::RenRemCMD( "page $pager [BR] You are already authenticated." );
+    }
+    elsif (3 == $authResult)
+    {
+      RenRem::RenRemCMD( "page $pager [BR] Your nickname is not registered. Register it first." );
+    }
+    elsif (4 ==  $authResult)
+    {
+      brIRC::ircmsg( "9[Page] $pager tried to !auth from outside the game!", "A" );
+      RenRem::RenRemCMD( "page $pager [BR] $pager your auth-exploit has been logged and will be reviewed." );
+    }
+
+    # Don't allow any further processing since this string contains a password
+    return;
+  }
+
+  # Log the page to the console and IRC
+  my $logmessage = "[Page] $pager: $message";
+  modules::console_output($logmessage);
+  brIRC::ircmsg(brIRC::colourise(9, $logmessage, "A");
 }
 
+# --------------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-###############################################
-## MESSAGE HANDLERS
-###############################################
-
-sub handleInvite
+# Processes chat messages, and outputs them to IRC
+#
+# Chat Messages Look like this: [23:58:36] flawliss9: BAD LAG
+# Team Messages Look like this: [23:58:36] [Team]: flawliss9: BAD LAG
+sub handle_chat($$$)
 {
-	my $pager	= shift;
-	my $pagemsg	= shift;
+  my ($sender, $message, $isTeamMessage) = @_;
+  
+  # Prevent bugs/command abuse caused by players with : in their name
+  return if ("$5$6" =~ m/^Player\s.+\s(joined|left)\sthe\sgame$/
+          || "$5$6" =~ m/^.+:\s!\s.+\swas\skicked$/);
 
-	if ( lc($pagemsg) eq "letmein" )
-	{
-		if (check_invite($pager) eq $pager)
-		{
-			RenRem::RenRemCMD( "page $pager [BR] You are ALREADY invited. Stop SPAMMING." );
-			brIRC::ircmsg( "9Page Sent to $pager --> [BR] You are ALREADY invited. Stop SPAMMING." );
-		}
-		else
-		{
-			add_invite($pager);
-			mass_invite;
-		}
-	}
+  # Handle host messages and drop out without additional processing
+  if ($sender eq "Host")
+  {
+    handle_hostmsg($message);
+    return;
+  }
 
-	if ($pagemsg =~ /WWDECLINE/)
-	{
-		brIRC::ircmsg(  "[BR] $pager declined invite...tearing up invitation" );
-		RenRem::RenRemCMD( "page $pager [BR] Removed your invitation." );
-		del_invite($pager);
-	}
+  # Get data for person who chatted
+  my ($result, %player) = playerData::getPlayerData($sender);
+  if (1 == $result)
+  {
+    # Format mod and admin names
+    my $ircPlayername = modules::parseModName($player{'name'}, 1);
+
+    # F2 chat
+    if (!$isTeamMessage)
+    {
+      brIRC::ircmsg(brTeams::colourise($player{'teamid'}, $ircPlayername).": $message", "B");
+    }
+
+    # F3 chat, if teammessages is enabled
+    elsif (modules::get_module("teammessages"))
+    {
+      brIRC::ircmsg(
+        brIRC::colourise(6, "[Team] ").brTeams::colourise($player{'teamid'},"$ircPlayername: $message"),
+        (1 == $brconfig::irc_showTeamMessages_PublicChan) ? "B" : "A"
+      );
+    }
+
+
+    # Handle !commands
+    if ( $message =~ m/^\!/i)
+    {
+      eval { commands::parsearg($message, $player{'name'}, "N"); }
+        or modules::display_error($@);
+    }
+
+
+    # Run plugins for public chat messages
+    my @plugins = plugin::get_plugin_event("text");
+    my %args;
+
+    $args{id}           = $player{'id'};
+    $args{nick}         = $player{'name'};
+    $args{nicktype}     = 0;
+    $args{message}      = $message;
+    $args{messagetype}  = ($isTeamMessage) ? "team" : "public";
+    $args{team}         = $player{'side'};
+
+    foreach (@plugins)
+    {
+      eval { $main::poe_kernel->post("plugin_".$_ => "text" => \%args); }
+        or modules::display_error($@);
+    }
+  }
 }
 
+# --------------------------------------------------------------------------------------------------
+
+sub handle_hostmsg($)
+{
+  my $message = shift;
+  
+  # Check for team change events
+  if ( $message =~ m/^(.+?) changed teams.$/ )
+  {
+    brIRC::ircmsg(brIRC::colourise(11, "Host: ".$message), "B");
+
+    # Mark the player as having changed teams
+    playerData::setKeyValue($1, "changedTeam", 1);
+
+    # Update game data
+    RenRem::RenRemCMD("game_info");
+    RenRem::RenRemCMD("player_info");
+  }
+  else
+  {
+    brIRC::ircmsg(brIRC::colourise(14, "Host: ").brIRC::bold($message), "B");
+  }
+}
+
+# --------------------------------------------------------------------------------------------------
+
+sub handle_input($)
+{
+  # If we're currently reading game definitions then add the line to the list of maps without parsing
+  if (1 == $readGameDefs)
+  {
+    if ($line eq " ")
+    {
+      #modules::console_output ( "[Renlog] DEBUG: End of map defs.\n )";
+      $readGameDefs = 0;
+    }
+    else
+    {
+      #modules::console_output ( "[Renlog] DEBUG: Got map $line\n )";
+      push (@brconfig::installed_maps, $line);
+    }
+
+    return;
+  }
 
 
+  # Start of game defs?
+  if ( $line =~ m/Available game definitions:/ )
+  {
+    #modules::console_output ( "[Renlog] DEBUG: Start of map defs.\n )";
+    $readGameDefs = 1;
+    @brconfig::installed_maps = ();
+    return;
+  }
+
+  # Reply from mapnum command
+  if ( $line =~ m/The Current Map Number is (\d+)/i )
+  {
+    serverStatus::updateMapNum($1);
+    return;
+  }
+
+  # Start of the reply from the game_info command
+  if ($line =~ m/(.+?) mode active/g)
+  {
+    serverStatus::updateMode($1);
+    return;
+  }
+
+  if ( $line =~ /Map : (.+)/ )
+  {
+    serverStatus::updateMap($1);
+    return;
+  }
+
+  if ($line =~ /Time : (.+)/)
+  {
+    serverStatus::updateTimeRemaining($1);
+    return;
+  }
+
+  if ($line =~ /Fps : (.+)/)
+  {
+    serverStatus::updateSFPS($1);
+    return;;
+  }
+
+  if ($line =~ /(GDI|All) : (.+?)\/(.+?) players\s+ (.+?) points/)
+  {
+    serverStatus::updateStatus_GDI($2, $4, $3);
+    return;
+  }
+
+  if ($line =~ /(NOD|Sov) : (.+?)\/(.+?) players\s+ (.+?) points/)
+  {
+    serverStatus::updateStatus_Nod($2, $4, $3);
+    return;
+  }
+
+
+
+
+  # First line of output from player_info command
+  if ( $line =~ /Id\s+Name/ )
+  {
+    $logPlayerInfo = 1;
+    return;
+  }
+
+  if ( $line =~ "No players" )
+  {
+    $logPlayerInfo = 0;
+    return;
+  }
+
+  # Last line of output from player_info command
+  if ($line =~ "Total current bandwidth")
+  {
+    $logPlayerInfo = 0;
+    checkPlayerlist();
+    return;
+  }
+
+  # Player data line from a player_info command
+  if ( $logPlayerInfo )
+  {
+    parsePlayerInfoInput($line);
+    return;
+  }
+
+
+
+
+  if ($line =~ m/^Player (.+?) left the game$/)
+  {
+    # Player left, need to update Player Array...
+    my ( $result, %player ) = playerData::getPlayerData ( $1 );
+    if ( $result != 1 )
+    {
+      $player{'name'} = $1;
+    }
+    
+    if ( !plugin::call_core_override('playerleave_msg', $1) )
+      { brIRC::ircmsg( brIRC::colourise(11,"$1 left the game from team ").brTeams::get_colourised_name($player{'side'}) ); }
+
+    my @plugins = plugin::get_plugin_event( "playerleave" );
+    my %args;
+
+    $args{'id'} = $player{'id'};
+    $args{'nick'} = $player{'name'};
+    $args{'name'} = $player{'name'};
+    $args{'teamid'} = $player{'teamid'};
+    $args{'ip'} = $player{'ip'};
+
+    foreach (@plugins)
+    {
+      eval { $main::poe_kernel->post("plugin_".$_ => "playerleave" => \%args); }
+        or modules::display_error($@);
+    }
+
+    $#plugins = -1;
+
+    $player{'name'} =~ s/'/''/g;
+
+    RenRem::RenRemCMD( "game_info" );
+    RenRem::RenRemCMD( "player_info" );
+
+    # Remove all the data we are storing about them
+    playerData::clearPlayerData ( $player{'id'} );
+    return;
+  }
+
+  # A player joined the game
+  if ( $line =~ m/^Player (.*?) joined the game$/ )
+  {
+    my $joiner = $1;
+
+    $joiners{lc($joiner)} = 1;
+    #brIRC::ircmsg( "11$line" );   // Now done in joinstuff
+
+    # Check if a player with that name is already ingame
+    my $tmp_nick = $joiner;
+    $tmp_nick =~ s/\s+$//g; # remove all trailing spaces
+
+    my ( $result, %player ) = playerData::getPlayerData( $tmp_nick, 1 );
+    if ( $result == 1 )
+    {
+      # If !pi picked them up before we did let them off (2 seconds max)
+      if ( ( time() - $player{'joinTime'} ) >= 3 )		# Ingame for 3 seconds or more
+      {
+        # Schedule the player to be kicked in 2 seconds (needs player_info to be updated FIRST)
+        POE::Session->create
+        ( inline_states =>
+          {
+            _start => sub
+            {
+              $_[HEAP]->{next_alarm_time} = int( time() ) + 2;
+              $_[HEAP]->{name} = $tmp_nick;
+              $_[HEAP]->{id} = $player{id};
+              $_[KERNEL]->alarm( fakeUser => $_[HEAP]->{next_alarm_time} );
+            },
+            fakeUser => sub
+              { fakeUser ( $_[HEAP]->{name}, $_[HEAP]->{id} ); }
+          }
+        );
+      }
+    }
+
+    $joiner =~ s/'/''/g;
+
+    # Check if their name is all spaces
+    if ( $joiner =~ m/[\s+]$/ )
+    {
+      # Schedule the player to be kicked in 2 seconds (needs player_info to be updated FIRST)
+      POE::Session->create
+      ( inline_states =>
+        {
+          _start => sub
+          {
+            $_[HEAP]->{next_alarm_time} = int( time() ) + 2;
+            $_[HEAP]->{name} = $joiner;
+            $_[KERNEL]->alarm( fakeUser => $_[HEAP]->{next_alarm_time} );
+          },
+          fakeUser => sub
+            { fakeUser ( $_[HEAP]->{name} ); }
+        }
+      );
+    }
+
+    # Update game status
+    RenRem::RenRemCMD( "player_info" );
+    RenRem::RenRemCMD( "game_info" );
+    return;
+  } # end of joined the game
+  
+
+  if ( $line =~ m/^Level loaded OK$/ )
+  {
+    # New Level has reloaded, need to update Player Array...
+
+    brIRC::ircmsg( "9$line", "A" );
+    brconfig::readServerSettings(); # Re-read the server settings
+
+    # Apply map settings
+    modules::applyMapSettings(1);
+
+    my @plugins = plugin::get_plugin_event( "mapload" );
+
+    my %args;
+    $args{'map'} = serverStatus::getMap();
+
+    foreach ( @plugins )
+    {
+      eval { $main::poe_kernel->post("plugin_".$_ => "mapload" => \%args); }
+        or modules::display_error($@);
+    }
+
+    # Process autobalance (if it is enabled)
+    modules::do_autobalance();
+
+    # Update game information
+    RenRem::RenRemCMD( "game_info" );
+    RenRem::RenRemCMD( "player_info" );
+    return;
+  }
+
+  # Handle any lines which just get thrown out to the IRC
+  if ( $line =~ m/^\w+ not found$/
+    || $line =~ m/^Logging on....$/
+    || $line =~ m/^Logging onto .+ Server$/
+    || $line =~ m/^Failed to log in$/
+    || $line =~ m/^Creating game channel$/
+    || $line =~ m/^Channel created OK$/
+    || $line =~ m/^Terminating game$/ )
+  {
+    brIRC::ircmsg( "9$line", "A" );	# Admin channel only
+    return;
+  }
+
+  # If server crashed clear all player data, or people rejoining quickly
+  # might be mistaken for nick stealers!
+  if ( $line =~ m/^Initializing .+ Mode$/ )
+  {
+    brIRC::ircmsg( "9$line" );	# Show in both channels
+    playerData::clearAllData();
+    RenRem::RenRemCMD ( "sversion" );
+    brconfig::GetAvailableMaps();
+    return;
+  }
+
+
+  # Record player scripts version
+  if ( $line =~ m/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/i )
+  {
+    playerData::setKeyValue ( $1, "scriptsVersion", $2 );
+    playerData::setKeyValue ( $1, "scriptsRevision", $3 );
+    return;
+  }
+
+  # Record the version of the server
+  if ( $line =~ m/^The Version of the server is (.+)/ || $line =~ m/^The version of (?:bhs|tt|bandtest).dll on this machine is (\d+\.\d+)( r%d+)?/i )
+  {
+    $brconfig::serverScriptsVersion = $1;
+    $brconfig::serverScriptsRevision = $2;
+    return;
+  }
+
+
+  # Record player bandwidth
+  if ($line =~ /Current Bandwidth for player (.*?) is (.+)/)
+  {
+    playerData::setKeyValue ( $1, "bandwidth", $2 );
+    return;
+  }
+
+
+  if ($line =~ /is required for this map/)
+  {
+    $brconfig::config_force_bhs_dll_map = 1;
+
+    # Check players already ingame
+    my %playerData = playerData::getPlayerList();
+    while ( my ( $id, $player ) = each ( %playerData ) )
+    {
+      # Only check them if they have been ingame longer than 4 seconds
+      # Players who have just joined might not have had chance to respond
+      if ( length ( $player->{'scriptsVersion'} ) == 0 && ( ( time() - $player->{'joinTime'} ) > 4 ) )
+      {
+        modules::kick_player ( $player->{'id'}, 'BRenBot', 'Scripts version 1.3 or higher is required to play on this map (pre 1.3 installed)' );
+      }
+    }
+    
+    return;
+  }
+
+  if ($line =~ /Loading level (.+)/)
+  {
+    brIRC::ircmsg( "9$line" );
+    serverStatus::updateMap ( $1 );
+
+    if ( $renew_ssgm == 1 )
+    {
+      $ssgm::midnight = 1;
+      $poe_kernel->post("ssgm_tail", "renew_wheel");
+      $renew_ssgm = 0;
+    }
+
+    $brconfig::config_force_bhs_dll_map = 0;
+
+    # Schedule game results to run in 1 second
+    POE::Session->create
+    ( inline_states =>
+      {
+        _start => sub
+        {
+          $_[HEAP]->{next_alarm_time} = int( time() ) + 1;
+          $_[KERNEL]->alarm( do_results => $_[HEAP]->{next_alarm_time} );
+        },
+        do_results => \&results::ProcessGameResults
+      }
+    );
+
+    # Issue a mapnum command to ensure the map number is updated
+    RenRem::RenRemCMD ( "mapnum" );
+
+    # Restore original map rotation if someone used !setnextmap during the last game
+    my $nextmapChanged = brdatabase::get_global('nextmap_changed');
+    if ( $nextmapChanged )
+    {
+      modules::console_output ( "Restoring original map rotation..." );
+      
+      if ( $nextmapChanged == 1 )
+      {
+        my $backup;
+
+        open (FDSfile, "svrcfg_cnc.ini.old") or modules::console_output ( "Error reading backup map rotation file!" );
+        while (<FDSfile>) { $backup .= $_; }
+        close (FDSfile);
+
+        open (FDSfile, ">$brconfig::config_fdsconfigfile") or modules::console_output ( "Error writing map configuration file!" );
+        print FDSfile $backup;
+        close (FDSfile);
+
+        undef $backup;
+      }
+      elsif ( $nextmapChanged == 4 )
+      {
+        # Read the ID and mapname that were changed
+        my $mapid = brdatabase::get_global('nextmap_changed_id');
+        my $mapname = brdatabase::get_global('nextmap_changed_mapname');
+        
+        modules::console_output ( "Restoring map at index $mapid to $mapname." );
+        RenRem::RenRemCMD ( "mlistc $mapid $mapname" );
+
+        # Update the rotation
+        foreach (@brconfig::maplist)
+        {
+          if ( $_->{'id'} == $mapid )
+          {
+            $_->{'mapname'} = $mapname;
+            last;
+          }
+        }
+      }
+      brdatabase::set_global('nextmap_changed', '0')
+    }
+
+    return;
+  }
+
+  $_ = $line; # Matches below only work on $_ variable.
+  #  if (/committed suicide./g) {$line="$line";brIRC::ircmsg(  "$line");}
+
+  # Vehicle purchase
+  if ( m/(.+) purchased a vehicle/i )
+  {
+    my ( $result, %player ) = playerData::getPlayerData( $1 );
+    if ( $result == 1 )
+    {
+      if ( $brconfig::gamelog_show_vehicle_purchase == 1 )
+      {
+        if ( !modules::get_module( "gamelog" ) )
+          { brIRC::ircmsg( "3[Vehicle Purchase]: ".brTeams::colourise($player{'teamid'},$player{'name'}), "A" ); }
+        else
+          { gamelog::vehicle_purchase_renlog( $player{'name'} ); }
+      }
+
+      if ( $brconfig::config_vehiclekick == 1 )
+      {
+        modules::kick_player ( $player{'id'}, 'BRenBot', 'Purchasing a vehicle in an infantry only server' );
+      }
+    }
+  }
+
+  if ( /Connection broken to client./g ) { brIRC::ircmsg( "$line" ); }
+
+  if ( /was kicked/g ) { brIRC::ircmsg( "$line" ); }
+}
 
 1;

@@ -652,10 +652,10 @@ sub crate
 				{ $vehicleFromCrate = $crateVehiclePreset; }
 			}
 
-			if ( $brconfig::gamelog_showCrateMsgs != 0 && $startup != 1 )
+			if (0 != $brconfig::gamelog_showCrateMsgs && 1 != $startup)
 			{
-				my $ircChannelCode = ( $brconfig::gamelog_showCrateMsgs == 1 ) ? "A" : "";
-				brIRC::ircmsg ( "3[Crate]:" . brTeams::colourise($team,"$name got the $param crate $param2"), $ircChannelCode );
+				my $ircChannelCode = ($brconfig::gamelog_showCrateMsgs == 1) ? "A" : "B";
+				brIRC::ircmsg ( "3[Crate] " . brTeams::colourise($team,"$name got the $param crate $param2"), $ircChannelCode );
 			}
 		}
 	}
