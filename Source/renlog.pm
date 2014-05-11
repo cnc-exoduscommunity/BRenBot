@@ -282,7 +282,7 @@ sub parse_line
   if ($line =~ m/^(\[Team\]\s)?([^\s:]+):\s(.+)/i)
   {
     #modules::console_output("[Renlog] DEBUG: Chat message");
-    handle_chat($2, $3, (defined($1) and $1 eq "[Team]") ? 1 : 0);
+    handle_chat($2, $3, (defined($1) and $1 eq "[Team] ") ? 1 : 0);
   }
 
   elsif ($line =~ m/^\[Page\]\s([^:]+):\s(.+)$/)
