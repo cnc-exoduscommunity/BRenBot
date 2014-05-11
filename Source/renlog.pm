@@ -271,7 +271,7 @@ sub parse_line
   $line =~ s/	/ /g;   # replace any TABS with a space
   $line =~ s/^ //;    #eat leading spaces
 
-  modules::console_output("[Renlog] DEBUG: Parsing input ==>$line<==");
+  #modules::console_output("[Renlog] DEBUG: Parsing input ==>$line<==");
 
   # Skip level loading messages ([00:52:01] Load 0% complete[00:52:01] Load 0% complete....)
   return if ($line =~ m/^Load \d+\% Complete/i);
@@ -281,19 +281,19 @@ sub parse_line
   # any names with spaces in since we are banning those now (see check_playername)
   if ($line =~ m/^(\[Team\]\s)?([^\s:]+):\s(.+)/i)
   {
-    modules::console_output("[Renlog] DEBUG: Chat message");
+    #modules::console_output("[Renlog] DEBUG: Chat message");
     handle_chat($2, $3, (defined($1) and $1 eq "[Team]") ? 1 : 0);
   }
 
   elsif ($line =~ m/^\[Page\]\s([^:]+):\s(.+)$/)
   {
-    modules::console_output("[Renlog] DEBUG: Page");
+    #modules::console_output("[Renlog] DEBUG: Page");
     handle_page($1, $2);
   }
 
   else
   {
-    modules::console_output("[Renlog] DEBUG: Other input");
+    #modules::console_output("[Renlog] DEBUG: Other input");
     handle_input($line);
   }
 
@@ -474,14 +474,14 @@ sub handle_input($)
   # If we're currently reading game definitions then add the line to the list of maps without parsing
   if (1 == $readGameDefs)
   {
-    if ($line eq " ")
+    if ($line eq "")
     {
-      #modules::console_output ( "[Renlog] DEBUG: End of map defs.\n )";
+      #modules::console_output("[Renlog] DEBUG: End of map defs.");
       $readGameDefs = 0;
     }
     else
     {
-      #modules::console_output ( "[Renlog] DEBUG: Got map $line\n )";
+      #modules::console_output("[Renlog] DEBUG: Got map $line");
       push (@brconfig::installed_maps, $line);
     }
 
@@ -492,7 +492,7 @@ sub handle_input($)
   # Start of game defs?
   if ( $line =~ m/Available game definitions:/ )
   {
-    #modules::console_output ( "[Renlog] DEBUG: Start of map defs.\n )";
+    #modules::console_output("[Renlog] DEBUG: Start of map defs");
     $readGameDefs = 1;
     @brconfig::installed_maps = ();
     return;
@@ -567,7 +567,7 @@ sub handle_input($)
   }
 
   # Player data line from a player_info command
-  if ( $logPlayerInfo )
+  if ($logPlayerInfo)
   {
     parsePlayerInfoInput($line);
     return;
