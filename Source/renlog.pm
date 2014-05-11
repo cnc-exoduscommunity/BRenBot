@@ -189,7 +189,7 @@ sub fakeUser
 		{
 			# NB: DO NOT USE modules::kick_player as it may remove the incorrect player
 			RenRem::RenRemCMD( "msg [BR] $player{name} is being kicked by BRenBot for: FAKE NICK" );
-        
+
       my $command = 'kick '.$player{'id'};
       $command .= ' Fake Nickname' if ($brconfig::ssgm_version >= 4);
       RenRem::RenRemCMD ( $command, 1 );
@@ -206,7 +206,7 @@ sub fakeUser
 			{
 				# NB: DO NOT USE modules::kick_player as it may fail to remove players with illegal nicknames
 				RenRem::RenRemCMD( "msg [BR] $player->{name} is being kicked by BRenBot for: Impersonating someone else" );
-        
+
         my $command = 'kick '.$player->{'id'};
         $command .= ' Impersonating someone else' if ($brconfig::ssgm_version >= 4);
         RenRem::RenRemCMD ( $command, 1 );
@@ -270,18 +270,18 @@ sub parse_line
 
   $line =~ s/	/ /g;   # replace any TABS with a space
   $line =~ s/^ //;    #eat leading spaces
-  
+
   #modules::console_output ( "[Renlog] DEBUG: Parsing input ==>$line<==\n" );
 
   # Skip level loading messages ([00:52:01] Load 0% complete[00:52:01] Load 0% complete....)
-  return if ($line =~ m/^Load \d+\% Complete/i)
+  return if ($line =~ m/^Load \d+\% Complete/i);
 
   # 10 Sept 2012: Added extra protection by explicitly disallowing : in the username of the player
   # sending the chat message to help prevent abuse of the ambiguous logging format. Also ignoring
   # any names with spaces in since we are banning those now (see check_playername)
-  if ( $line =~ m/^(\[Team\]\s)?([^\s:]+):\s(.+)/i )
+  if ($line =~ m/^(\[Team\]\s)?([^\s:]+):\s(.+)/i)
   {
-    handle_chat($2, $3, defined($1) and $1 eq "[Team]");
+    handle_chat($2, $3, (defined($1) and $1 eq "[Team]") ? 1 : 0);
   }
 
   elsif ($line =~ m/^\[Page\]\s([^:]+):\s(.+)$/)
@@ -364,7 +364,7 @@ sub handle_page($$)
   # Log the page to the console and IRC
   my $logmessage = "[Page] $pager: $message";
   modules::console_output($logmessage);
-  brIRC::ircmsg(brIRC::colourise(9, $logmessage, "A");
+  brIRC::ircmsg(brIRC::colourise(9, $logmessage, "A"));
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -376,7 +376,7 @@ sub handle_page($$)
 sub handle_chat($$$)
 {
   my ($sender, $message, $isTeamMessage) = @_;
-  
+
   # Prevent bugs/command abuse caused by players with : in their name
   return if ("$5$6" =~ m/^Player\s.+\s(joined|left)\sthe\sgame$/
           || "$5$6" =~ m/^.+:\s!\s.+\swas\skicked$/);
@@ -443,7 +443,7 @@ sub handle_chat($$$)
 sub handle_hostmsg($)
 {
   my $message = shift;
-  
+
   # Check for team change events
   if ( $message =~ m/^(.+?) changed teams.$/ )
   {
@@ -466,6 +466,8 @@ sub handle_hostmsg($)
 
 sub handle_input($)
 {
+  my $line = shift;
+
   # If we're currently reading game definitions then add the line to the list of maps without parsing
   if (1 == $readGameDefs)
   {
@@ -579,7 +581,7 @@ sub handle_input($)
     {
       $player{'name'} = $1;
     }
-    
+
     if ( !plugin::call_core_override('playerleave_msg', $1) )
       { brIRC::ircmsg( brIRC::colourise(11,"$1 left the game from team ").brTeams::get_colourised_name($player{'side'}) ); }
 
@@ -672,7 +674,7 @@ sub handle_input($)
     RenRem::RenRemCMD( "game_info" );
     return;
   } # end of joined the game
-  
+
 
   if ( $line =~ m/^Level loaded OK$/ )
   {
@@ -769,7 +771,7 @@ sub handle_input($)
         modules::kick_player ( $player->{'id'}, 'BRenBot', 'Scripts version 1.3 or higher is required to play on this map (pre 1.3 installed)' );
       }
     }
-    
+
     return;
   }
 
@@ -808,7 +810,7 @@ sub handle_input($)
     if ( $nextmapChanged )
     {
       modules::console_output ( "Restoring original map rotation..." );
-      
+
       if ( $nextmapChanged == 1 )
       {
         my $backup;
@@ -828,7 +830,7 @@ sub handle_input($)
         # Read the ID and mapname that were changed
         my $mapid = brdatabase::get_global('nextmap_changed_id');
         my $mapname = brdatabase::get_global('nextmap_changed_mapname');
-        
+
         modules::console_output ( "Restoring map at index $mapid to $mapname." );
         RenRem::RenRemCMD ( "mlistc $mapid $mapname" );
 
