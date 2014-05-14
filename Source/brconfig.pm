@@ -146,7 +146,7 @@ sub read_server_configuration
 		}
 
 		# RemoteAdminPassword = password
-		if ($_ =~ m/RemoteAdminPassword\s*=\s*(.+)/)
+		elsif ($_ =~ m/RemoteAdminPassword\s*=\s*(.+)/)
 		{
 			if ( length( $1 ) != 8 )
 				{ modules::console_output ( '[Config] WARNING: RemoteAdminPassword must be 8 characters long! BRenBot will not be able to communicate properly with the server!' ); }
@@ -155,17 +155,17 @@ sub read_server_configuration
 		}
 
 		# RemoteAdminPort = 4949
-		if ($_ =~ m/RemoteAdminPort\s*=\s*(\d+)/)
+		elsif ($_ =~ m/RemoteAdminPort\s*=\s*(\d+)/)
 		{
 			$config_renrem_port = $1;
 		}
 
-		if ($_ =~ m/GameSpyGamePort\s*=\s*(\d+)/)
+		elsif ($_ =~ m/GameSpyGamePort\s*=\s*(\d+)/)
 		{
 			$server_gamespy_gameport = $1;
 		}
 
-    if ($_ =~ m/Port\s*=\s*(\d+)/)
+    elsif ($_ =~ m/^Port\s*=\s*(\d+)/)
     {
       $server_gameport = $1;
     }
