@@ -95,7 +95,6 @@ our $server_name;
 our $server_timelimit                     = 0;      # If this is 0 we shouldn't enforce the 3 second restriction on setnextmap
 our %server_rules;
 our $server_gameport                      = 0;
-our $server_gamespy_gameport              = 0;
 
 
 
@@ -158,11 +157,6 @@ sub read_server_configuration
 		elsif ($_ =~ m/RemoteAdminPort\s*=\s*(\d+)/)
 		{
 			$config_renrem_port = $1;
-		}
-
-		elsif ($_ =~ m/GameSpyGamePort\s*=\s*(\d+)/)
-		{
-			$server_gamespy_gameport = $1;
 		}
 
     elsif ($_ =~ m/^Port\s*=\s*(\d+)/)
