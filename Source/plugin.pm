@@ -73,7 +73,7 @@ sub init
   while ( my($plugin,$data) = each(%plugins) )
   {
     # Get initial state for plugin from database
-    my @db_record = plugin::execute_query("SELECT * FROM plugins WHERE name = '$plugin'");
+    my @db_record = execute_query("SELECT * FROM plugins WHERE name = '$plugin'");
     if ( @db_record and $db_record[0]->{'bisenabled'} == 1 )
     {
       # Get initial state for plugin from database
@@ -103,10 +103,10 @@ sub set_state
 
     # Save the new enabled/disabled state to the database...
     my $db_state = ($plugin_state==1)?"1":"0";
-    if ( plugin::execute_query("SELECT * FROM plugins WHERE name = '$plugin_name'") )
-      { plugin::execute_query("UPDATE plugins SET bIsEnabled = $db_state WHERE name = '$plugin_name'", 1); }
+    if ( execute_query("SELECT * FROM plugins WHERE name = '$plugin_name'") )
+      { execute_query("UPDATE plugins SET bIsEnabled = $db_state WHERE name = '$plugin_name'", 1); }
     else
-      { plugin::execute_query("INSERT INTO plugins(name,bIsEnabled) VALUES ( '$plugin_name', $db_state )", 1); }
+      { execute_query("INSERT INTO plugins(name,bIsEnabled) VALUES ( '$plugin_name', $db_state )", 1); }
   }
 }
 
@@ -953,8 +953,8 @@ sub irc_colourise { brIRC::colourise(@_); }
 # Run a BRenBot command from a plugin
 sub call_command
 {
-  my $callername  = shift;
-  my $command     = shift;
+  my $callername      = shift;
+  my $command         = shift;
 
   $command = "!$command";
 
@@ -1041,19 +1041,19 @@ sub strftimestamp($$;$) { return modules::strftimestamp(shift,shift,shift // 1);
 #
 # \param[in] $team
 #   The ID or abbreviation of the team
-sub plugin::team_get_name { return brTeams::get_name(@_); }
+sub team_get_name { return brTeams::get_name(@_); }
 
 # Get the abbreviation for a team given its ID
 #
 # \param[in] $team
 #   The ID of the team
-sub plugin::team_get_abbreviation { return brTeams::get_abbreviation(@_); }
+sub team_get_abbreviation { return brTeams::get_abbreviation(@_); }
 
 # Get the IRC colour code for a team given its ID
 #
 # \param[in] $team
 #   The ID or abbreviation of the team
-sub plugin::team_get_colour { return brTeams::get_colour(@_); }
+sub team_get_colour { return brTeams::get_colour(@_); }
 
 # Colourise a string with the specified teams IRC colour
 #
@@ -1061,19 +1061,19 @@ sub plugin::team_get_colour { return brTeams::get_colour(@_); }
 #   The ID or abbreviation of the team
 # \param[in] $string
 #   The string to colourise
-sub plugin::team_colourise { return brTeams::colourise(@_); }
+sub team_colourise { return brTeams::colourise(@_); }
 
 # Get the full name of a team in a colourised IRC string given its ID or abbreviation
 #
 # \param[in] $team
 #   The ID or abbreviation of the team
-sub plugin::team_get_colourised_name { return brTeams::get_colourised_name(@_); }
+sub team_get_colourised_name { return brTeams::get_colourised_name(@_); }
 
 # Get the abbreviation for a team in a colourised IRC string given its ID
 #
 # \param[in] $team
 #   The ID of the team
-sub plugin::team_get_colourised_abbreviation { return brTeams::get_colourised_abbreviation(@_); }
+sub team_get_colourised_abbreviation { return brTeams::get_colourised_abbreviation(@_); }
 
 # Get the list of players on a specified team
 #
@@ -1081,7 +1081,7 @@ sub plugin::team_get_colourised_abbreviation { return brTeams::get_colourised_ab
 #   The ID, name or abbreviation of the team
 #
 # \return A hash of playerdata for each player on the team
-sub plugin::team_get_players { return playerData::getPlayersByTeam(@_); }
+sub team_get_players { return playerData::getPlayersByTeam(@_); }
 
 
 
