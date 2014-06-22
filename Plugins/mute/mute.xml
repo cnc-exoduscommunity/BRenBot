@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<plugin name="tags">
+
+  <!-- Configuration settings for the plugin, change the values of these to suit your server -->
+  <config>
+  </config>
+
+
+  <!-- Do not modify this events list or you may break the plugin -->
+  <events>
+    <event>command</event>
+    <event>playerjoin</event>
+  </events>
+
+
+  <!-- Do not add or remove commands from this section, but feel free to modify the permission level
+  require to use the command, the help text, whether the command is enabled or not and its aliases -->
+  <command name="mute">
+    <permission level="3"/>
+    <syntax value="!mute &lt;player&gt; &lt;duration&gt; &lt;reason&gt;"/>
+    <help value="Mutes a player. The duration must be a number followed by a word, for example: 1 day, 2 weeks, 10 minutes" />
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+    <hideInHelp value="0"/>
+  </command>
+  
+  <command name="unmute">
+    <permission level="3"/>
+    <syntax value="!unmute &lt;Player&gt;"/>
+    <help value="Unmute a player" />
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+    <hideInHelp value="0"/>
+  </command>
+</plugin>

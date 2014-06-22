@@ -20,14 +20,13 @@
 
   <!-- Do not add or remove commands from this section, but feel free to modify the permission level
   require to use the command, the help text, whether the command is enabled or not and its aliases -->
-	<command name="tag">
-		<permission level="3"/>
-		<syntax value="!tag"/>
-		<help value="Tags a Player with a specific Tag."/>
-		<enabled value="1"/>
-		<group>ingame</group>
-		<group>irc_public</group>
-		<group>irc_admin</group>
-		<hideInHelp value="0"/>
-	</command>
+  <command name="tag">
+    <permission level="3"/>
+    <syntax value="!tag"/>
+    <help value="Tags a Player with a specific Tag."/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <group>irc_admin</group>
+    <hideInHelp value="0"/>
+  </command>
 </plugin>
