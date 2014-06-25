@@ -4,7 +4,7 @@
 # players on their team in equal portions.
 #
 # \author Daniel Paul (danpaul88@yahoo.co.uk)
-# \version 1.02
+# \version 1.03
 #*
 
 package donate;
@@ -12,7 +12,7 @@ package donate;
 use POE;
 use plugin;
 
-my $currentVersion = '1.02';
+my $currentVersion = '1.03';
 my $loaded_ok = undef;
 
 # Check bot compatibility
@@ -93,12 +93,7 @@ sub donate
   my %args = %{$_[ ARG0 ]};
 
   # Can only be used by a player in the game, not from a plugin or by IRC users
-  if ( $args{'nicktype'} != 0 )
-  {
-    if ( $args{'nicktype'} == 2 )
-      { plugin::ircmsg( 'You need to be ingame to use this command.', $args{'ircChannelCode'} ); }
-    return;
-  }
+  return if (0 != $args{'nicktype'});
 
   if ( plugin::get_server_ssgm_version() < 2 )
   {
@@ -171,12 +166,7 @@ sub teamdonate
   my %args = %{$_[ ARG0 ]};
 
   # Can only be used by a player in the game, not from a plugin or by IRC users
-  if ( $args{'nicktype'} != 0 )
-  {
-    if ( $args{'nicktype'} == 2 )
-      { plugin::ircmsg( 'You need to be ingame to use this command.', $args{'ircChannelCode'} ); }
-    return;
-  }
+  return if (0 != $args{'nicktype'});
 
   if ( plugin::get_server_ssgm_version() < 2 )
   {
