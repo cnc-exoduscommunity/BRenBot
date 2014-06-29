@@ -3,7 +3,7 @@
 # broadcast system that existed in BRenBot prior to version 1.54.1 plus some additional new features
 #
 # \author Daniel Paul (danpaul88@yahoo.co.uk)
-# \version 1.1
+# \version 1.02
 #*
 
 package gamespy;
@@ -12,7 +12,7 @@ use POE;
 use IO::Socket;
 use plugin;
 
-my $currentVersion = '1.1';
+my $currentVersion = '1.02';
 my $loaded_ok = undef;
 
 # Check bot compatibility
@@ -331,6 +331,7 @@ sub generate_players
   # Send any remaining player data
   if ($string ne "")
   {
+    $string .= "\\queryid\\".$queryid.'.'.$index++;
     send($handle, $string, 0, $socket);
     $string = "";
   }
