@@ -17,7 +17,7 @@
     <cvar name="query_port" value="23500"/>
 
     <!-- The game type to send in response to an info request, default value is C&C -->
-    <cvar name="game_type" value="C&C"/>
+    <cvar name="game_type" value="C&amp;C"/>
 
     <!-- This setting contains additional custom values to be broadcast to the master server, enter
     these as Key=Value pairs. The key must contain only alphanumeric characters and no spaces -->
