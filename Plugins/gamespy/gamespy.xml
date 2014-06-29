@@ -9,11 +9,15 @@
     this setting if you do not want to broadcast to any master servers -->
     <cvar name="master_servers">
       <value>master.gamespy.com:27900</value>
+      <value>renmaster.cncnet.org:27900</value>
     </cvar>
 
     <!-- UDP port to listen on for GSA queries from clients. This value must be unique on the host
     server from all other game servers or applications and must be allowed through any firewalls -->
     <cvar name="query_port" value="23500"/>
+
+    <!-- The game type to send in response to an info request, default value is C&C -->
+    <cvar name="game_type" value="C&C"/>
 
     <!-- This setting contains additional custom values to be broadcast to the master server, enter
     these as Key=Value pairs. The key must contain only alphanumeric characters and no spaces -->

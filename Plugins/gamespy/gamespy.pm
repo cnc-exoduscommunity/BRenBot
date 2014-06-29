@@ -3,7 +3,7 @@
 # broadcast system that existed in BRenBot prior to version 1.54.1 plus some additional new features
 #
 # \author Daniel Paul (danpaul88@yahoo.co.uk)
-# \version 1.0
+# \version 1.1
 #*
 
 package gamespy;
@@ -12,7 +12,7 @@ use POE;
 use IO::Socket;
 use plugin;
 
-my $currentVersion = '1.0';
+my $currentVersion = '1.1';
 my $loaded_ok = undef;
 
 # Check bot compatibility
@@ -271,7 +271,7 @@ sub generate_info
   $map =~ s/\.mix//g;
   $string .= "\\mapname\\" . $map;
   
-  $string .= "\\gametype\\C&C";
+  $string .= "\\gametype\\" . $config{'game_type'};
   $string .= "\\numplayers\\" . $numplayers;
   $string .= "\\maxplayers\\" . $maxplayers;
 
@@ -310,16 +310,34 @@ sub generate_players
 
   my $i = 0;
   my $string = "";
+
+  # Send player data in batches of 15 players to avoid overrunning the length limitations
   while (my ($id, $player) = each(%playerlist))
   {
-    $string .= "\\player_$i\\$player->{'name'}\\score_$i\\$player->{'score'}\\ping_$i\\$player->{'ping'}\\team_$i\\$player->{'side'}";
-    if (0 == (++$i%20) and $i < $numPlayers)
+    $string .= "\\player_$i\\$player->{'name'}"
+              ."\\score_$i\\$player->{'score'}"
+              ."\\ping_$i\\$player->{'ping'}"
+              ."\\team_$i\\$player->{'teamid'}"
+              ."\\kills_$i\\".(exists($player->{'stats_kills'}) ? $player->{'stats_kills'} : '0')
+              ."\\deaths_$i\\".(exists($player->{'stats_deaths'}) ? $player->{'stats_deaths'} : '0');
+    if (0 == (++$i%15) and $i < $numPlayers)
     {
       $string .= "\\queryid\\".$queryid.'.'.$index++;
       send($handle, $string, 0, $socket);
       $string = "";
     }
   }
+
+  # Send any remaining player data
+  if ($string ne "")
+  {
+    send($handle, $string, 0, $socket);
+    $string = "";
+  }
+  
+  # Generate team data
+  my (undef, undef, undef, $t1Points, undef, $t0Points, undef, undef, undef, undef) = plugin::getGameStatus();
+  $string = "\\team_t0\\".plugin::team_get_name(0)."\\score_t0\\".$t0Points."\\team_t1\\".plugin::team_get_name(1)."\\score_t1\\".$t1Points;
 
   send ($handle, $string."\\final\\\\queryid\\".$queryid .'.'.$index, 0, $socket);
 }
@@ -372,6 +390,12 @@ sub load_config
     }
   }
   
+  # Set default value for game type if it is not provided
+  if (!exists($config{'game_type'}) || length($config{'custom_info'}) <= 0)
+  {
+    $config{'game_type'} = "C&C";
+  }
+
   return 1;
 }
 

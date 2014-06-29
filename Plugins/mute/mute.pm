@@ -132,7 +132,7 @@ sub mute
     my ($mute_id, undef, undef, undef, undef) = is_muted($target);
     if (0 != $mute_id)
     {
-      $message = "Player $player is already muted";
+      $message = "Player $target is already muted";
       
       if (1 == $args{'nicktype'}) { plugin::ircmsg($message, $args{'ircChannelCode'}); }
       else { plugin::pagePlayer($args{'nick'}, 'BRenBot', $message); }
