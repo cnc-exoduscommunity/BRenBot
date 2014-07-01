@@ -317,7 +317,7 @@ sub generate_players
     $string .= "\\player_$i\\$player->{'name'}"
               ."\\score_$i\\$player->{'score'}"
               ."\\ping_$i\\$player->{'ping'}"
-              ."\\team_$i\\".(brTeams::get_name($player->{'teamid'}))
+              ."\\team_$i\\$player->{'teamid'}"
               ."\\kills_$i\\".(exists($player->{'stats_kills'}) ? $player->{'stats_kills'} : '0')
               ."\\deaths_$i\\".(exists($player->{'stats_deaths'}) ? $player->{'stats_deaths'} : '0');
     if (0 == (++$i%15) and $i < $numPlayers)
