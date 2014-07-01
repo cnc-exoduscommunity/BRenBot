@@ -3,7 +3,7 @@
 # broadcast system that existed in BRenBot prior to version 1.54.1 plus some additional new features
 #
 # \author Daniel Paul (danpaul88@yahoo.co.uk)
-# \version 1.02
+# \version 1.03
 #*
 
 package gamespy;
@@ -12,7 +12,7 @@ use POE;
 use IO::Socket;
 use plugin;
 
-my $currentVersion = '1.02';
+my $currentVersion = '1.03';
 my $loaded_ok = undef;
 
 # Check bot compatibility
