@@ -312,7 +312,7 @@ sub generate_players
   my $string = "";
 
   # Send player data in batches of 15 players to avoid overrunning the length limitations
-  while (my ($id, $player) = each(%playerlist))
+  while (my ($id, $player) = each(%playerList))
   {
     $string .= "\\player_$i\\$player->{'name'}"
               ."\\score_$i\\$player->{'score'}"
