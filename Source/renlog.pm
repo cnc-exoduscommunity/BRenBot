@@ -367,7 +367,7 @@ sub handle_page($$)
   # Log the page to the console and IRC
   my $logmessage = "[Page] $pager: $message";
   modules::console_output($logmessage);
-  brIRC::ircmsg(brIRC::colourise(9, $logmessage, "A"));
+  brIRC::ircmsg(brIRC::colourise(9, $logmessage), "A");
 }
 
 # --------------------------------------------------------------------------------------------------
