@@ -1,5 +1,5 @@
 FDS Status Reporter Plugin
-Version 1.04
+Version 1.06
 Daniel Paul (danpaul88)
 danpaul88@yahoo.co.uk
 
@@ -19,6 +19,12 @@ Extract the plugins folder to your BRenBot folder.
 ###############
 Changelog
 ###############
+
+1.06
+ - Updated to new 1.54 plugin format
+
+1.05
+ - Community patch provided by Gen_Blacky. See http://www.renegadeforums.com/index.php?t=msg&th=40432
 
 1.04
  - Support for updating through brLoader

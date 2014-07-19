@@ -1,17 +1,12 @@
 <?xml version="1.0" ?>
-
 <plugin name="fds_status_reporter">
-  <command name="seen">
-    <!-- No Commands -->
-  </command>
-  <events>
-    <!-- No Events -->
-  </events>
+
+  <!-- Configuration settings for the plugin, change the values of these to suit your server -->
   <config>
     <!-- Time in minutes between each update of the FDS status -->
     <cvar name="updateInterval" value="15"/>
     
-    <!-- FTP Server -->
+    <!-- FTP Server - do not include the ftp:// part -->
     <cvar name="ftpServer" value="ftp.mysite.com"/>
     
     <!-- Username -->
@@ -22,10 +17,10 @@
     
     <!-- Path to place uploaded file
     Must start with /, but must not have a / on the end -->
-    <cvar name="ftpPath" value="/site.com/folder"/>
+    <cvar name="ftpPath" value="/"/>
     
-    <!-- Name for the uploaded file (useful if you have
-    multiple servers) -->
+    <!-- Name for the uploaded file (useful if you have multiple servers) -->
     <cvar name="filename" value="fdsstatus.txt"/>
   </config>
+
 </plugin>

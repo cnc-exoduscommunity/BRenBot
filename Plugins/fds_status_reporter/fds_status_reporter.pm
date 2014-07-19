@@ -1,153 +1,147 @@
+#**
+# FDS Status Reporter plugin
+# Reports the status of the FDS to an FTP location automatically by uploading a .txt file.
+# Processing the raw data is up to the website
 #
-# FDS Status Reporter plugin for BRenBot 1.51 by Daniel Paul
-# Reports the status of the FDS to an FTP location automatically by
-# uploading a .txt file. Processing the raw data is up to the website
-#
-# Version 1.04
-#
+# \author Daniel Paul (danpaul88@yahoo.co.uk)
+# \version 1.06
+#*
+
 package fds_status_reporter;
 
 use POE;
 use plugin;
-use gamelog;
 use Net::FTP;
 
-sub CHANNEL () { plugin::get_irc_channel()  };
+my $currentVersion = '1.06';
+my $loaded_ok = undef;
 
-# define additional events in the POE session
+# Check bot compatibility
+if ( !defined(plugin::getBrVersion) || plugin::getBrVersion() < 1.54
+  || (plugin::getBrVersion() == 1.54 && plugin::getBrBuild() < 1 ) )
+{
+  print ' == FDS Status Reporter Plugin Error ==\n'
+      . 'This version of the plugin is not compatible with BRenBot versions older than 1.54.1\n';
+  return 0;
+}
 
-our %additional_events =
-(
-	"updateStatus" => "updateStatus"
-);
+# --------------------------------------------------------------------------------------------------
 
-# BRenBot automatically sets the plugin name
+# BRenBot supplies these on plugin startup
 our $plugin_name;
-
-# BRenBot automatically imports the plugin's config (from the xml file) into %config
 our %config;
 
-my $pluginVersion = 1.04;
+# Define additional events in the POE session
+our %additional_events =
+(
+  'updateStatus' => 'updateStatus'
+);
 
 
 
-########### Event handlers
+
+# --------------------------------------------------------------------------------------------------
+##
+#### Bot Events
+##
+# --------------------------------------------------------------------------------------------------
 
 sub start
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	# Set our current version in the globals table
-	plugin::set_global ( "version_plugin_fds_status_reporter", $pluginVersion );
-	
-	# Schedule the first upload for 15 seconds time (giving BRenBot plenty
-	# of time to get the server status)
-	my $next_time = int( time() ) + 15;
-	$kernel->alarm( updateStatus => $next_time => \%args );
+  my $kernel = $_[KERNEL];
+  plugin::set_global("version_plugin_fds_status_reporter", $currentVersion);
+
+  # Schedule the first upload for 15 seconds time (giving BRenBot time to get the server status)
+  $kernel->alarm(updateStatus => int(time()) + 15);
+
+  return ($loaded_ok = 1);
 }
 
 
 sub stop
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
 }
 
 
 
 
+# --------------------------------------------------------------------------------------------------
+##
+#### FTP upload code
+##
+# --------------------------------------------------------------------------------------------------
 
-########### Other Functions
-
-# Main program function, updates the status file and then
-# schedules the next update
+# Creates the file to be uploaded
 sub updateStatus
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	
-	## Update the data in the text file
-	my $statusFile;
-	if( open( $statusFile, ">./$config{'filename'}" ) )
-	{
-		if ( $main::version >= 1.51 )
-		{
-			my ( $serverMode, $currentMap, $gdiPlayers, $gdiPoints, $nodPlayers, $nodPoints, $currentPlayers, $maxPlayers, $timeRemaining, $sfps ) = plugin::getGameStatus();
-			print $statusFile "$serverMode\n$currentMap\n$gdiPlayers\n$gdiPoints\n$nodPlayers\n$nodPoints\n$maxPlayers\n$timeRemaining\n$sfps\n";
-			
-			# Print data for each player
-			my %playerlist = plugin::get_playerlist();
-			while ( my ( $id, $player ) = each ( %playerlist ) )
-			{
-				print $statusFile "$player->{name}\t$player->{side}\t$player->{score}\t$player->{stats_kills}\t$player->{stats_deaths}\t$player->{ping}\t$player->{time}\n";
-			}
-		}
-		else
-		{
-			my %gameinfo = plugin::get_gameinfo();
-			print $statusFile "$gameinfo{mode}\n$gameinfo{map}\n$gameinfo{gdi_players}\n$gameinfo{gdi_points}\n$gameinfo{nod_players}\n$gameinfo{nod_points}\n$gameinfo{maxplayers}\n$gameinfo{timeleft}\n$gameinfo{sfps}\n";
-			
-			# Print data for each player
-			my @playerList = plugin::get_playerlist();
-			foreach $player ( @playerList )
-			{
-				my $playerstats = gamelog::get_playerstats ( $player->{name} );
-				print $statusFile "$player->{name}\t$player->{side}\t$player->{score}\t$playerstats->{kills}\t$playerstats->{deaths}\t$player->{ping}\t$player->{time}\n";
-			}
-		}
-		
-		close $statusFile;
-	}
-	else
-	{
-		print "FDS STATUS PLUGIN :: Failed to open $config{'filename'}... aborting."
-	}
-	
-	
-	
-	## Login to the FTP and upload our file
-	my $ftp = Net::FTP->new( "$config{'ftpServer'}", Debug => 0 );
-	if ( $ftp )
-	{
-		if ( $ftp->login( $config{'ftpUsername'},$config{'ftpPassword'} ) )
-		{
-			print "FDS STATUS PLUGIN :: FTP :: Login Successful\n";
-			if ( $ftp->cwd( $config{'ftpPath'} ) )
-			{
-				# Upload the file
-				if ( $ftp->put ( "./$config{'filename'}" ) )
-				{
-					print "FDS STATUS PLUGIN :: FTP :: File $config{'filename'} uploaded successful\n";
-				}
-				else
-				{
-					print "FDS STATUS PLUGIN :: FTP :: File $config{'filename'} upload failed!\n";
-				}
-			}
-			else
-			{
-				print "FDS STATUS PLUGIN :: FTP :: Path '$config{ftpPath}' does not exist!\n";
-			}
-			
-			$ftp->quit;
-			print "FDS STATUS PLUGIN :: FTP :: Disconnected\n";
-		}
-		else
-		{
-			print "FDS STATUS PLUGIN :: FTP :: Login Failed\n";
-		}
-	}
-	
-	
-	
-	# Schedule the next update
-	my $next_time = int( time() ) + ($config{'updateInterval'}*60);
-	$kernel->alarm( updateStatus => $next_time => \%args );
+  my $kernel = $_[KERNEL];
+
+  ## Update the data in the text file
+  my $statusFile;
+  if (!open($statusFile, ">./$config{'filename'}") )
+  {
+    plugin::console_output("[FDS Status Reporter] Failed to open $config{'filename'}");
+    return;
+  }
+
+  # Report basic server info
+  my ($serverMode, $map, $gdiPlayers, $gdiPoints, $nodPlayers, $nodPoints, $currentPlayers, $maxPlayers, $timeRemaining, $sfps) = plugin::getGameStatus();
+  print $statusFile "$serverMode\n$map\n$gdiPlayers\n$gdiPoints\n$nodPlayers\n$nodPoints\n$maxPlayers\n$timeRemaining\n$sfps\n";
+
+  # Report player info
+  my %playerlist = plugin::get_playerlist();
+  while ( my($id,$player) = each (%playerlist) )
+  {
+    print $statusFile "$player->{name}\t$player->{side}\t$player->{score}\t$player->{stats_kills}\t$player->{stats_deaths}\t$player->{ping}\t$player->{time}\n";
+  }
+
+  close $statusFile;
+
+  uploadFile();
+
+  # Schedule the next update
+  $kernel->alarm(updateStatus => int(time()) + $config{'updateInterval'}*60);
+}
+
+# Uploads the status file
+sub uploadFile
+{
+  ## Login to the FTP and upload our file
+  my $ftp = Net::FTP->new("$config{'ftpServer'}", Debug => 0);
+  if (!$ftp)
+  {
+    plugin::console_output("[FDS Status Reporter] Failed to connect to FTP server $config{'ftpServer'}");
+    return;
+  }
+
+  if (!$ftp->login($config{'ftpUsername'}, $config{'ftpPassword'}))
+  {
+    plugin::console_output('[FDS Status Reporter] FTP Login Failed');
+    $ftp->quit;
+    return;
+  }
+
+  #plugin::console_output('[FDS Status Reporter] FTP Login Successful');
+
+  if (!$ftp->cwd($config{'ftpPath'}))
+  {
+    plugin::console_output("[FDS Status Reporter] FTP Directory Path '$config{ftpPath}' does not exist!");
+    $ftp->quit;
+    return;
+  }
+
+  if ($ftp->put("./$config{'filename'}"))
+  {
+    plugin::console_output("[FDS Status Reporter] File $config{'filename'} uploaded successful\n");
+  }
+  else
+  {
+    plugin::console_output("[FDS Status Reporter] File $config{'filename'} upload failed!\n");
+  }
+
+  $ftp->quit;
 }
 
 
-
-# Return true or the plugin will not work properly...
+# Plugin loaded OK
 1;
