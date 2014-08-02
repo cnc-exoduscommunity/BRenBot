@@ -1,21 +1,175 @@
 <?xml version="1.0" ?>
-
 <plugin name="custom_commands">
-  <command name="show_commands">
-    <permission level="2"/>
-    <syntax value="show_commands"/>
-    <help value="Lists all the available custom commands which can be used."/>
+
+  <!-- Do not modify this events list or you may break the plugin -->
+  <events>
+    <event>command</event>
+  </events>
+
+
+  <!-- Define your custom commands here. These commands will be exist as first class commands within
+  BRenBot, unlike in older versions of this plugin where they were only listed with a special
+  !show_commands command (which no longer exists).
+
+  Commands support all of the same settings as those in commands.xml in addition to some special
+  additions only supported by this plugin.
+
+  The most important of these additional settings is the <action/> node which tells BRenBot what the
+  command should do. This node must contain one or more lines of text, each of which consists of one
+  valid BRenBot command. You can use custom commands inside other custom commands to build up more
+  complex commands.
+
+  Warning: All commands in the action setting will be executed with plugin level permissions which
+           bypass the normal permissions for that command. Be careful to set appropriate permissions
+           for your custom commands to avoid exposing admin level functionality to the wrong people.
+
+  You can use the following macros in your commands;
+    %ID%                ID of the command user (-1 for IRC users)
+    %NAME%              Name of the command user
+    %TEAM%              Team name of the command user (UNDEF for IRC users)
+    %TEAMID%            Team ID of the command user (-1 for IRC users)
+    %ENEMYTEAM%         Team name of the opposite team to the command users (UNDEF for IRC users)
+    %ENEMYTEAMID%       Team ID of the opposite team to the command users (UNDEF for IRC users)
+
+  The following macros are used to extract arguments from the string provided to the command. You
+  should use the special <requiredArgs>N</requiredArgs> setting on a command to tell BRenBot that
+  the user must provide at LEAST that many arguments to use the command.
+  
+    %ARG1%              The first space separated argument to the !command
+    %ARG2%              The second space separated argument to the !command
+    %ARGN%              The Nth space separated argument to the !command
+    %ARGN+%             The Nth space separated argument to the !command and all subsequent text
+    %ARGS%              All of the text following the !command (could be blank!)
+
+  For the following macros it is assumed that the first argument (%ARG1%) specifies the name or ID
+  of the target. Using a target does not change the value of %ARG1%. You must specify the special
+  <requiresTarget>1</requiresTarget> to tell BRenBot that the first argument must be the name or ID
+  of a player in the game.
+
+  You can also use the <defaultSelfTarget>1</defaultSelfTarget> setting to tell BRenBot to set the
+  target to the user of the command, unless the user was in IRC. Note that this will only work on
+  on commands that do not have any arguments other than the target otherwise the first argument will
+  be presumed to be the target.
+
+    %TARGETID%          ID of the target player
+    %TARGETNAME%        Name of the target player
+    %TARGETTEAM%        Team name of the target player
+    %TARGETTEAMID%      Team ID of the target player
+    %TARGETENEMYTEAM%   Team name of the opposite team to the target player
+    %TARGETENEMYTEAMID% Team ID of the opposite team to the target player
+
+  You can use the  Additionally you can specify the
+  -->
+  <command name="website">
+    <permission level="1"/>
     <enabled value="1"/>
     <group>irc</group>
     <group>ingame</group>
-    <renguard required="0"/>
+    <hideInHelp value="1"/>
+    <alias>web</alias>
+    <action>!msg Visit our website at renforums.com</action>
   </command>
-  <events>
-    <event>command</event>
-    <event>text</event>
-  </events>
-  <config>
-    <!-- No config settings for custom commands plugin...
-    To configure your custom commands please use the custom_commands.brf file -->
-  </config>
+
+  <command name="english">
+    <permission level="2"/>
+    <enabled value="1"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <hideInHelp value="1"/>
+    <action>!msg Speak English Only <> Parlez seulement Anglais <> Spreek alleen engels <> Sprechen sie nur Englisch <> Fale O ingles somente <> Parlie inglese soltanto</action>
+  </command>
+
+  <command name="afk">
+    <permission level="1"/>
+    <enabled value="1"/>
+    <group>ingame</group>
+    <hideInHelp value="1"/>
+    <action>!msg %name% is stepping away from the game for a while</action>
+  </command>
+
+  <command name="b2b">
+    <permission level="1"/>
+    <enabled value="1"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <hideInHelp value="1"/>
+    <action>!msg Base to base is not allowed. This refers to the use of a vehicle or infantry unit to attack enemy buildings from within its own base</action>
+  </command>
+
+
+  <!-- The following commands require SSGM 4.x plugins to work properly. If you have the required
+  plugin(s) installed and want use these commands set their enabled value to 1 -->
+
+  <!-- Requires ExtraConsoleCommands -->
+  <command name="givepow">
+    <permission level="4"/>
+    <enabled value="0"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+    <requiresTarget>1</requiresTarget>
+    <action>!fds givepow %TARGETID% %ARG2+%</action>
+  </command>
+
+  <!-- Requires ExtraConsoleCommands -->
+  <command name="fly">
+    <permission level="4"/>
+    <enabled value="0"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+    <requiresTarget>1</requiresTarget>
+    <defaultSelfTarget>1</defaultSelfTarget>
+    <action>!fds fly %TARGETID%</action>
+  </command>
+
+  <!-- Requires ExtraConsoleCommands. Must also enable !fly (see above) -->
+  <command name="noclip">
+    <permission level="4"/>
+    <enabled value="0"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+    <requiresTarget>1</requiresTarget>
+    <defaultSelfTarget>1</defaultSelfTarget>
+    <action>
+      !fly %TARGETID%
+      !fds attachscript JFW_Disable_Physical_Collision %TARGETID%
+    </action>
+  </command>
+
+  <!-- Requires Spectate -->
+  <command name="spectate">
+    <permission level="4"/>
+    <enabled value="0"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+    <alias>spec</alias>
+    <requiresTarget>1</requiresTarget>
+    <defaultSelfTarget>1</defaultSelfTarget>
+    <action>!fds spectate %TARGETID%</action>
+  </command>
+
+  <!-- Requires ExtraConsoleCommands -->
+  <command name="changechar">
+    <permission level="4"/>
+    <enabled value="0"/>
+    <group>irc</group>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+    <alias>setchar</alias>
+    <requiresTarget>1</requiresTarget>
+    <action>!fds changechar %TARGETID% %ARG2+%</action>
+  </command>
+
+  <!-- Requires ExtraConsoleCommands -->
+  <command name="changemychar">
+    <permission level="4"/>
+    <enabled value="0"/>
+    <group>ingame</group>
+    <hideInHelp value="0"/>
+    <alias>setmychar</alias>
+    <action>!fds changechar %ID% %ARG1+%</action>
+  </command>
 </plugin>

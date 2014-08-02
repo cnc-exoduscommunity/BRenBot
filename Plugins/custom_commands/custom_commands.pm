@@ -1,218 +1,161 @@
+#**
+# This plugin is a major overhaul of the original custom commands plugin that has been available for
+# BRenBot for several years now. It provides a much more comprehensive way to implement macro based
+# custom commands which can use the full range of BRenBots functionality, rather than being limited
+# to sending host messages to the server.
 #
-# CUSTOM COMMANDS PLUGIN for BRenBot 1.43 by Daniel Paul
-# Version 1.11
-#
+# \author Daniel Paul (danpaul88@yahoo.co.uk)
+# \version 2.0
+#*
+
 package custom_commands;
 
 use POE;
 use plugin;
-use strict;
 
-sub CHANNEL () { plugin::get_irc_channel() };
+my $currentVersion = '2.00';
+my $loaded_ok = undef;
 
-# define additional events in the POE session
+# Check bot compatibility
+if ( !defined(plugin::getBrVersion) || plugin::getBrVersion() < 1.54
+  || (plugin::getBrVersion() == 1.54 && plugin::getBrBuild() < 1 ) )
+{
+  print " == Custom Commands Plugin Error ==\n"
+      . "This version of the plugin is not compatible with BRenBot versions older than 1.54.1\n";
+  return 0;
+}
 
-our %additional_events =
-(
-	# !commands
-	"show_commands" => "show_commands",
-);
+# --------------------------------------------------------------------------------------------------
 
-# plugin_name and config are automatically given data by BRenBot
+# BRenBot supplies these on plugin startup
 our $plugin_name;
 our %config;
-our %type1Commands;				# Holds a list of type 1 commands, and the ID for their text
-our %type2Commands;				# Holds a list of type 2 commands, and the ID for their text
-our %type3Commands;				# Holds a list of type 3 commands, and the ID for their text
-our %commandsText;				# Holds the actual text for the commands
-my $pluginVersion = 1.11;
+
+# Define additional events in the POE session
+our %additional_events = ();
 
 
 
-########### Functions for !commands
 
-# Function for !show_commands command - Shows available custom commands
-sub show_commands
-{
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	my $key;
-	my $commandsList = "Available Commands: ";
-	
-	foreach $key ( keys ( %type1Commands ) )
-	{
-		$commandsList .= $key . ", ";
-	}
-	foreach $key ( keys ( %type2Commands ) )
-	{
-		$commandsList .= $key . ", ";
-	}
-	foreach $key ( keys ( %type3Commands ) )
-	{
-		$commandsList .= $key . ", ";
-	}
-	
-	if ( $commandsList ne "Available Commands: " )
-	{
-		# Trim trailing ", "
-		$commandsList = substr ( $commandsList, 0, -2 );
-	}
-	else
-	{ $commandsList = "There are no custom commands setup at this time."; }
-	
-	if ( $args{nicktype} == 1 )
-	{ $kernel->post ( IRC => privmsg => CHANNEL, "[BR] " . $commandsList ); }
-	else
-	{ plugin::RenRemCMD ( "msg [BR] " . $commandsList ); }
-}
+# --------------------------------------------------------------------------------------------------
+##
+#### Bot Events
+##
+# --------------------------------------------------------------------------------------------------
 
-
-
-########### Event handlers
-
-# Runs when BRenBot loads the plugin
 sub start
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	
-	# Set our current version in the globals table
-	plugin::set_global ( "version_plugin_custom_commands", $pluginVersion );
-	
-	# Load commands list
-	loadCommands();
+  # Set our current version in the globals table
+  plugin::set_global('version_plugin_custom_commands', $currentVersion);
+
+  return ($loaded_ok = 1);
 }
 
-# Runs when BRenBot shuts down
 sub stop
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
 }
 
-# Runs when a !command specified in the .xml file is typed
+
+
+
+# --------------------------------------------------------------------------------------------------
+##
+#### Game Events
+##
+# --------------------------------------------------------------------------------------------------
+
 sub command
 {
-	# trigger on !commands
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	if ( $args{command} eq "show_commands" )
-	{ $kernel->yield("show_commands" => \%args); }
+  return if ($loaded_ok == 0);
+
+  my %args = %{$_[ARG0]};
+
+  # Check if the command requires a target and abort if it does and none is found
+  my %target = get_target(@_);
+  return if !defined(%target);
+
+  # Todo: check minimum arguments
+
+  # Process each action for this command
+  my @actions = get_command_actions(@_);
+  foreach (@actions)
+  {
+    process_command_action($_, $args{'nick'}, \%target, $args{'arg'});
+  }
 }
 
-# Runs when any text is typed ingame or in IRC
-sub text
+
+
+
+# --------------------------------------------------------------------------------------------------
+##
+#### Utility Functions
+##
+# --------------------------------------------------------------------------------------------------
+
+# Checks if a target is required for this command and, if so, determines who that should be. Returns
+# an empty hash if no target is required, undef if a target is required but none was found or the
+# player hash of the target if a target is required and one was found.
+sub get_target()
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
-	
-	if ( $args{message} =~ m/^\!(\S+)(\s(.+))?/i )
-	{
-		my $command = lc ($1);
-		my $argsparam = $3;
-		
-		# Check type 1 commands
-		if ( $type1Commands{$command} )
-		{
-			#print $commandsText{$type1Commands{$command}};
-			my $message = $commandsText{$type1Commands{$command}};
-			$message =~ s/\%(name|nick)/$args{nick}/gi;
-			$message =~ s/\%args/$argsparam/gi;
-			
-			plugin::RenRemCMD( "msg [BR] " . $message );
-		}
-		
-		# Check type 2 commands
-		if ( $type2Commands{$command} )
-		{
-			if ( $args{nicktype} == 0 )
-			{
-				#print $commandsText{$type2Commands{$command}};
-				my $message = $commandsText{$type2Commands{$command}};
-				$message =~ s/\%(name|nick)/$args{nick}/gi;
-				$message =~ s/\%team/$args{team}/gi;
-				my $otherteam = ( $args{team} eq "GDI" ) ? "Nod" : "GDI";
-				$message =~ s/\%enemyteam/$otherteam/gi;
-				$message =~ s/\%args/$argsparam/gi;
-				
-				plugin::RenRemCMD( "msg [BR] " . $message );
-			}
-			else
-			{ $kernel->post ( IRC => privmsg => CHANNEL, "[BR] The command $command cannot be used from IRC." ); }
-		}
-		
-		# Check type 3 commands
-		if ( $type3Commands{$command} )
-		{
-			if ( $args{nicktype} == 0 )
-			{
-				#print $commandsText{$type3Commands{$command}};
-				my $message = $commandsText{$type3Commands{$command}};
-				$message =~ s/\%(name|nick)/$args{nick}/gi;
-				$message =~ s/\%team/$args{team}/gi;
-				my $otherteam = ( $args{team} eq "GDI" ) ? "Nod" : "GDI";
-				$message =~ s/\%enemyteam/$otherteam/gi;
-				$message =~ s/\%args/$argsparam/gi;
-				
-				plugin::RenRemCMD( "page $args{nick} [BR] " . $message );
-			}
-			else
-			{ $kernel->post ( IRC => privmsg => CHANNEL, "[BR] The command $command cannot be used from IRC." ); }
-		}
-	}
+  my %args = %{$_[ARG0]};
+
+  return () if (1 != $args{'settings'}->{'requiresTarget'});
+
+  # Figure out who the target should be
+  my $target = $args{'arg1'};
+  if (!$target and 1 == $args{'settings'}->{'defaultSelfTarget'} and 0 == $args{'nicktype'})
+  {
+    $target = $args{'nick'};
+  }
+
+  # Check the target exists in the server
+  my ($result, %targetdata) = plugin::getPlayerData();
+  return %targetdata if (1 == $result);
+
+  if (0 == $args{'nicktype'})
+  {
+    plugin::pagePlayer($donator_id, 'BRenBot', 'Donations are not allowed on '.plugin::get_map()." in the first $donatelimit minutes. You have to wait $remaining more minutes" );
+  }
+
+  # Show error message
+  my $message = $target.' was not found in the server or is not unique';
+  if (0 == $args{'nicktype'})
+    { plugin::pagePlayer( $args{'nick'}, 'BRenBot', $syntax ); }
+  elsif (1 == $args{'nicktype'})
+    { plugin::ircmsg( $syntax, $args{'ircChannelCode'} ); }
+
+  return undef;
 }
 
-
-
-########### Other Functions
-
-# Reads the commands from the commands.xml file
-sub loadCommands
+# Get an array of actions to be performed by the command
+sub get_command_actions()
 {
-	my $currentSection = 0;
-	my $currentTextID = 0;
-	
-	eval
-	{
-		open ( COMMANDSFILE, 'plugins/custom_commands.brf' );
-		while ( <COMMANDSFILE> )
-		{
-			if ( $_ !~ m/^\#/ && $_ !~ m/^\s+$/ )		# If the line starts with a hash or is blank ignore it
-			{
-				if ( $_ =~ m/\[(|TYPE1|TYPE2|TYPE3)\]/i )
-				{
-					$currentSection = uc($1);
-				}
-				elsif ( $currentSection )
-				{
-					if ( $_ =~ m/([^=]+)\s?=\s?(.+)/i )
-					{
-						# Put the command text into the commandsTest hash
-						$currentTextID++;
-						$commandsText{$currentTextID} = $2;
-						
-						# Now put all of the commands into the right hash
-						foreach ( split(/,/, $1) )
-						{
-							my $command = lc($_);
-							$command =~ s/\s//g;	# Trim spaces from the command
-							
-							if ( $currentSection eq "TYPE1" ) { $type1Commands{$command} = $currentTextID; }
-							elsif ( $currentSection eq "TYPE2" ) { $type2Commands{$command} = $currentTextID; }
-							elsif ( $currentSection eq "TYPE3" ) { $type3Commands{$command} = $currentTextID; }
-						}
-					}
-				}
-			}
-		}
-		close ( COMMANDSFILE );
-	}
-	or modules::display_error($@);
+  my %args = %{$_[ARG0]};
+
+  return () if !defined($args{'settings'}->{'action'});
+
+  my @actions;
+  for (split /^/, $args{'settings'}->{'action'})
+  {
+    push @actions, $_ if ($_ =~ m/^\!/i);
+  }
+
+  return @actions;
 }
 
+sub process_command_action()
+{
+  my $command = shift;
+  my $user    = shift;
+  my $target  = shift;
+  my $args    = shift;
+
+  # todo: parse macros
+
+  plugin::call_command($command, $user);
+}
+
+
+# Plugin loaded OK
 1;
