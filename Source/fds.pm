@@ -137,7 +137,7 @@ sub send_coloured_message($$$$;$)
 {
   my ($r,$g,$b,$message,$sender) = (@_);
 
-  return 0 if ( $brconfig::serverScriptsVersion < 2.6 );
+  return 0 if ($brconfig::serverScriptsVersion < 2.6);
 
   $message = '('.$sender."): $message" if ( defined($sender) );
   send_command("cmsg $r,$g,$b $message");

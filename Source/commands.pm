@@ -1676,40 +1676,36 @@ sub sndp
 
 sub tpage
 {
-	my ( $session, $heap, $args ) = @_[ SESSION, HEAP, ARG0 ];
-	my $kernel = $_[KERNEL];
-	my %args = %{$args};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		if (!$args{arg1})
-		{
-			show_syntax_error(@_);
-			return;
-		}
-		if ($args{arg} =~ /^\!tpage\s(gdi|all|1|nod|sov|0)\s(.+)/i)
-		{
+  eval
+  {
+    if (!$args{'arg1'})
+    {
+      show_syntax_error(@_);
+      return;
+    }
+    if ($args{arg} =~ /^\!\S+\s(\S+)\s(.+)/i)
+    {
+      my $team = brTeams::get_id_from_name($1);
+      my $text = $2;
 
-			if ($brconfig::serverScriptsVersion >= 2.6)
-			{
-				my $team = $1;
-				my $text = $2;
-				if ( $team =~ m/nod/i || $team =~ m/sov/i ) { $team = "0" }
-				if ( $team =~ m/gdi/i || $team =~ m/all/i ) { $team = "1" }
-				if (! ($text)) { brIRC::ircmsg ( "Usage: !tpage <team> <text>", $args{'ircChannelCode'} ); }
-				else
-				{
-          fds::send_coloured_message_team(0,255,0,$team,$text,$args{'nick'});
-					brIRC::ircmsg ( "9TeamPage Sent to Team $team --> \($args{nick}): $text", $args{'ircChannelCode'} );
-				}
-	 		}
-			else
-			{
+      if (!defined($team) || length($text) < 1)
+      {
+        show_syntax_error(@_);
+        return;
+      }
+
+      if (0 == fds::send_coloured_message_team(0,255,0,$team,$text,$args{'nick'}))
+      {
         brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
-			}
-		}
-	}
-	or modules::display_error($@);
+        return;
+      }
+
+      brIRC::ircmsg("9TeamPage Sent to team $team --> \($args{nick}): $text", $args{'ircChannelCode'});
+    }
+  }
+  or modules::display_error($@);
 }
 
 
@@ -2282,15 +2278,20 @@ sub delban
 
 sub rules
 {
-	my %args = %{$_[ ARG0 ]};
+  my %args = %{$_[ ARG0 ]};
 
-	eval
-	{
-		postrule( 1, $args{'ircChannelCode'} );
-		if ( $modules::maprules && modules::get_module ( "map_settings" ) )
-			{ RenRem::RenRemCMD ( "msg [BR] Special rules for ".serverStatus::getMap().": ".$modules::maprules ); }
-	}
-	or modules::display_error($@);
+  eval
+  {
+    postrule( 1, $args{'ircChannelCode'} );
+
+    # Find any map specific rules
+    my $maprules = get_map_setting('rules');
+    if (defined($maprules))
+    {
+      fds::send_message('Special rules for '.serverStatus::getMap().': '.$maprules);
+    }
+  }
+  or modules::display_error($@);
 }
 
 sub banlog
