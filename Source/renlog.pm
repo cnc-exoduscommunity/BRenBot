@@ -536,7 +536,7 @@ sub handle_input($)
     return;
   }
 
-  if ($line =~ /(NOD|Sov) : (.+?)\/(.+?) players\s+ (.+?) points/)
+  if ($line =~ /(Nod|Sov) : (.+?)\/(.+?) players\s+ (.+?) points/)
   {
     serverStatus::updateStatus_Nod($2, $4, $3);
     return;
