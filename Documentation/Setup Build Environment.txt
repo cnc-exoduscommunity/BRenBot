@@ -9,9 +9,9 @@
 ##################################################################################
 
 
-1) Download and install Strawberry Perl 5.16.3 (32 bit) from
+1) Download and install Strawberry Perl 5.18.2 (32 bit) from
 
-   http://strawberry-perl.googlecode.com/files/strawberry-perl-5.16.3.1-32bit.msi
+   http://strawberry-perl.googlecode.com/files/strawberry-perl-5.18.2.2-32bit.msi
 
 
 
