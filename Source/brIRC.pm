@@ -12,7 +12,6 @@ use POE;
 use brAuth;
 
 # Variables
-my $socket;
 my @priorityMessageQueue;	# Queue for high priority outgoing messages
 my @messageQueue;			# Queue for outgoing messages
 
@@ -35,12 +34,12 @@ sub init
 				# Public and admin IRC channels cannot be the same
 				if ( lc($brconfig::irc_publicChannel) eq lc($brconfig::irc_adminChannel) ) { $brconfig::irc_publicChannel = ""; };
 
-				$socket = IO::Socket::INET->new( PeerAddr => $brconfig::config_ircserver,
+				$heap->{'socket'} = IO::Socket::INET->new( PeerAddr => $brconfig::config_ircserver,
 					PeerPort => $brconfig::config_ircport,
 					Proto => 'tcp' );
 
 
-				if ( $socket && $socket->connected() )
+				if ($heap->{'socket'} && $heap->{'socket'}->connected())
 				{
 					modules::console_output ( "[IRC] Connected to $brconfig::config_ircserver." );
 
@@ -65,11 +64,11 @@ sub init
 			{
 				my ( $kernel, $heap ) = @_[ KERNEL, HEAP ];
 
-				$socket = IO::Socket::INET->new( PeerAddr => $brconfig::config_ircserver,
+				$heap->{'socket'} = IO::Socket::INET->new( PeerAddr => $brconfig::config_ircserver,
 					PeerPort => $brconfig::config_ircport,
 					Proto => 'tcp' );
 
-				if ( $socket && $socket->connected() )
+				if ($heap->{'socket'} && $heap->{'socket'}->connected())
 				{
 					modules::console_output ( "[IRC] Connected to $brconfig::config_ircserver." );
 
@@ -94,9 +93,9 @@ sub init
 			{
 				my $heap = $_[ HEAP ];
 
-				$heap->{'socket'} = new POE::Wheel::ReadWrite
+				$heap->{'wheel'} = new POE::Wheel::ReadWrite
 				(
-					Handle     => $socket,
+					Handle     => $heap->{'socket'},
 					InputEvent => 'gotline',
 					ErrorEvent => 'goterror',
 			    );
@@ -109,7 +108,7 @@ sub init
         my $availableChars = $brconfig::irc_charsPerSecond;
         my $sendString = "";
         
-        if (!defined($heap->{'socket'}))
+        if (!defined($heap->{'wheel'}) || !defined($heap->{'socket'}))
         {
           return;
         }
@@ -143,13 +142,13 @@ sub init
 					$availableChars -= length ( $output );
 				}
 
-				if ( $sendString )
-				{
-					$heap->{'socket'}->send( $sendString );
-				}
+        if ($sendString)
+        {
+          $heap->{'socket'}->send( $sendString );
+        }
 
-			    # Come back to the send loop in 1 second
-			    $kernel->delay ( "sendloop", 1 );
+        # Come back to the send loop in 1 second
+        $kernel->delay ( "sendloop", 1 );
 			},
 			gotline => sub
 			{
@@ -229,10 +228,10 @@ sub init
 				#close IRCDEBUGFILE;
 
 				# Shutdown socket and wheel
-				$heap->{'socket'}->shutdown_input();
-				$heap->{'socket'}->shutdown_output();
-				delete $heap->{'socket'};
-				shutdown ( $socket, 2 );
+				$heap->{'wheel'}->shutdown_input();
+				$heap->{'wheel'}->shutdown_output();
+				delete $heap->{'wheel'};
+				shutdown($heap->{'socket'}, 2);
 
 				modules::console_output ( "[IRC] ERROR: $error" );
 				modules::console_output ( "[IRC] Disconnect detected, attemping to reconnect in 10 seconds." );
