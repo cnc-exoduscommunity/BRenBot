@@ -52,8 +52,8 @@ sub init
 					$heap->{'ircNick'} = $brconfig::config_botname;
 
 					# Start receiving
-					$kernel->yield( "receiveloop" );
-					$kernel->yield( "sendloop" );
+					$kernel->yield("receiveloop");
+					$kernel->yield("sendloop");
 				}
 				else
 				{
@@ -81,8 +81,8 @@ sub init
 					$heap->{'ircNick'} = $brconfig::config_botname;
 
 					# Start receiving
-					$kernel->yield( "receiveloop" );
-					$kernel->yield ( "sendloop" );
+					$kernel->yield("receiveloop");
+					$kernel->yield("sendloop");
 				}
 				else
 				{
@@ -106,6 +106,11 @@ sub init
 				my $kernel = $_[ KERNEL ];
 				my $availableChars = $brconfig::irc_charsPerSecond;
 				my $sendString = "";
+        
+        if (!defined($heap->{'socket'}))
+        {
+          return;
+        }
 
 				# Send at least one message
 				if ( $priorityMessageQueue[0] )
@@ -138,7 +143,7 @@ sub init
 
 				if ( $sendString )
 				{
-					$socket->send( $sendString );
+					$heap->{'socket'}->send( $sendString );
 				}
 
 			    # Come back to the send loop in 1 second
