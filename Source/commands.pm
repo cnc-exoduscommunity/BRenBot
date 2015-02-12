@@ -2285,7 +2285,7 @@ sub rules
     postrule( 1, $args{'ircChannelCode'} );
 
     # Find any map specific rules
-    my $maprules = get_map_setting('rules');
+    my $maprules = modules::get_map_setting('rules');
     if (defined($maprules))
     {
       fds::send_message('Special rules for '.serverStatus::getMap().': '.$maprules);
