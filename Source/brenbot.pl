@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 
-use Time::HiRes qw(time);   # Used by POE to make alarms more accurate
 use POE;
 use POE::Kernel;
 use POE::Session;

@@ -103,9 +103,11 @@ sub init
 			},
 			sendloop => sub
 			{
-				my $kernel = $_[ KERNEL ];
-				my $availableChars = $brconfig::irc_charsPerSecond;
-				my $sendString = "";
+        my $kernel = $_[ KERNEL ];
+        my $heap = $_[ HEAP ];
+        
+        my $availableChars = $brconfig::irc_charsPerSecond;
+        my $sendString = "";
         
         if (!defined($heap->{'socket'}))
         {
