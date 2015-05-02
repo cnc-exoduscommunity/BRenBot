@@ -120,10 +120,12 @@ sub send_message_player($$;$)
   my ($result, %playerdata) = playerData::getPlayerData($player);
   return 0 if ( $result != 1 );
 
-  $message = '('.$sender."): $message" if (defined($sender));
+  # If cmsg paging is enabled then try using that first
   return 1 if ($brconfig::enableCmsgPaging && send_coloured_message_player(0,255,0,$message,$playerdata{'id'},$sender));
 
   # CMSG paging not enabled or not supported so fall back on older methods
+  $message = '('.$sender."): $message" if (defined($sender));
+
   if ($brconfig::serverScriptsVersion >= 1.3)
     { send_command("ppage $playerdata{id} $message"); }
   else
