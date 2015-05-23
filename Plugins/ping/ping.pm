@@ -73,7 +73,7 @@ sub ping
   {
     my ($searchName,$message) = ($args{'arg1'},"");
     
-    my ( $result, %player ) = playerData::getPlayerData( $searchName );
+    my ( $result, %player ) = plugin::getPlayerData( $searchName );
     if ( $result == 1 )     { $message = "$player{name} has a ping of $player{ping}."; }
     elsif ( $result == 2 )  { $message = "$searchName is not unique, please be more specific."; }
     else                    { $message = "$searchName was not found in the server."; }
@@ -81,18 +81,18 @@ sub ping
     if ( $args{'nicktype'} == 0 )
       { plugin::pagePlayer ( $player{'id'}, 'Your ping is currently '.$player{'ping'} ); }
     else
-      { plugin::::ircmsg ( $message, $args{'ircChannelCode'} ); }
+      { plugin::ircmsg ( $message, $args{'ircChannelCode'} ); }
   }
 }
 
 # --------------------------------------------------------------------------------------------------
 # Misc. Commands
 
-sub report_ping
+sub report_own_ping
 {
   my $player_id = shift;
   
-  my ( $result, %player ) = playerData::getPlayerData ( $player_id );
+  my ( $result, %player ) = plugin::getPlayerData ( $player_id );
   if ( $result == 1 )
     { plugin::pagePlayer ( $player{'id'}, 'Your ping is currently '.$player{'ping'} ); }
 }
