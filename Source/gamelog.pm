@@ -1264,27 +1264,23 @@ sub show_stats
 
 sub vehicle_purchase_renlog
 {
-	my $playername = shift;
+  my $playername = shift;
 
-	my $side;
+  eval
+  {
+    my ($result, %player) = playerData::getPlayerData($playername);
+    return if (1 != $result);
 
-	eval
-	{
-		my ( $result, %player ) = playerData::getPlayerData($playername);
-		if ( $result == 1 )
-		{
-			$side = $player{side};
-			if ($side eq "NOD" || $side eq "Sov") #nod
-			{
-				$last_purchase_nod = $playername;
-			}
-			else #gdi
-			{
-				$last_purchase_gdi = $playername;
-			}
-		}
-	}
-	or modules::display_error($@);
+    if (0 == $player{'teamid'}) #nod
+    {
+      $last_purchase_nod = $playername;
+    }
+    else #gdi
+    {
+      $last_purchase_gdi = $playername;
+    }
+  }
+  or modules::display_error($@);
 }
 
 sub vehicle_created_gamelog
