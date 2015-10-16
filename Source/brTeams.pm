@@ -22,7 +22,7 @@ our %teams = (
   },
   2 => {
     'name'          => "Neutral",
-    'abbreviation'  => "Neutral",
+    'abbreviation'  => "Neu",
     'colour'        => "09"
   }
 );
