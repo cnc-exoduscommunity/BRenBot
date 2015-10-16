@@ -1238,85 +1238,80 @@ sub IsNumeric
 # Process autobalance, called on mapload
 sub do_autobalance
 {
-	# Is autobalance enabled?
-	if ( !modules::get_module( "autobalance" ) || !($brconfig::serverScriptsVersion >= 2.0) ) { return; }
+  # Is autobalance enabled?
+  if ( !modules::get_module( "autobalance" ) || !($brconfig::serverScriptsVersion >= 2.0) ) { return; }
 
-	# Attempts to automatically balance the teams 5 seconds after the map has loaded
-	POE::Session->create
-	( inline_states =>
-		{
-			_start => sub
-			{
-				# Make sure we have up to date game info when it calls the alarm
-				RenRem::RenRemCMD ( "game_info" );
-				RenRem::RenRemCMD ( "player_info" );
-				$_[HEAP]->{next_alarm_time} = int( time() ) + 5;
-				$_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
-			},
-			tick => sub
-			{
-				return if ( serverStatus::getCurrentPlayers() == 0 );
-				modules::console_output ( "Starting autobalance...", 1 );
+  # Attempts to automatically balance the teams 5 seconds after the map has loaded
+  POE::Session->create
+  ( inline_states =>
+    {
+      _start => sub
+      {
+        # Make sure we have up to date game info when it calls the alarm
+        RenRem::RenRemCMD ( "game_info" );
+        RenRem::RenRemCMD ( "player_info" );
+        $_[HEAP]->{next_alarm_time} = int( time() ) + 5;
+        $_[KERNEL]->alarm( tick => $_[HEAP]->{next_alarm_time} );
+      },
+      tick => sub
+      {
+        return if ( serverStatus::getCurrentPlayers() == 0 );
+        modules::console_output ( "Starting autobalance...", 1 );
 
-				# Get difference
-				my $difference = ( serverStatus::getPlayers_GDI() - serverStatus::getPlayers_Nod() );
-				#print "DEBUG: Difference is $difference, gdi has $gameinfo{'gdi_players'} and nod has $gameinfo{'nod_players'}\n";
+        # Get difference
+        my $difference = ( serverStatus::getPlayers_GDI() - serverStatus::getPlayers_Nod() );
+        #print "DEBUG: Difference is $difference, gdi has $gameinfo{'gdi_players'} and nod has $gameinfo{'nod_players'}\n";
 
-				if ( $difference <= 1 && $difference >= -1 )
-				{
-					modules::console_output ( "Teams are balanced, no action necessary.", 3 );
-					return;
-				}
-				else
-				{
-					if ( $difference > 1 )
-					{
-						modules::console_output ( "GDI has more players, balancing teams...", 3 );
+        if ( $difference <= 1 && $difference >= -1 )
+        {
+          modules::console_output ( "Teams are balanced, no action necessary.", 3 );
+          return;
+        }
 
-						my %playerlist = playerData::getPlayerList();
-						while ( my ( $id, $player ) = each ( %playerlist ) )
-						{
-							if ( $player->{'side'} eq "GDI" || $player->{'side'} eq "All" )
-							{
-								if ( gamelog::isPlayerLoaded($player->{'name'}) )
-								{
-									modules::console_output ( "Swapping $player->{name} from GDI to Nod." );
-									RenRem::RenRemCMD( "team2 $player->{id} 0" );
-									RenRem::RenRemCMD( "msg $player->{name} has been automatically changed to Nod to balance the teams." );
-									modules::pagePlayer( $player->{'id'}, "BRenBot", "You have been automatically moved to Nod to balance the teams." );
-									$difference -= 2;
-								}
-							}
-							last unless ( $difference > 1 )
-						}
-					}
-					else
-					{
-						modules::console_output ( "Nod has more players, balancing teams...", 3 );
+        my $team0name = brTeams::get_name(0);
+        my $team1name = brTeams::get_name(1);
+      
+        if ($difference > 1)
+        {
+          modules::console_output("$team1name has more players, balancing teams...", 3);
 
-						my %playerlist = playerData::getPlayerList();
-						while ( my ( $id, $player ) = each ( %playerlist ) )
-						{
-							if ( $player->{'side'} eq "NOD" || $player->{'side'} eq "Sov" )
-							{
-								if ( gamelog::isPlayerLoaded($player->{'name'}) )
-								{
-									modules::console_output ( "Swapping $player->{name} from Nod to GDI." );
-									RenRem::RenRemCMD( "team2 $player->{id} 1" );
-									RenRem::RenRemCMD( "msg $player->{name} has been automatically changed to GDI to balance the teams." );
-									modules::pagePlayer( $player->{'id'}, "BRenBot", "You have been automatically moved to GDI to balance the teams." );
-									$difference += 2;
-								}
-							}
-							last unless ( $difference < -1 )
-						}
-					}
+          my %playerlist = playerData::getPlayersByTeam(1);
+          while (my ($id, $player) = each (%playerlist))
+          {
+            if (gamelog::isPlayerLoaded($player->{'name'}))
+            {
+              modules::console_output ( "Swapping $player->{name} from $team1name to $team0name" );
+              fds::send_command( "team2 $player->{id} 0" );
+              fds::send_message($player->{'name'}." has been automatically changed to $team0name to balance the teams." );
+              modules::pagePlayer( $player->{'id'}, "BRenBot", "You have been automatically moved to $team0name to balance the teams." );
+              $difference -= 2;
+            }
+            last unless ($difference > 1)
+          }
+        }
+        else
+        {
+          modules::console_output("$team0name has more players, balancing teams...", 3);
 
-					modules::console_output ( "Autobalancing finished." );
-				}
-			},
-		},
-	);
+          my %playerlist = playerData::getPlayersByTeam(0);
+          while (my ($id, $player) = each (%playerlist))
+          {
+            if (gamelog::isPlayerLoaded($player->{'name'}))
+            {
+              modules::console_output ( "Swapping $player->{name} from $team0name to $team1name" );
+              fds::send_command( "team2 $player->{id} 1" );
+              fds::send_message($player->{'name'}." has been automatically changed to $team1name to balance the teams." );
+              modules::pagePlayer( $player->{'id'}, "BRenBot", "You have been automatically moved to $team1name to balance the teams." );
+              $difference += 2;
+            }
+            last unless ($difference < -1)
+          }
+        }
+
+        modules::console_output ( "Autobalancing finished." );
+      },
+    },
+  );
 }
 
 1;
