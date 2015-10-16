@@ -1593,43 +1593,37 @@ sub forcetc
 			show_syntax_error(@_);
 			return;
 		}
-		my $user = $args{arg1};
+    
+    if ($brconfig::serverScriptsVersion < 2.0)
+    {
+      brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
+    }
+    
+    if (!modules::get_module("gamelog") )
+    {
+      RenRem::RenRemCMD("msg [BR] Gamelog must be enabled to be able to use forcetc");
+      return;
+    }
 
-		if ($brconfig::serverScriptsVersion >= 2.0)
-		{
-
-			my $admin = $args{nick};
-
-			my ( $result, %player ) = playerData::getPlayerData( $user );
-			if ( $result == 1 )
-			{
-
-				if (!modules::get_module("gamelog") )
-				{
-					RenRem::RenRemCMD("msg [BR] Gamelog must be enabled to be able to use forcetc");
-					return;
-				}
-
-				if ( gamelog::isPlayerLoaded( $player{'name'} ) )
-				{
-					my $team = 0;
-					$team = 0 if ($player{'side'} eq "GDI" || $player{'side'} eq "All");
-					$team = 1 if ($player{'side'} eq "NOD" || $player{'side'} eq "Sov");
-					RenRem::RenRemCMD( "msg $player{name} has changed teams." );
-					RenRem::RenRemCMD( "team2 $player{id} $team" );
-					modules::pagePlayer ( $player{'id'}, "BRenBot", "$admin has changed your team by force." );
-				}
-				else
-				{
-					if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Player is not finished with loading yet.", $args{'ircChannelCode'} ); }
-					else { modules::pagePlayer ( $args{'nick'}, "BRenBot", "Player is not finished with loading yet." ); }
-				}
-			}
-		}
-		else
-		{
-			brIRC::ircmsg("The server does not support this command", $args{'ircChannelCode'});
-		}
+    my ($result, %player) = playerData::getPlayerData($args{'arg1'});
+    if (1 == $result)
+    {
+      my $currentTeam = $player{'teamid'};
+      if (gamelog::isPlayerLoaded( $player{'name'} ) && defined($currentTeam))
+      {
+        my $team = (0 == $currentTeam) ? 1 : 0;
+        my $teamname = brTeams::get_name($team);
+        
+        fds::send_message($player{'name'}.' has been swapped to team '.$teamname);
+        fds::send_command("team2 $player{id} $team");
+        modules::pagePlayer($player{'id'}, "BRenBot", $args{'nick'}.' has swapped you to team '.$teamname);
+      }
+      else
+      {
+        if ( $args{'nicktype'} == 1 ) { brIRC::ircmsg ( "Player has not finished with loading yet.", $args{'ircChannelCode'} ); }
+        else { modules::pagePlayer ( $args{'nick'}, "BRenBot", "Player is not finished with loading yet." ); }
+      }
+    }
 	}
 	or modules::display_error($@);
 }
