@@ -1666,11 +1666,12 @@ sub kill
 
 				# If we dont have SSGM 4 we need to swap their team twice to kill them, check this would not
 				# end the game before doing so
-				if ( !($brconfig::ssgm_version >= 4)
-					&& ( ( ( $player{side} eq "GDI" || $player{side} eq "All" ) && ( serverStatus::getPlayers_GDI() == 1 ) )
-					|| ( ( $player{side} eq "NOD" || $player{side} eq "Sov" ) && ( serverStatus::getPlayers_Nod() == 1 ) ) ) )
+        my $currentTeam = $player{'teamid'};
+				if ( $brconfig::ssgm_version < 4
+          && ( (0 == $currentTeam && serverStatus::getPlayers_Nod() == 1)
+            || (1 == $currentTeam && serverStatus::getPlayers_GDI() == 1) ) )
 				{
-					if ($args{nicktype} == 1)
+					if ($args{'nicktype'} == 1)
 					{
 						brIRC::ircmsg ( "Killing $player{name} at this time would end the game.", $args{'ircChannelCode'} );
 					}
@@ -1692,14 +1693,13 @@ sub kill
 					{
 						RenRem::RenRemCMD ( "kill $player{id}" );
 					}
-					else
-					{
-						my $team = ( $player{side} eq "GDI" || $player{side} eq "All" ) ? 0 : 1;
-						RenRem::RenRemCMD( "team2 $player{id} $team" );
-
-						$team = ( $team == 0 ) ? 1 : 0;
-						RenRem::RenRemCMD( "team2 $player{id} $team" );
-					}
+          else
+          {
+            my $otherTeam = (0 == $currentTeam) ? 1 : 0;
+          
+            fds::send_command( "team2 $player{id} $otherTeam" );
+            fds::send_command( "team2 $player{id} $currentTeam" );
+          }
 
 					modules::pagePlayer ( $player{'id'}, "BRenBot", "$admin has killed you." );
 				}
@@ -1755,15 +1755,16 @@ sub killme
 					return;
 				}
 
-				# If we dont have SSGM 4 we need to swap their team twice to kill them, check this would not
-				# end the game before doing so
-				if ( !($brconfig::ssgm_version >= 4)
-					&& ( ( ( $player{side} eq "GDI" || $player{side} eq "All" ) && ( serverStatus::getPlayers_GDI() == 1 ) )
-					|| ( ( $player{side} eq "NOD" || $player{side} eq "Sov" ) && ( serverStatus::getPlayers_Nod() == 1 ) ) ) )
-				{
-					modules::pagePlayer ( $player{'id'}, "BRenBot", "Killing yourself now would end the game!" );
-					return;
-				}
+        # If we dont have SSGM 4 we need to swap their team twice to kill them, check this would not
+        # end the game before doing so
+        my $currentTeam = $player{'teamid'};
+        if ( $brconfig::ssgm_version < 4
+          && ( (0 == $currentTeam && serverStatus::getPlayers_Nod() == 1)
+            || (1 == $currentTeam && serverStatus::getPlayers_GDI() == 1) ) )
+        {
+          modules::pagePlayer ( $player{'id'}, "BRenBot", "Killing yourself now would end the game!" );
+          return;
+        }
 
 
 				if ( gamelog::isPlayerLoaded( $player{'name'} ) )
@@ -1773,14 +1774,13 @@ sub killme
 					{
 						RenRem::RenRemCMD ( "kill $player{id}" );
 					}
-					else
-					{
-						my $team = ( $player{side} eq "GDI" || $player{side} eq "All" ) ? 0 : 1;
-						RenRem::RenRemCMD( "team2 $player{id} $team" );
-
-						$team = ( $team == 0 ) ? 1 : 0;
-						RenRem::RenRemCMD( "team2 $player{id} $team" );
-					}
+          else
+          {
+            my $otherTeam = (0 == $currentTeam) ? 1 : 0;
+          
+            fds::send_command( "team2 $player{id} $otherTeam" );
+            fds::send_command( "team2 $player{id} $currentTeam" );
+          }
 				}
 				else
 				{
@@ -2151,6 +2151,7 @@ sub ids
   {
     my @noddies;
     my @gdiguys;
+    my @neutrals;
 
     if ( serverStatus::getCurrentPlayers() == 0 )
     {
@@ -2171,8 +2172,13 @@ sub ids
       for ( my $i = 1; $i <= $minlength - length($pname); $i++ )
         { $pname .= " "; }
 
-      push (@noddies, $pname) if ($player->{'side'} eq "NOD" || $player->{'side'} eq "Sov");
-      push (@gdiguys, $pname) if ($player->{'side'} eq "GDI" || $player->{'side'} eq "All");
+      my $teamid = $player->{'teamid'};
+      if (0 == $teamid)
+        { push (@noddies, $pname); }
+      elsif (1 == $teamid)
+        { push (@gdiguys, $pname); }
+      else
+        { push (@neutrals, $pname); }
     }
 
     for ( my $i=0; $i <= scalar(@gdiguys)-1; $i = $i+4 )
@@ -2182,6 +2188,10 @@ sub ids
     for ( my $i = 0; $i <= scalar(@noddies)-1; $i = $i+5 )
     {
       brIRC::ircmsg(brTeams::colourise(0,brIRC::bold(brTeams::get_name(0).':')." $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'} ));
+    }
+    for ( my $i = 0; $i <= scalar(@neutrals)-1; $i = $i+5 )
+    {
+      brIRC::ircmsg(brTeams::colourise(2,brIRC::bold(brTeams::get_name(2).':')." $neutrals[$i] $neutrals[$i+1] $neutrals[$i+2] $neutrals[$i+3]", $args{'ircChannelCode'} ));
     }
   }
   or modules::display_error($@);
@@ -2204,6 +2214,7 @@ sub scripts
     {
       my @noddies;
       my @gdiguys;
+      my @neutrals;
 
       if ( serverStatus::getCurrentPlayers() == 0 )
       {
@@ -2224,8 +2235,13 @@ sub scripts
         for ( my $i = 1; $i <= $minlength - length($pname); $i++ )
           { $pname .= " "; }
 
-        push (@noddies, $pname) if ($player->{'side'} eq "NOD" || $player->{'side'} eq "Sov");
-        push (@gdiguys, $pname) if ($player->{'side'} eq "GDI" || $player->{'side'} eq "All");
+        my $teamid = $player->{'teamid'};
+        if (0 == $teamid)
+          { push (@noddies, $pname); }
+        elsif (1 == $teamid)
+          { push (@gdiguys, $pname); }
+        else
+          { push (@neutrals, $pname); }
 
       }
 
@@ -2236,6 +2252,10 @@ sub scripts
       for ( my $i = 0; $i <= scalar(@noddies)-1; $i = $i+5 )
       {
         brIRC::ircmsg(brTeams::colourise(0,brIRC::bold(brTeams::get_name(0).':')." $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'} ));
+      }
+      for ( my $i = 0; $i <= scalar(@neutrals)-1; $i = $i+5 )
+      {
+        brIRC::ircmsg(brTeams::colourise(2,brIRC::bold(brTeams::get_name(2).':')." $neutrals[$i] $neutrals[$i+1] $neutrals[$i+2] $neutrals[$i+3]", $args{'ircChannelCode'} ));
       }
     }
     else
