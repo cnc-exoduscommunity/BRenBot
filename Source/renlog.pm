@@ -93,7 +93,7 @@ sub init
 sub parsePlayerInfoInput
 {
 	my $playerDataLine = shift;
-	if ( $playerDataLine =~ m/(\d+)\s(.+?)\s+(-{0,1}\d+)\s+(GDI|NOD|Sov|All)\s+(\d+)\s+(\d+\.\d+\.\d+\.\d+)[\;\d]*\s+(\d+)\s+(\d+\.\d+\.\d+)/i )
+	if ( $playerDataLine =~ m/(\d+)\s(.+?)\s+(-{0,1}\d+)\s+([a-zA-Z]{1,3})\s+(\d+)\s+(\d+\.\d+\.\d+\.\d+)[\;\d]*\s+(\d+)\s+(\d+\.\d+\.\d+)/i )
 	{
 		playerData::updatePlayerData ( $1, $2, $3, $4, $5, $6, $7, $8 );
 		check_playername ( $1, $2, $6 );
@@ -530,15 +530,17 @@ sub handle_input($)
     return;;
   }
 
-  if ($line =~ /(GDI|All) : (.+?)\/(.+?) players\s+ (.+?) points/)
+  my $team0abbrv = brTeams::get_abbreviation(0);
+  if ($line =~ /$team0abbrv : (.+?)\/(.+?) players\s+ (.+?) points/i)
   {
-    serverStatus::updateStatus_GDI($2, $4, $3);
+    serverStatus::updateStatus_Nod($1, $3, $2);
     return;
   }
 
-  if ($line =~ /(Nod|Sov) : (.+?)\/(.+?) players\s+ (.+?) points/i)
+  my $team1abbrv = brTeams::get_abbreviation(1);
+  if ($line =~ /$team1abbrv : (.+?)\/(.+?) players\s+ (.+?) points/)
   {
-    serverStatus::updateStatus_Nod($2, $4, $3);
+    serverStatus::updateStatus_GDI($1, $3, $2);
     return;
   }
 
