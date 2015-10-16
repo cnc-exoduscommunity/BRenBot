@@ -222,11 +222,11 @@ sub check_banlist
   my ($result, %player) = playerData::getPlayerData(shift, 1);
   if (1 == $result)
   {
+    return 1 if 1 == $player{'banned'};
+  
     my ($banresult, $reason, $banner, $date) = modules::is_banned($player{'name'});
     if ($banresult)
     {
-      return 1 if 1 == $player{'banned'};
-
       modules::console_output("player_id $player{id} is BANNED");
       RenRem::RenRemCMD("msg [BR] $player{name} has been BANNED on $date by $banner for: $reason");
 

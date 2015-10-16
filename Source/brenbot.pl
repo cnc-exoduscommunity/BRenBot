@@ -66,96 +66,99 @@ our %tempMods;                  # List of temporary moderators
 
 sub joinstuff
 {
-	my $name = shift;
+  my $name = shift;
 
-	my ( $result, %player ) = playerData::getPlayerData( $name );
-	if ( $result == 1 )
-	{
-		if ( !( renlog::check_banlist( $name ) ) && !( modules::check_kicks( $name ) ) )
-		{
-      if ( !plugin::call_core_override('playerjoin_msg', $name) )
-        { brIRC::ircmsg( brIRC::colourise(11,"$name joined the game on team ").brTeams::get_colourised_name($player{'side'}) ); }
+  my ($result, %player) = playerData::getPlayerData($name);
+  return if (1 != $result);
 
-			# If they are authed, or not protected, show their mod status
-			my $authed = brAuth::GetAuthState ( $player{'name'} );
-			if ( $authed == 1 || $authed == 2 && !$brconfig::config_moderators_force_auth )
-				{ ShowModJoinMessage( $player{'name'} ); }
+  # Don't show join messages for players who are banned or kicked
+  return if (0 != renlog::check_banlist($name) || 0 != modules::check_kicks($name));
 
-			# Scripts version checking stuff
-			if ( $brconfig::serverScriptsVersion >= 1.3 )
-			{
-				# If minimum scripts version is specified, or this map requires scripts.dll, trigger check in 5
-				# seconds. Note that the playerData module takes care of requesting their scripts version
-				if ( $brconfig::config_minimum_scripts_version > 0 || $brconfig::config_force_bhs_dll_map == 1 )
-				{
-					# Start check session
-					POE::Session->create
-					(
-						inline_states =>
-						{
-							_start => sub
-							{
-								# Define how many extra chances they get if we don't recieve a response
-								$_[HEAP]->{'chances'} = 2;
+  if ( !plugin::call_core_override('playerjoin_msg', $name) )
+  {
+    brIRC::ircmsg(
+      brIRC::colourise(11, "$name joined the game on team ")
+      .brTeams::get_colourised_name($player{'teamid'})
+    );
+  }
 
-								# Start the clock
-								$_[KERNEL]->alarm( tick => int(time()) + 2 );
-							},
-							tick => sub
-							{
-								# Has the version been provided yet?
-								my ( $result, %player ) = playerData::getPlayerData( $player{'id'} );
-								if ( $result == 1 )
-								{
-									if ( length($player{'scriptsVersion'}) > 0 )
-									{
-										# They have reported their version, but is it high enough? This check is not
-										# applicable when bhs.dll is only required by the map
-										if ( $player{'scriptsVersion'} < $brconfig::config_minimum_scripts_version && $brconfig::config_minimum_scripts_version > 0 )
-										{
-											modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.' or higher is required to play on this server ('.$player{'scriptsVersion'}.' installed)' );
-										}
-									}
+  # If they are authed, or not protected, show their mod status
+  my $authed = brAuth::GetAuthState ( $player{'name'} );
+  if ( $authed == 1 || $authed == 2 && !$brconfig::config_moderators_force_auth )
+    { ShowModJoinMessage( $player{'name'} ); }
 
-									# No version reported, do they have any chances left?
-									elsif ( $_[HEAP]->{'chances'} > 0 )
-									{
-										$_[HEAP]->{'chances'}--;
-										RenRem::RenRemCMD( "version $player{id}" );
-										$_[KERNEL]->alarm( tick => int(time()) + 2 );
-									}
+  # Scripts version checking stuff
+  if ( $brconfig::serverScriptsVersion >= 1.3 )
+  {
+    # If minimum scripts version is specified, or this map requires scripts.dll, trigger check in 5
+    # seconds. Note that the playerData module takes care of requesting their scripts version
+    if ( $brconfig::config_minimum_scripts_version > 0 || $brconfig::config_force_bhs_dll_map == 1 )
+    {
+      # Start check session
+      POE::Session->create
+      (
+        inline_states =>
+        {
+          _start => sub
+          {
+            # Define how many extra chances they get if we don't recieve a response
+            $_[HEAP]->{'chances'} = 2;
 
-									# No chances left... bye bye!
-									else
-									{
-										modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.' or higher is required to play on this server (pre 1.3 installed)' );
-									}
-								}
-							} # end of tick
-						} # end of inline states
-					);
-				}
-			}
+            # Start the clock
+            $_[KERNEL]->alarm( tick => int(time()) + 2 );
+          },
+          tick => sub
+          {
+            # Has the version been provided yet?
+            my ( $result, %player ) = playerData::getPlayerData( $player{'id'} );
+            if ( $result == 1 )
+            {
+              if ( length($player{'scriptsVersion'}) > 0 )
+              {
+                # They have reported their version, but is it high enough? This check is not
+                # applicable when bhs.dll is only required by the map
+                if ( $player{'scriptsVersion'} < $brconfig::config_minimum_scripts_version && $brconfig::config_minimum_scripts_version > 0 )
+                {
+                  modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.' or higher is required to play on this server ('.$player{'scriptsVersion'}.' installed)' );
+                }
+              }
+
+              # No version reported, do they have any chances left?
+              elsif ( $_[HEAP]->{'chances'} > 0 )
+              {
+                $_[HEAP]->{'chances'}--;
+                RenRem::RenRemCMD( "version $player{id}" );
+                $_[KERNEL]->alarm( tick => int(time()) + 2 );
+              }
+
+              # No chances left... bye bye!
+              else
+              {
+                modules::kick_player ( $player{'id'}, 'BRenBot', 'Scripts version '.$brconfig::config_minimum_scripts_version.' or higher is required to play on this server (pre 1.3 installed)' );
+              }
+            }
+          } # end of tick
+        } # end of inline states
+      );
+    }
+  }
 
 
-			# Process playerjoin plugin events
-			my %args;
-			$args{'id'}			= $player{'id'};
-			$args{'nick'}		= $player{'name'};
-			$args{'name'}		= $player{'name'};
-			$args{'side'}		= $player{'side'};
+  # Process playerjoin plugin events
+  my %args;
+  $args{'id'}			= $player{'id'};
+  $args{'nick'}		= $player{'name'};
+  $args{'name'}		= $player{'name'};
+  $args{'side'}		= $player{'side'};
 
-			my @plugins = plugin::get_plugin_event( "playerjoin" );
-			foreach ( @plugins )
-			{
-				my $plugin = $_;
-				my $alias = "plugin_" . $plugin;
-				$main::poe_kernel->post( $alias => "playerjoin" => \%args );
-			}
+  my @plugins = plugin::get_plugin_event("playerjoin");
+  foreach ( @plugins )
+  {
+    my $alias = "plugin_" . $_;
+    $main::poe_kernel->post($alias => "playerjoin" => \%args);
+  }
 
-			$#plugins = -1;
-		} # end of banlist if
-	}
+  $#plugins = -1;
 } # end of joinstuff
 
 

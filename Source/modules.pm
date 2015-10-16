@@ -179,21 +179,21 @@ sub remove_kick
 # Checks if the specified player is kicked, and if they are kicks them out
 sub check_kicks
 {
-	my $name = shift;			$name =~ s/'/''/g;
+  my $name = shift;			$name =~ s/'/''/g;
 
-	# Before we start clear any out of date kicks (older than 24 hours)
-	brdatabase::execute_query ( "DELETE FROM kicks WHERE timestamp <= " . (time()-86400), 1 );
+  # Before we start clear any out of date kicks (older than 24 hours)
+  brdatabase::execute_query ( "DELETE FROM kicks WHERE timestamp <= " . (time()-86400), 1 );
 
-	# Data should already be in the playerData array - Exact match only
-	my ( $result, %player ) = playerData::getPlayerData ( $name, 1 );
-	return 0 if ( $result != 1 );
-	return 1 if ( $player{'kicked'} && $player{'kicked'} == 1 );
+  # Data should already be in the playerData array - Exact match only
+  my ( $result, %player ) = playerData::getPlayerData ( $name, 1 );
+  return 0 if ( $result != 1 );
+  return 1 if 1 == $player{'kicked'};
 
-	# Now look for any entries in the kicks table
-	my $serial = ( exists ( $player{'serial'} ) ) ? "OR serial = '$player{serial}'" : "";
-	my @array = brdatabase::execute_query( "SELECT * FROM kicks WHERE LOWER(name) = '".lc($player{'name'})."' OR ip = '$player{ip}' $serial" );
+  # Now look for any entries in the kicks table
+  my $serial = ( exists ( $player{'serial'} ) ) ? "OR serial = '$player{serial}'" : "";
+  my @array = brdatabase::execute_query( "SELECT * FROM kicks WHERE LOWER(name) = '".lc($player{'name'})."' OR ip = '$player{ip}' $serial" );
 
-	if ( scalar(@array) > 0 )
+  if ( scalar(@array) > 0 )
 	{
     my $kicktime      = strftimestamp('%H:%M',$array[0]->{'timestamp'});
     my $kickday       = ( strftimestamp('%d',time()) eq strftimestamp('%d',$array[0]->{'timestamp'}) ) ? "today" : "yesterday";
@@ -209,7 +209,7 @@ sub check_kicks
     return 1;
   }
 
-	return 0;
+  return 0;
 }
 
 
