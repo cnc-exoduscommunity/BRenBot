@@ -19,8 +19,8 @@ use strict;
 # sub POE::Kernel::TRACE_FILENAME () { 'memoryleakdebug.txt' }
 
 # Define these before loading BRenBot modules as they may be used inside those modules
-use constant BR_VERSION         => 1.54;
-use constant BR_BUILD           => 4;
+use constant BR_VERSION         => 1.55;
+use constant BR_BUILD           => 1;
 use constant BR_COPYRIGHT_YEAR  => "2003-2015";
 
 # Load BRenBot modules
