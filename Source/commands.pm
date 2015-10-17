@@ -3612,7 +3612,7 @@ sub cmsg
     }
     elsif ( $args{command} eq "cmsgt" )
     {
-      my $team = brTeams::get_id_from_name($2);
+      my $team = brTeams::get_id_from_name($sendTo);
       if (!defined $team)
       {
         brIRC::ircmsg("Team name $sendTo not recognised", $args{'ircChannelCode'});
