@@ -879,14 +879,8 @@ sub padd_string
   my $string    = shift;
   my $lpad      = shift // 0;
 
-  my $output = $string;
-
-  for (my $i=1; $i <= $minlength - length($string); $i++)
-  {
-    if ( $lpad != 1 ) { $output .= " "; }
-    else              { $output = " ".$output; }
-  }
-  return $output;
+  my $pattern = '%' . ((1 == $lpad) ? '' : '-') . $minlength . 's';
+  return sprintf($pattern, $string);
 }
 
 sub GetRotation
