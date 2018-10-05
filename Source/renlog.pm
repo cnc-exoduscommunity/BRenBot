@@ -745,7 +745,7 @@ sub handle_input($)
   }
 
   # Record the version of the server
-  if ( $line =~ m/^The Version of the server is (.+)/ || $line =~ m/^The version of (?:bhs|tt|bandtest).dll on this machine is (\d+\.\d+)( r%d+)?/i )
+  if ( $line =~ m/^The Version of the server is (.+)/ || $line =~ m/^The version of (?:(?:bhs|tt|bandtest).dll|(?:game|server).exe) on this machine is (\d+\.\d+)( r%d+)?/i )
   {
     $brconfig::serverScriptsVersion = $1;
     $brconfig::serverScriptsRevision = $2;
