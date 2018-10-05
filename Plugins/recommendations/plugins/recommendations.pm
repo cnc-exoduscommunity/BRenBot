@@ -33,9 +33,12 @@ our %config;
 our %additional_events =
 (
   'recommend'   				=> 'recommend',
-  'n00b'        				=> 'recommend',     # Same code for both functions
+  'n00b'        				=> 'recommend',       # Same code for both functions
   'recignore'   				=> 'recignore',
   'recallow'    				=> 'recallow',
+  'teamplayers' 				=> 'teamplayers',
+  'shown00bs'   				=> 'teamplayers',     # Same code for both functions
+  'recommendations' 			=> 'recommendations',
   'gamelog_building_killed' 	=> 'gamelog_building_killed',
   'gamelog_vehicle_killed' 		=> 'gamelog_vehicle_killed',
   'gamelog_building_repair' 	=> 'gamelog_building_repair',
@@ -373,7 +376,14 @@ sub recommend
       my $can_recommend = can_recommend ( $args{'nick'}, $player{'name'}, $isNoob );
       if ( $can_recommend == 1 )
       {
-        recommend_player( $player{'name'}, $args{'nick'}, $reason );
+        if ($isNoob == 1)
+        {
+          n00b_player($player{'name'}, $args{'nick'}, $reason);
+        }
+        else
+        {
+          recommend_player($player{'name'}, $args{'nick'}, $reason);
+        }
       }
       elsif ( $can_recommend == 2 )
       {
@@ -528,7 +538,7 @@ sub teamplayers
   }
 }
 
-# Worker function for the !teamplayers command
+# Worker function for the !teamplayers and !shown00bs commands
 sub teamplayers_processTeam
 {
   my $teamid      = shift;
@@ -537,7 +547,7 @@ sub teamplayers_processTeam
   my $string      = "";
   my $count       = 0;
 
-  my %teamplayers = plugin::getPlayersByTeam($teamid);
+  my %teamplayers = plugin::team_get_players($teamid);
   while ( my ( $id, $player ) = each ( %teamplayers ) )
   {
     my $recs = ( $showNoobs == 1 ) ? get_n00b($player->{'name'}) : get_recommendation($player->{'name'});
@@ -548,13 +558,13 @@ sub teamplayers_processTeam
 
     if ( ++$count >= 5 )
     {
-      players_outputTeam($teamid, $string);
+      teamplayers_outputTeam($teamid, $string);
       $count = 0;
       $string = "";
     }
   }
   
-  players_outputTeam($teamid, $string) if ( $string ne "" );
+  teamplayers_outputTeam($teamid, $string) if ( $string ne "" );
 }
 
 # Worker function for the !teamplayers command
@@ -628,7 +638,7 @@ sub n00b_player
   my $reason      = shift;        $reason =~ s/'/''/g;
 
   # Announce recommendation
-  plugin::serverMsg ( $name.' has been marked a n00b by '.$n00ber.' for: '.$reason );
+  plugin::serverMsg ( $name.' has been marked as a n00b by '.$n00ber.' for: '.$reason );
 
   # Does a record exist for this player?
   my @recData = plugin::execute_query ( "SELECT * FROM recommendations WHERE LOWER(name) = '".lc($name)."'" );
