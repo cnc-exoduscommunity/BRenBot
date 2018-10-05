@@ -820,7 +820,7 @@ sub killed_by_basedefence
     if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
     {
       my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
-      brIRC::ircmsg(brTeams::colourise($team,"$killed->{name} was pwnd by the " . translatePreset($killerpreset)), $ircChannelCode );
+      brIRC::ircmsg(brTeams::colourise($team,"$killed->{name} was killed by the " . translatePreset($killerpreset)), $ircChannelCode );
     }
 
     playerData::incrementKeyValue ( $killed->{'name'}, "stats_deaths" );;
@@ -861,73 +861,79 @@ sub killed_soldier
 
 	eval
 	{
+		playerData::incrementKeyValue ($killed->{'name'}, "stats_deaths");
+
 		my $team = ( $killer ne 0 ) ? $killer->{team} : $killed->{team};
 		my $color = brTeams::get_colour($team);
 
-		if ( $killer ne 0 )
+
+		# If there was no killer then the player died by tiberium, a bot, fall damage or similar
+		if ( $killer eq 0 )
 		{
-			if ($killer->{type} eq "SOLDIER")
+			if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
 			{
-				if ($killer->{name} ne $killed->{name})
+				my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
+				brIRC::ircmsg(brIRC::colourise($color, "$killed->{name} died"), $ircChannelCode );
+			}
+
+			return;
+		}
+
+		# Otherwise this a death caused by another player
+		if ($killer->{type} eq "SOLDIER")
+		{
+			if ($killer->{name} ne $killed->{name})
+			{
+				if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
 				{
-					if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
+					my $killerpreset = translatePreset ( $killer->{preset} );
+					my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
+
+					if ($killer->{vehicle} ne 0)
 					{
-						my $killerpreset = translatePreset ( $killer->{preset} );
-						my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
-
-						if ($killer->{vehicle} ne 0)
+						if (exists $gameobjects{ $killer->{vehicle} })
 						{
-							if (exists $gameobjects{ $killer->{vehicle} })
-							{
-								my $killerVehicle = $gameobjects{ $killer->{vehicle} };
+							my $killerVehicle = $gameobjects{ $killer->{vehicle} };
 
-								$weapon = translatePreset ( $killerVehicle->{preset} );
-							}
-							else
-							{
-								$weapon = "error";
-							}
+							$weapon = translatePreset ( $killerVehicle->{preset} );
 						}
 						else
 						{
-							$weapon = translateWeaponPreset ( $weapon );
-						}
-
-						my $killedpreset = translatePreset ( $killed->{preset} );
-
-						if ( $killedpreset ne "Visceroid" )		# Dont show players killing visceroids
-						{
-							brIRC::ircmsg ( "" . $color . "$killer->{name} killed $killed->{name} ($killerpreset/$weapon " . $color . "vs $killedpreset" . $color . ")", $ircChannelCode );
+							$weapon = "error";
 						}
 					}
-
-					playerData::incrementKeyValue ( $killer->{'name'}, "stats_kills" );
-				}
-				elsif ($killer->{name} eq $killed->{name})
-				{
-					if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
+					else
 					{
-						my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
-						brIRC::ircmsg ( "" . $color . "$killer->{name} killed theirself.", $ircChannelCode );
+						$weapon = translateWeaponPreset ( $weapon );
+					}
+
+					my $killedpreset = translatePreset ( $killed->{preset} );
+
+					if ( $killedpreset ne "Visceroid" )		# Dont show players killing visceroids
+					{
+						brIRC::ircmsg ( "" . $color . "$killer->{name} killed $killed->{name} ($killerpreset/$weapon " . $color . "vs $killedpreset" . $color . ")", $ircChannelCode );
 					}
 				}
+
+				playerData::incrementKeyValue ( $killer->{'name'}, "stats_kills" );
 			}
-			elsif ( $killer->{type} eq "VEHICLE" && $brconfig::gamelog_showKillMsgs == 1 )
+			elsif ($killer->{name} eq $killed->{name})
 			{
 				if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
 				{
 					my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
-					brIRC::ircmsg ( "" . $color . "$killed->{name} was ran over by the " . translatePreset ( $killer->{preset} ) . ".", $ircChannelCode );
+					brIRC::ircmsg(brIRC::colourise($color, "$killer->{name} killed theirself."), $ircChannelCode );
 				}
 			}
 		}
-		elsif ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
+		elsif ( $killer->{type} eq "VEHICLE" && $brconfig::gamelog_showKillMsgs == 1 )
 		{
-			my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
-			brIRC::ircmsg ( "" . $color . "$killed->{name} didn't last too long in the Tiberium field.", $ircChannelCode );
+			if ( $brconfig::gamelog_showKillMsgs != 0 && $startup != 1 )
+			{
+				my $ircChannelCode = ( $brconfig::gamelog_showKillMsgs == 1 ) ? "A" : "";
+				brIRC::ircmsg(brIRC::colourise($color, "$killed->{name} was ran over by a " . translatePreset($killer->{preset}) . "."), $ircChannelCode );
+			}
 		}
-
-		playerData::incrementKeyValue ( $killed->{'name'}, "stats_deaths" );
 	}
 	or modules::display_error($@);
 }
