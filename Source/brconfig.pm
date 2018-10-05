@@ -401,7 +401,7 @@ sub readServerSettings
 				$mapRotationIdx = -1;
 			}
 
-			elsif ( $mapRotationIdx >= 0 && /^\s*\"(.+)\"\,?$/ )
+			elsif ($mapRotationIdx >= 0 && /^\s*\"(.+)\"\s*\,?\s*$/)
 			{
 				chomp(my $mapname=$1);
 				my %hash;
