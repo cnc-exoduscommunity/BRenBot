@@ -2249,11 +2249,11 @@ sub scripts
       {
         brIRC::ircmsg(brTeams::colourise(1,brIRC::bold(brTeams::get_name(1).':')." $gdiguys[$i] $gdiguys[$i+1] $gdiguys[$i+2] $gdiguys[$i+3]", $args{'ircChannelCode'} ));
       }
-      for ( my $i = 0; $i <= scalar(@noddies)-1; $i = $i+5 )
+      for ( my $i = 0; $i <= scalar(@noddies)-1; $i = $i+4 )
       {
         brIRC::ircmsg(brTeams::colourise(0,brIRC::bold(brTeams::get_name(0).':')." $noddies[$i] $noddies[$i+1] $noddies[$i+2] $noddies[$i+3]", $args{'ircChannelCode'} ));
       }
-      for ( my $i = 0; $i <= scalar(@neutrals)-1; $i = $i+5 )
+      for ( my $i = 0; $i <= scalar(@neutrals)-1; $i = $i+4 )
       {
         brIRC::ircmsg(brTeams::colourise(2,brIRC::bold(brTeams::get_name(2).':')." $neutrals[$i] $neutrals[$i+1] $neutrals[$i+2] $neutrals[$i+3]", $args{'ircChannelCode'} ));
       }
