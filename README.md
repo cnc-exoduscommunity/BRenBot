@@ -1,6 +1,4 @@
-####################################
-Readme file for BRenBot 1.55
-####################################
+# Readme file for BRenBot 1.55
 
 This file contains setup instructions, general troubleshooting information and information on how to
 obtain support for BRenBot
@@ -11,9 +9,7 @@ like to suggest changes, please contact an active developer.
 Readme file written by danpaul88, with several useful parts taken from the pre-1.50 readme file.
 
 
-####################################
-Credits
-####################################
+## Credits
 
 BRenBot has been developed by;
 Blazer
@@ -34,9 +30,7 @@ Thanks to Scorpio9a and Silent_Kane for deciphering RenRem/FDSTALK protocol, and
 aka bynari (Jeff.Parsons@Webgeeks.co.uk) for helping convert the deciphered renrem to Perl.
 
 
-####################################
-Setup Instructions
-####################################
+## Setup Instructions
 
 Setting up BRenBot is easy and quick to do if you follow these simple instructions. After installing
 both the RenegadeFDS and BRenBot, you need to set up communication between them. This is done via
@@ -49,10 +43,12 @@ Open your server.ini in RenegadeFDS/Server
 Step 2.
 Locate the following options and set them to the values given here
 
+```
 AllowRemoteAdmin = true
 RemoteAdminPassword = yourpass
 RemoteAdminIP = 127.0.0.1
 RemoteAdminPort = 4949
+```
 
 Note: The lines with a ; on the front are NOT the actual options, and not where you put these
 settings. It is recommended that you change the pw option to an 8 digit password of your choice.
@@ -65,10 +61,12 @@ Open your brenbot.cfg file in RenegadeFDS/Server/BRenBot
 Step 4.
 Locate the following options and set them to appropriate values
 
+```
 BotName = brenbot
 IrcServer = irc.n00bstories.com
 IrcPort = 6667
-ircAdminChannel = #brenbot
+IrcAdminChannel = #brenbot
+```
 
 Set the BotName to something unique to your server (such as br_myclansrv), and choose the IRC server
 and channel of your choice. The default channel is #brenbot on the n00bstories IRC server, but you
@@ -79,17 +77,17 @@ Step 6.
 Finally locate the two settings below and check their paths are correct. If you installed the FDS in
 the default location these paths should be correct.
 
+```
 FDSLogFilePath = C:/Westwood/RenegadeFDS/Server/
 FDSConfigFile = C:/Westwood/RenegadeFDS/Server/Data/svrcfg_cnc.ini
+```
 
 
 Basic setup is now complete and BRenBot has enough information to connect to your server and perform
 all of its functions.
 
 
-####################################
-IRC Dual Channel Mode
-####################################
+### IRC Dual Channel Mode
 
 BRenBot has the ability to use two IRC channels simultaneously, an admin channel where all commands
 can be used, and a public channel where a limited number of commands are available. The public
@@ -100,9 +98,7 @@ Users in the public channel will see F2 chat and a limited amount of ingame info
 display more or less information to the public channel using the settings in brenbot.cfg
 
 
-####################################
-Using the authorisation system
-####################################
+## Using the authorisation system
 
 BRenBot includes a secure authorisation system to prevent GSA or Direct Connect users from stealing
 your mods names, and getting moderator access. The auth system is always enabled, but only functions
@@ -117,8 +113,7 @@ name they will not get moderator powers. This means that unprotected names canno
 also means that all your moderators must protect their names before they get their moderator powers.
 
 
-How to register a name
-------------------------------------
+#### How to register a name
 Registering a username on BRenBot is very easy. All you need to do is login to IRC, and
 open a private chat window with BRenBot ( double click on the bots name in mIRC). Then
 type !register <playername> <password> to register a name. All of your moderators should
@@ -126,8 +121,7 @@ do this themselves, so they can use a password they will not forget. From now on
 using that name must authorise themselves when they join.
 
 
-How to authorise
-------------------------------------
+#### How to authorise
 There are several ways to authorise yourself in this version of BRenBot. If you are connected to the
 FDS via XWIS/WOL you can page the bot from ingame by typing /page <serverlogin> !auth <password>,
 replacing <serverlogin> with the login of the server you are on (EG: a00000001), and <password> with
@@ -139,9 +133,7 @@ cannot use the !auth command open a PM window with the bot and type !auth <name>
 authorise yourself.
 
 
-####################################
-Using the commands.xml file
-####################################
+## Using the commands.xml file
 
 The commands.xml file in BRenBot gives you total control over who can use which commands, and even
 lets you disable commands completely. The top part of the file dealing with permissions is beyond
@@ -154,6 +146,7 @@ plugin will actually be activated when using the command.
 
 Let's look at an example command in the commands.xml file;
 
+```
   <command name="shown00bs">
     <permission level="1"/>
     <syntax value="!shown00bs"/>
@@ -165,6 +158,7 @@ Let's look at an example command in the commands.xml file;
     <alias>shownoobs</alias>
     <alias>n00bs</alias>
   </command>
+```
 
 At first this might look very confusing, so lets break it down a bit. The first line identifies
 which command this setting is for, and should NEVER be changed.
@@ -187,9 +181,7 @@ you typed the full name given on the top line.
 The last line marks the end of the command settings and should NEVER be changed.
 
 
-####################################
-Configuration Files
-####################################
+## Configuration Files
 
  - brenbot.cfg
 Contains the core settings for BRenBot. The comments in the file explain what each settings does.
@@ -215,15 +207,13 @@ Contains map specific settings for various things like vehicle and mine limits. 
 settings from this file to configure map specific behaviour - an example is the donate plugin which
 allows the time limit before donations are permitted to be set via this file.
 
-The <default> section contains the settings that are used when no map-specific settings are defined
+The `<default>` section contains the settings that are used when no map-specific settings are defined
 for the current map.
 
 Some functions of this file only work when the map_settings module is enabled.
 
 
-####################################
-Using the GameSpy broadcaster
-####################################
+## Using the GameSpy broadcaster
 
 Note: As of BRenBot 1.54 the GSA broadcasting system has been moved into the gamespy plugin, which
 is included by default with BRenBot.
@@ -241,9 +231,7 @@ Note: If you want to configure the bot to reply to GSA queries without broadcast
 servers you can remove all the entries from the master_servers setting.
 
 
-####################################
-Troubleshooting
-####################################
+# Troubleshooting
 
 Some common problems people have with BRenBot, if you can't find the answer here please see the
 Technical Support section below this one.
@@ -279,9 +267,7 @@ Explorer and look for a folder in there named par-<yourusername>. When you find 
 it and then try to run BRenBot again.
 
 
-####################################
-Technical Support
-####################################
+# Technical Support
 
 For technical support please visit www.renegadeforums.com and post your query in the Technical
 Support -> Other subforum.
@@ -291,9 +277,7 @@ https://gitlab.com/danpaul88/brenbot/issues or create a new card on our Trello b
 https://trello.com/b/dlqadUmV/brenbot
 
 
-####################################
-Source
-####################################
+# Source
 
 BRenBot is an open source product and you are free to customise the bot to meet your own needs. If
 you would like to contribute bug fixes or new features to the main repository please submit a merge
@@ -302,9 +286,7 @@ request and it will be reviewed at the earliest opportunity.
 The official BRenBot git repository is available at https://gitlab.com/danpaul88/brenbot
 
 
-####################################
-Getting plugins
-####################################
+# Getting plugins
 
 The latest TT supplied plugins are available directly from the BRenBot git repository, which you can
 find at https://gitlab.com/danpaul88/brenbot/tree/master/Plugins
@@ -313,9 +295,7 @@ Additionally several plugins are available from the BRenBot website, http://new.
 in many cases these are outdated and may not function correctly on the latest version of BRenBot
 
 
-####################################
-Changelog
-####################################
+# Changelog
 
 1.55.1 ( 17 Oct 15 )
  - Updated the last batch of commands with hard coded GDI/NOD team names
