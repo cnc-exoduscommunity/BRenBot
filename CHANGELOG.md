@@ -52,10 +52,10 @@ _Missing Information - to be added later_
 ## [1.53.13](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.12...brenbot-1.53.13) - 2013-03-23
 _Missing Information - to be added later_
 
-## 1.53.12 - 2013-03-15
+## [1.53.12](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.11...brenbot-1.53.12) - 2013-03-15
 _Missing Information - to be added later_
 
-## 1.53.11 - 2012-02-29
+## [1.53.11](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.10...brenbot-1.53.11) - 2012-02-29
 ### Added
 ### Changed
 - Fix some quote replacement issues in logging related functionality
@@ -67,13 +67,13 @@ _Missing Information - to be added later_
 ### Removed
 - Removed redundant RG related function `is_serial_banned` from modules.pm
 
-## 1.53.10 - 2012-01-08
+## [1.53.10](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.9...brenbot-1.53.10) - 2012-01-08
 ### Changed
 - Fix missing MD5 library which prevented auth passwords being verified
 - Changed default presets.cfg entry for mp_GDI_War_Factory to "Weapons Factory" from "War Factory"
 - Removed some redundant duplicated RenRem functions
 
-## 1.53.9 - 2011-08-25
+## [1.53.9](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.8...brenbot-1.53.9) - 2011-08-25
 ### Changed
 - Fixed !auth command not working correctly
 - Fixed FindInstalledMap expecting the search string to not include the last character in the name
