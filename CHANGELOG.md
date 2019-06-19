@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Unreleased
 
-## [1.55.1] - 2017-10-17
+## [1.55.1](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.54.4...brenbot-1.55.1) - 2017-10-17
 ### Changed
 - Updated the last batch of commands with hard coded GDI/NOD team names
 - Modified game_info and player_info parsing to improve custom team name support
@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed default presets.cfg entry for mp_GDI_War_Factory to "Weapons Factory" from "War Factory"
 - Removed some redundant duplicated RenRem functions
 
-## [1.53.9] - 2011-08-25
+## 1.53.9 - 2011-08-25
 ### Changed
 - Fixed !auth command not working correctly
 - Fixed FindInstalledMap expecting the search string to not include the last character in the name
@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tweaked kick / ban mechanisms to not send a pamsg when using SSGM 4.0s ban system, which sends an additional message of its own, resulting in a double message
 - Replace a reference to NOD in the default presets.cfg with Nod
 
-## [1.53.8] - 2011-08-07
+## 1.53.8 - 2011-08-07
 ### Added
 - Added a new function to handle console output and add timestamps to each message
 - Added support for SSGM 4.0 resource manager
@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix GSA flood protection so that it cleans up old records instead of simply gobbling up more and more memory over time
 - Reworked parts of the authentication system to be more centralised, rather than having duplicate code spread out across several modules
 
-## [1.53.7] - 2010-08-13
+## 1.53.7 - 2010-08-13
 ### Added
 - Replaced `Seperate_Donate_From_Gamelog` option with a `Enable_Gamelog_Loaded_Checks` option which applies to a wider range of functions
 - Added `getBrVersion()` and `getBrBuild()` to plugin interface
@@ -75,13 +75,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plugins events are now executed using eval to prevent them from crashing the bot
 - Overhauled the banning and kicking system and merged the kickban and ban commands into a single command with the functionality of the kickban command
 
-## [1.53.6] - 2009-07-05
+## 1.53.6 - 2009-07-05
 ### Changed
 - Fixed crash bug relating to how plugin configuration is loaded
 - Modified database query function to print failed SQL statements to the console without crashing for easier debugging
 ### Removed
 
-## [1.53.5] - 2009-06-22
+## 1.53.5 - 2009-06-22
 ### Added
 - Added `recommendations_recent_history` table to database
 -- Recommendations and n00bs are now stored in the `recommendations_recent_history` table for one week
@@ -92,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked some parts of the command processor based on Perl 5.10 warnings
 - Fixed plugin loader
 
-## [1.53.4] - 2009-06-21
+## 1.53.4 - 2009-06-21
 ### Added
 - Added `IsNumeric($input)` utility function to plugin interface
 - Replaced `Force_bhs_dll` option with `Minimum_scripts_version` option in brenbot.cfg
@@ -116,7 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Stripped out some redundant code relating to bhs.dll existance
 
-## [1.53.3] - 2008-11-14
+## 1.53.3 - 2008-11-14
 ### Added
 - Added ability to detect tt.dll and enable support
 ### Changed
@@ -126,7 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed `RenRemLinux*` configuration settings from brenbot.cfg, these are now loaded from server.ini
 - Removed long redundant LadderLookup option from default brenbot.cfg file
 
-## [1.53.2] - 2008-10-14
+## 1.53.2 - 2008-10-14
 ### Added
 - Added serverMsg, isTempMod, isHalfMod, isFullMod, isAdmin and getIrcPermissions functions to plugin interface.
 - Replaced !cp function with !scripts function. The !scripts function lists all ingame players along with their scripts (bhs.dll/tt.dll) version.
@@ -135,14 +135,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced 2007 with 2008 in copyright notices
 - Fixed !ids command to actually show ids
 
-## [1.53.1] - 2008-09-30
+## 1.53.1 - 2008-09-30
 ### Changed
 - Disabled some non-functional commands
 - Disabled STDIN and STDOUT buffering so error messages are displayed properly
 ### Removed
 - Removed all RenGuard related functionality
 
-## [1.52.1] - 2007-09-10
+## 1.52.1 - 2007-09-10
 ### Added
 - Support for SSGM 2.0 added
 - New config option, `Moderators_Show_Join_Message`, which controls if the join message for moderators is shown ( XYZ is a full moderator etc)
@@ -182,11 +182,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Removed module minelimit
 
-## [1.50.2] - 2007-06-05
+## 1.50.2 - 2007-06-05
 ### Changed
 - Updated RenGuard protocol to allow disconnected users time to reconnect to RenGuard before kicking them ( Full RG or Half-RG + forced user ).
 
-## [1.50.1] - 2007-01-24
+## 1.50.1 - 2007-01-24
 ### Added
 - Added option to withhold moderator rights from users who have not registered on the !auth system
 - Added a plugin system to allow extra features to be added easily
@@ -239,7 +239,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modules !teams and !seen are removed, as this can be controlled via commands.xml
 - Removed the !seen command. See the new plugin if you still want this.
 
-## [1.41] - 2005-01-17
+## 1.41 - 2005-01-17
 ### Added
 - Added !rgplayers and !nonrgplayers
 - Added support for configurable minelimit via scripts.dll 2.0
@@ -250,7 +250,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed various half renguard issues (spamming, not properly detecting etc)
 - Fixed cpu lockup/cpu performance issues
 
-## [1.40] - 2004-11-29
+## 1.40 - 2004-11-29
 ### Added
 - Added detailed fds logging (gamelog) to display various ingame live statistics.
 - Added BHS.dll support. (pamsg, ppage, forcetc etc)
@@ -272,21 +272,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LOTS OF BUGFIXES
 - Revamped RenGuard Support, much more stable now
 
-## [1.36] - 2004-11-01
+## 1.36 - 2004-11-01
 _Public Testing release, which turned into BRenBot 1.40_
 
-## [1.35] - 2004-04-14
+## 1.35 - 2004-04-14
 ### Changed
 - WOL related RenGuard bugfix
 
-## [1.34] - 2004-04-14
+## 1.34 - 2004-04-14
 ### Added
 - Added ability to ban by serial hash (RenGuard only)
 - Added !rglocate (RenGuard only)
 ### Changed
 - Various RenGuard Fixes
 
-## [1.33] - 2004-04-07
+## 1.33 - 2004-04-07
 ### Added
 - RenGuard Support (see RenGuard section)
 - Added !rehash command which reloads all configs (so you dont have to restart the bot after adding moderators etc.)
@@ -308,12 +308,12 @@ _Public Testing release, which turned into BRenBot 1.40_
 - Removed dependency on perlglob.exe. Now using internal directory scanning code to get mapnames.
 - Removed hard coded autoresponses for "refill", "base to base", and "spawn kill".
 
-## [1.31] - 2001-04-01
+## 1.31 - 2001-04-01
 ### Changed
 - Fixed problem with auto-recommendations not working for LFDS or Win32+GSA.
 - Fixed problem with LFDS not detecting the host IP.
 
-## [1.30] - 2004-03-01
+## 1.30 - 2004-03-01
 ### Added
 - added native win32 renrem support
 - added filter to !playerinfo (!pi <keyword>)
@@ -332,7 +332,7 @@ _Public Testing release, which turned into BRenBot 1.40_
 - migration of win32 code into one code base
 - made !playerinfo formatted nicely
 
-## [1.29] - 2003-10-09
+## 1.29 - 2003-10-09
 ### Added
 - added !shown00bs
 - added !n00b
@@ -341,7 +341,7 @@ _Public Testing release, which turned into BRenBot 1.40_
 - changed gamespy broadcasting to every 5 mins
 - Automatic IRC disconnect when disconnected from server
 
-## [1.28] - 2003-10-05
+## 1.28 - 2003-10-05
 ### Added
 - module support
 - new gamespy query handler for extended information on ASE/Gamespy
@@ -352,54 +352,54 @@ _Public Testing release, which turned into BRenBot 1.40_
 - !deltempmod bugfix
 - !auth bugfix
 
-## [1.24] - 2003-08-04
+## 1.24 - 2003-08-04
 ### Changed
 - irc channel bugfix
 
-## [1.23] - 2003-07-24
+## 1.23 - 2003-07-24
 ### Added
 - !auth
 - playerlist being exported to htmlpages
 
-## [1.22] - 2003-07-10
+## 1.22 - 2003-07-10
 ### Changed
 - bugfixes
 - detection of Fakenicknames (extension)
 
-## [1.21] - 2003-07-07
+## 1.21 - 2003-07-07
 ### Added
 - !delban
 - CTCP Version Reply
 - detection of Fakenicknames
 
-## [1.19] - 2003-07-06
+## 1.19 - 2003-07-06
 ### Added
 - html export
 
-## [1.18] - 2003-07-07
+## 1.18 - 2003-07-07
 ### Changed
 - distinction of normal and oppped/voiced users on IRC
 
-## [1.14] - 2003-07-05
+## 1.14 - 2003-07-05
 ### Added
 - new banlist
 
-## [1.13] - 2003-07-03
+## 1.13 - 2003-07-03
 ### Added
 - added !teamplayers
 - added !seen
 - added !setjoin
 - added !viewjoin
 
-## [1.11] - 2003-06-16
+## 1.11 - 2003-06-16
 ### Added
 - added "!vote map cyclemap" to change to the next map in rotation
 
-## [1.10] - 2003-06-13
+## 1.10 - 2003-06-13
 ### Added
 - added Mapvoting
 
-## [1.9] - 2003-06-12
+## 1.9 - 2003-06-12
 _First public release to selected testers_
 ### Added
 - added Q auth
