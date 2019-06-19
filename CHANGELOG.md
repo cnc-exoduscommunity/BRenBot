@@ -19,8 +19,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed hard coded team names from the autobalance module
 - Removed the !teams command
 
-1.54.x
- - Missing information - to be added later.
+## [1.54.4](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.54.3...brenbot-1.54.4) - 2015-04-04
+_Missing Information - to be added later_
+
+## [1.54.3](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.54.2...brenbot-1.54.3) - 2015-02-21
+_Missing Information - to be added later_
+
+## [1.54.2](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.54.1...brenbot-1.54.2) - 2014-05-18
+_Missing Information - to be added later_
+
+## [1.54.1](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.19...brenbot-1.54.1) - 2014-04-12
+_Missing Information - to be added later_
+
+## [1.53.19](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.18...brenbot-1.53.19) - 2014-02-04
+_Missing Information - to be added later_
+
+## [1.53.18](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.17...brenbot-1.53.18) - 2013-12-30
+_Missing Information - to be added later_
+
+## [1.53.17](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.16...brenbot-1.53.17) - 2013-10-27
+_Missing Information - to be added later_
+
+## [1.53.16](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.15...brenbot-1.53.16) - 2013-08-18
+_Missing Information - to be added later_
+
+## [1.53.15](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.14...brenbot-1.53.15) - 2013-08-17
+_Missing Information - to be added later_
+
+## [1.53.14](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.13...brenbot-1.53.14) - 2013-08-11
+_Missing Information - to be added later_
+
+## [1.53.13](https://gitlab.com/danpaul88/brenbot/compare/brenbot-1.53.12...brenbot-1.53.13) - 2013-03-23
+_Missing Information - to be added later_
+
+## 1.53.12 - 2013-03-15
+_Missing Information - to be added later_
 
 ## 1.53.11 - 2012-02-29
 ### Added
