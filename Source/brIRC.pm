@@ -391,25 +391,29 @@ sub privmsg_pm
 sub mode
 {
 	my $input = shift;
-	if ( $input =~ m/\:\S+\sMODE\s(\S+)\s(\+|\-)((o|v|h|q|a)+)\s(.+)/ )
+	if ( $input =~ m/\:(?:\S+|.+\!.+\@.+)\sMODE\s(\S+)\s(\+|\-)([ovhqaY]+)\s(.+)/  )
 	{
 		my $channel		= $1;
 		my $plusminus	= $2;
 		my $modes		= $3;
-		my $names		= $5;
+		my $names		= $4;
 
 		#open ( IRCDEBUGFILE, '>>ircdebug.txt' );
 		#print IRCDEBUGFILE "Got mode change on channel $channel, $plusminus $modes for $names\n";
 		#close IRCDEBUGFILE;
 
-		while ( $names =~ m/^(\S+)(\s(.+))?/ )
+		while ( $names =~ m/^(\S+)(\s+(\S.+))?/ )
 		{
 			my $name = $1;
-			$names = $3;
+			$name=~s/^\://;
+			
+			$names = $2 // "";
+			$names=~s/^\s+//;			
+			
 
 			$modes =~ m/^(\S)(\S+)?/;
 			my $flag = $1;
-			$modes = $2;
+			$modes = $2 if ( $2 );
 
 			if ( lc($channel) eq lc($brconfig::irc_adminChannel) )
 			{
@@ -421,6 +425,8 @@ sub mode
 				if ( $plusminus eq '-' ) { setUserFlag ( $name, 'P', $flag, 0 ); }
 				elsif ( $plusminus eq '+' ) { setUserFlag ( $name, 'P', $flag, 1 ); }
 			}
+			
+			return if ( $names eq "" );
 		}
 	}
 }
