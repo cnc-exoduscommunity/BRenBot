@@ -1,5 +1,22 @@
 #!/usr/bin/perl -w
 
+# As of Perl 5.26 the current working directory is not included in @INC by default, which leads to
+# problems loading the various *.pm files in BRenBot. Longer term we should namespace these all
+# properly and use a "BRenBot::" prefix, but this may break a lot of plugins so for now we'll just
+# add '.' back into the lib search path
+
+# Include the directory containing brenbot.pl in the modules path
+my $brRootDir;
+use File::Basename;
+BEGIN { $brRootDir = dirname(__FILE__); }
+use lib $brRootDir;
+
+# Also include the current working directory (may differ from root) to ensure plugins can be loaded
+my $brCwd;
+use Cwd 'abs_path';
+BEGIN { $brCwd = dirname(abs_path($0)); }
+use lib $brCwd;
+
 use POE;
 use POE::Kernel;
 use POE::Session;
