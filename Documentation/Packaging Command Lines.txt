@@ -3,8 +3,8 @@
 # Command lines for packaging release builds of BRenBot 1.x and brLoader
 #
 # Author: danpaul88
-# Revision: 1.00
-# Date: 26-03-09
+# Revision: 1.01
+# Date: 17-04-2020
 #
 ##################################################################################
 
@@ -15,16 +15,9 @@ but remember to update the version numbers as appropriate.
 
 BRenBot 1.x
 
-pp -o brenbot.exe -M POE/Filter.pm -M POE/Filter/Stream.pm -M XML/LibXML/Sax.pm -l libexpat-1_.dll -l libxml2-2_.dll -l libiconv-2_.dll -l liblzma-5_.dll -l zlib1_.dll brenbot.pl
+pp -o brenbot.exe -M XML/SAX/Expat.pm brenbot.pl
 
 OR
 
 pp -vvv -x -o brenbot.exe brenbot.pl
 
-
-
-
-
-brLoader
-
-pp -o brloader.exe -N CompanyName="Tiberian Technologies";ProductVersion=1.42;ProductName="brLoader 1.42";FileVersion=1.42;LegalCopyright="Tiberian Technologies, All Rights Reserved";FileDescription="Loader and updater for BRenBot" brloader.pl
