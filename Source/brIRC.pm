@@ -102,16 +102,16 @@ sub init
 			},
 			sendloop => sub
 			{
-        my $kernel = $_[ KERNEL ];
-        my $heap = $_[ HEAP ];
-        
-        my $availableChars = $brconfig::irc_charsPerSecond;
-        my $sendString = "";
-        
-        if (!defined($heap->{'wheel'}) || !defined($heap->{'socket'}))
-        {
-          return;
-        }
+				my $kernel = $_[ KERNEL ];
+				my $heap = $_[ HEAP ];
+
+				my $availableChars = $brconfig::irc_charsPerSecond;
+				my $sendString = "";
+
+				if (!defined($heap->{'wheel'}) || !defined($heap->{'socket'}))
+				{
+				  return;
+				}
 
 				# Send at least one message
 				if ( $priorityMessageQueue[0] )
@@ -142,13 +142,13 @@ sub init
 					$availableChars -= length ( $output );
 				}
 
-        if ($sendString)
-        {
-          $heap->{'socket'}->send( $sendString );
-        }
+				if ($sendString)
+				{
+				  $heap->{'socket'}->send( $sendString );
+				}
 
-        # Come back to the send loop in 1 second
-        $kernel->delay ( "sendloop", 1 );
+				# Come back to the send loop in 1 second
+				$kernel->delay ( "sendloop", 1 );
 			},
 			gotline => sub
 			{
@@ -190,7 +190,7 @@ sub init
 
 				# PRIVMSG
 				elsif ( $input =~ m/PRIVMSG/ )
-					{ privmsg ( $input ); }
+					{ gotprivmsg ( $input ); }
 
 				# MODE
 				elsif ( $input =~ m/MODE/ )
@@ -279,10 +279,19 @@ sub sendToServer
 
 
 # Process incoming messages
-sub privmsg
+sub gotprivmsg
 {
 	my $line = shift;
 
+	# Handle CTCP version requests - some IRCDs require clients to be able to respond to this
+	if ($line =~ m/\:(.+)\sPRIVMSG\s(.+)\s\:\x01VERSION\x01/)
+	{
+		my $ctcp_requester = $1;
+		ircnotice($ctcp_requester, chr(1)."VERSION perl $^V".chr(1));
+		return;
+	}
+
+	# Handle channel messages
 	if ( $line =~ m/\:(.+)\!(.+)\@(.+)\sPRIVMSG\s(\#?\S+)\s\:(.+)/ )
 	{
 		my $nick			= $1;
@@ -293,7 +302,7 @@ sub privmsg
 
 		if ( $channel !~ m/^\#/ )
 		{
-			privmsg_pm ( $message, $nick );
+			gotprivmsg_pm ( $message, $nick );
 			return;
 		}
 
@@ -332,7 +341,7 @@ sub privmsg
 
 
 # Handle private messages from users
-sub privmsg_pm
+sub gotprivmsg_pm
 {
 	my $message		= shift;
 	my $sender		= shift;
@@ -406,10 +415,10 @@ sub mode
 		{
 			my $name = $1;
 			$name=~s/^\://;
-			
+
 			$names = $2 // "";
-			$names=~s/^\s+//;			
-			
+			$names=~s/^\s+//;
+
 
 			$modes =~ m/^(\S)(\S+)?/;
 			my $flag = $1;
@@ -425,7 +434,7 @@ sub mode
 				if ( $plusminus eq '-' ) { setUserFlag ( $name, 'P', $flag, 0 ); }
 				elsif ( $plusminus eq '+' ) { setUserFlag ( $name, 'P', $flag, 1 ); }
 			}
-			
+
 			return if ( $names eq "" );
 		}
 	}
@@ -857,7 +866,7 @@ sub colourise
 {
   my $colour = shift;
   my $message = shift;
-  
+
   # \todo validate colour matches either ##,## or ##, enforce two digits to prevent run-on if
   #       the message starts with a number
 
