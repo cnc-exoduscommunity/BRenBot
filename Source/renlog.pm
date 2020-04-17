@@ -381,8 +381,8 @@ sub handle_chat($$$)
   my ($sender, $message, $isTeamMessage) = @_;
 
   # Prevent bugs/command abuse caused by players with : in their name
-  return if ("$5$6" =~ m/^Player\s.+\s(joined|left)\sthe\sgame$/
-          || "$5$6" =~ m/^.+:\s!\s.+\swas\skicked$/);
+  return if ("$sender$message" =~ m/^Player\s.+\s(joined|left)\sthe\sgame$/
+          || "$sender$message" =~ m/^.+:\s!\s.+\swas\skicked$/);
 
   # Handle host messages and drop out without additional processing
   if ($sender eq "Host")
@@ -393,51 +393,53 @@ sub handle_chat($$$)
 
   # Get data for person who chatted
   my ($result, %player) = playerData::getPlayerData($sender);
-  if (1 == $result)
+  if ($result != 1)
   {
-    # Format mod and admin names
-    my $ircPlayername = modules::parseModName($player{'name'}, 1);
+    return;
+  }
 
-    # F2 chat
-    if (!$isTeamMessage)
-    {
-      brIRC::ircmsg(brTeams::colourise($player{'teamid'}, $ircPlayername).": $message", "B");
-    }
+  # Format mod and admin names
+  my $ircPlayername = modules::parseModName($player{'name'}, 1);
 
-    # F3 chat, if teammessages is enabled
-    elsif (modules::get_module("teammessages"))
-    {
-      brIRC::ircmsg(
-        brIRC::colourise(6, "[Team] ").brTeams::colourise($player{'teamid'},"$ircPlayername: $message"),
-        (1 == $brconfig::irc_showTeamMessages_PublicChan) ? "B" : "A"
-      );
-    }
+  # F2 chat
+  if (!$isTeamMessage)
+  {
+    brIRC::ircmsg(brTeams::colourise($player{'teamid'}, $ircPlayername).": $message", "B");
+  }
 
-
-    # Handle !commands
-    if ( $message =~ m/^\!/i)
-    {
-      eval { commands::parsearg($message, $player{'name'}, "N"); }
-        or modules::display_error($@);
-    }
+  # F3 chat, if teammessages is enabled
+  elsif (modules::get_module("teammessages"))
+  {
+    brIRC::ircmsg(
+      brIRC::colourise(6, "[Team] ").brTeams::colourise($player{'teamid'},"$ircPlayername: $message"),
+      (1 == $brconfig::irc_showTeamMessages_PublicChan) ? "B" : "A"
+    );
+  }
 
 
-    # Run plugins for public chat messages
-    my @plugins = plugin::get_plugin_event("text");
-    my %args;
+  # Handle !commands
+  if ( $message =~ m/^\!/i)
+  {
+    eval { commands::parsearg($message, $player{'name'}, "N"); }
+      or modules::display_error($@);
+  }
 
-    $args{id}           = $player{'id'};
-    $args{nick}         = $player{'name'};
-    $args{nicktype}     = 0;
-    $args{message}      = $message;
-    $args{messagetype}  = ($isTeamMessage) ? "team" : "public";
-    $args{team}         = $player{'side'};
 
-    foreach (@plugins)
-    {
-      eval { $main::poe_kernel->post("plugin_".$_ => "text" => \%args); }
-        or modules::display_error($@);
-    }
+  # Run plugins for public chat messages
+  my @plugins = plugin::get_plugin_event("text");
+  my %args;
+
+  $args{id}           = $player{'id'};
+  $args{nick}         = $player{'name'};
+  $args{nicktype}     = 0;
+  $args{message}      = $message;
+  $args{messagetype}  = ($isTeamMessage) ? "team" : "public";
+  $args{team}         = $player{'side'};
+
+  foreach (@plugins)
+  {
+    eval { $main::poe_kernel->post("plugin_".$_ => "text" => \%args); }
+      or modules::display_error($@);
   }
 }
 
