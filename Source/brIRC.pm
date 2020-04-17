@@ -283,6 +283,15 @@ sub gotprivmsg
 {
 	my $line = shift;
 
+	# Handle CTCP version requests - some IRCDs require clients to be able to respond to this
+	if ($line =~ m/\:(.+)\sPRIVMSG\s(.+)\s\:\x01VERSION\x01/)
+	{
+		my $ctcp_requester = $1;
+		ircnotice($ctcp_requester, chr(1)."VERSION perl $^V".chr(1));
+		return;
+	}
+
+	# Handle channel messages
 	if ( $line =~ m/\:(.+)\!(.+)\@(.+)\sPRIVMSG\s(\#?\S+)\s\:(.+)/ )
 	{
 		my $nick			= $1;
