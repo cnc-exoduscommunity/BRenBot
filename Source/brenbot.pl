@@ -19,12 +19,13 @@ use lib $brCwd;
 
 use POE;
 use POE::Kernel;
-use POE::Session;
-use POE qw/Wheel::FollowTail/;
+require POE::Session;
+require POE::Wheel;
+require POE::Wheel::FollowTail;
 
-use POE::Component::Client::TCP;
-use POE::Filter::Stream;
-use IO::Socket;
+require POE::Component::Client::TCP;
+require POE::Filter::Stream;
+require IO::Socket;
 
 use strict;
 

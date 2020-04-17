@@ -4,7 +4,7 @@ package renlog;
 use strict;
 
 use POE;
-use POE qw/Wheel::FollowTail/;
+use POE::Wheel::FollowTail;
 
 use modules;
 use brconfig;
