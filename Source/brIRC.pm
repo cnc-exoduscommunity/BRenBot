@@ -102,16 +102,16 @@ sub init
 			},
 			sendloop => sub
 			{
-        my $kernel = $_[ KERNEL ];
-        my $heap = $_[ HEAP ];
-        
-        my $availableChars = $brconfig::irc_charsPerSecond;
-        my $sendString = "";
-        
-        if (!defined($heap->{'wheel'}) || !defined($heap->{'socket'}))
-        {
-          return;
-        }
+				my $kernel = $_[ KERNEL ];
+				my $heap = $_[ HEAP ];
+
+				my $availableChars = $brconfig::irc_charsPerSecond;
+				my $sendString = "";
+
+				if (!defined($heap->{'wheel'}) || !defined($heap->{'socket'}))
+				{
+				  return;
+				}
 
 				# Send at least one message
 				if ( $priorityMessageQueue[0] )
@@ -142,13 +142,13 @@ sub init
 					$availableChars -= length ( $output );
 				}
 
-        if ($sendString)
-        {
-          $heap->{'socket'}->send( $sendString );
-        }
+				if ($sendString)
+				{
+				  $heap->{'socket'}->send( $sendString );
+				}
 
-        # Come back to the send loop in 1 second
-        $kernel->delay ( "sendloop", 1 );
+				# Come back to the send loop in 1 second
+				$kernel->delay ( "sendloop", 1 );
 			},
 			gotline => sub
 			{
@@ -406,10 +406,10 @@ sub mode
 		{
 			my $name = $1;
 			$name=~s/^\://;
-			
+
 			$names = $2 // "";
-			$names=~s/^\s+//;			
-			
+			$names=~s/^\s+//;
+
 
 			$modes =~ m/^(\S)(\S+)?/;
 			my $flag = $1;
@@ -425,7 +425,7 @@ sub mode
 				if ( $plusminus eq '-' ) { setUserFlag ( $name, 'P', $flag, 0 ); }
 				elsif ( $plusminus eq '+' ) { setUserFlag ( $name, 'P', $flag, 1 ); }
 			}
-			
+
 			return if ( $names eq "" );
 		}
 	}
@@ -857,7 +857,7 @@ sub colourise
 {
   my $colour = shift;
   my $message = shift;
-  
+
   # \todo validate colour matches either ##,## or ##, enforce two digits to prevent run-on if
   #       the message starts with a number
 
