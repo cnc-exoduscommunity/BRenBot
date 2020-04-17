@@ -4,7 +4,7 @@ package ssgm;
 use strict;
 
 use POE;
-use POE qw/Wheel::FollowTail/;
+use POE::Wheel::FollowTail;
 use POE::Kernel;					# Needed for successful pp compile
 use POE::Session;					# Needed for successful pp compile
 

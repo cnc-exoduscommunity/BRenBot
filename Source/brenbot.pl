@@ -1,13 +1,31 @@
 #!/usr/bin/perl -w
 
+# As of Perl 5.26 the current working directory is not included in @INC by default, which leads to
+# problems loading the various *.pm files in BRenBot. Longer term we should namespace these all
+# properly and use a "BRenBot::" prefix, but this may break a lot of plugins so for now we'll just
+# add '.' back into the lib search path
+
+# Include the directory containing brenbot.pl in the modules path
+my $brRootDir;
+use File::Basename;
+BEGIN { $brRootDir = dirname(__FILE__); }
+use lib $brRootDir;
+
+# Also include the current working directory (may differ from root) to ensure plugins can be loaded
+my $brCwd;
+use Cwd 'abs_path';
+BEGIN { $brCwd = dirname(abs_path($0)); }
+use lib $brCwd;
+
 use POE;
 use POE::Kernel;
-use POE::Session;
-use POE qw/Wheel::FollowTail/;
+require POE::Session;
+require POE::Wheel;
+require POE::Wheel::FollowTail;
 
-use POE::Component::Client::TCP;
-use POE::Filter::Stream;
-use IO::Socket;
+require POE::Component::Client::TCP;
+require POE::Filter::Stream;
+require IO::Socket;
 
 use strict;
 
@@ -19,9 +37,9 @@ use strict;
 # sub POE::Kernel::TRACE_FILENAME () { 'memoryleakdebug.txt' }
 
 # Define these before loading BRenBot modules as they may be used inside those modules
-use constant BR_VERSION         => 1.55;
+use constant BR_VERSION         => 1.56;
 use constant BR_BUILD           => 1;
-use constant BR_COPYRIGHT_YEAR  => "2003-2015";
+use constant BR_COPYRIGHT_YEAR  => "2003-2020";
 
 # Load BRenBot modules
 use modules;

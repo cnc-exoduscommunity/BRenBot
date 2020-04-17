@@ -4,7 +4,7 @@ package gamelog;
 use strict;
 
 use POE;
-use POE qw/Wheel::FollowTail/;
+use POE::Wheel::FollowTail;
 use POE::Kernel;
 use POE::Session;
 use XML::Simple;

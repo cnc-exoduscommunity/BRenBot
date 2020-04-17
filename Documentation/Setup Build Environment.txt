@@ -3,27 +3,39 @@
 # Setting up a BRenBot 1.x development and build environment
 #
 # Author: danpaul88
-# Revision: 1.10
-# Date: 11-08-2013
+# Revision: 1.11
+# Date: 17-04-2020
 #
 ##################################################################################
 
 
-1) Download and install Strawberry Perl 5.18.2 (32 bit) from
+1) Download and install Strawberry Perl 5.30.2 (64 bit) from
 
-   http://strawberry-perl.googlecode.com/files/strawberry-perl-5.18.2.2-32bit.msi
+   http://strawberryperl.com/download/5.30.2.1/strawberry-perl-5.30.2.1-64bit.msi
+
+   OR, if you want to run BRenBot on a 32 bit operating system, use the 32 bit version;
+
+   http://strawberryperl.com/download/5.30.2.1/strawberry-perl-5.30.2.1-32bit.msi
 
 
 
 
-2) After installing Strawberry Perl open a command prompt (WinKey+R, cmd, enter) and type in cpan
-   and hit the enter key. Once it loads type the following commands
+2) After installing Strawberry Perl open a command prompt (WinKey+R, cmd, enter) and type the
+   following command;
 
-   install POE::Test::Loops
-   install POE
-   install Date::Calc
-   install Class::Unload
-   install pp
+   cpan -i -T POE Class::Unload
 
-   Once all of these commands are completed you should be able to run brenbot.pl successfully and
-   compile it into a distributable package using the instructions in Packaging Command Lines.txt
+   Once this command has completed you should be able to run brenbot.pl successfully from the command
+   line using 'perl brenbot.pl'
+
+
+
+
+3) (Optional) If you also wish to be able to compile the source into an exe file, run the following
+   command;
+
+   cpan -i pp
+
+   Once this command has completed you should be able to compile brenbot into a distributable package
+   using the instructions in Packaging Command Lines.txt, or by running compile_exe.bat
+
