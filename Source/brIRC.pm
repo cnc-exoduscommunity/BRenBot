@@ -190,7 +190,7 @@ sub init
 
 				# PRIVMSG
 				elsif ( $input =~ m/PRIVMSG/ )
-					{ privmsg ( $input ); }
+					{ gotprivmsg ( $input ); }
 
 				# MODE
 				elsif ( $input =~ m/MODE/ )
@@ -279,7 +279,7 @@ sub sendToServer
 
 
 # Process incoming messages
-sub privmsg
+sub gotprivmsg
 {
 	my $line = shift;
 
@@ -293,7 +293,7 @@ sub privmsg
 
 		if ( $channel !~ m/^\#/ )
 		{
-			privmsg_pm ( $message, $nick );
+			gotprivmsg_pm ( $message, $nick );
 			return;
 		}
 
@@ -332,7 +332,7 @@ sub privmsg
 
 
 # Handle private messages from users
-sub privmsg_pm
+sub gotprivmsg_pm
 {
 	my $message		= shift;
 	my $sender		= shift;
