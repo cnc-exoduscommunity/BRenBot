@@ -719,10 +719,10 @@ sub pagePlayer
 
 # Check moderator status of players, returns 1 for true, 0 for false.
 # Parameters: playername
-sub isTempMod { return modules::isTempMod(@_); }
-sub isHalfMod { return modules::isHalfMod(@_); }
-sub isFullMod { return modules::isFullMod(@_); }
-sub isAdmin { return modules::isAdmin(@_); }
+sub isTempMod { return modules::IsTempMod(@_); }
+sub isHalfMod { return modules::IsHalfMod(@_); }
+sub isFullMod { return modules::IsFullMod(@_); }
+sub isAdmin { return modules::IsAdmin(@_); }
 
 
 # Check if a given player has finished loading the map, returns 1 for true, 0 for false.
