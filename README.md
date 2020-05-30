@@ -287,8 +287,5 @@ The official BRenBot git repository is available at https://gitlab.com/danpaul88
 
 # Getting plugins
 
-The latest TT supplied plugins are available directly from the BRenBot git repository, which you can
+The latest official plugins are available directly from the BRenBot git repository, which you can
 find at https://gitlab.com/danpaul88/brenbot/tree/master/Plugins
-
-Additionally several plugins are available from the BRenBot website, http://new.brenbot.com, however
-in many cases these are outdated and may not function correctly on the latest version of BRenBot
