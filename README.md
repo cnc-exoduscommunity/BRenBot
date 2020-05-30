@@ -273,8 +273,7 @@ For technical support please visit www.renegadeforums.com and post your query in
 Support -> Other subforum.
 
 To report a bug or request a new feature please create a new issue in the BRenBot git repository at
-https://gitlab.com/danpaul88/brenbot/issues or create a new card on our Trello board at
-https://trello.com/b/dlqadUmV/brenbot
+https://gitlab.com/danpaul88/brenbot/issues
 
 
 # Source
