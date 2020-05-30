@@ -11,15 +11,9 @@ Readme file written by danpaul88, with several useful parts taken from the pre-1
 
 ## Credits
 
-BRenBot has been developed by;
-Blazer
-Mac
-PackHunter
-danpaul88
+BRenBot has been developed by Blazer, Mac, PackHunter and danpaul88
 
-Thanks also go to the following for code contributions;
-AmunRa
-v00d00
+Thanks also go to AmunRa and v00d00 for code contributions
 
 BRenBot is Copyright 2003-2020 by Tiberian Technologies. All rights reserved.
 
