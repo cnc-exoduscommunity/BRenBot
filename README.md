@@ -269,8 +269,8 @@ it and then try to run BRenBot again.
 
 # Technical Support
 
-For technical support please visit www.renegadeforums.com and post your query in the Technical
-Support -> Other subforum.
+For technical support please visit httsp://w3dhub.com/forums and post your quer
+in the Help & Support subforum.
 
 To report a bug or request a new feature please create a new issue in the BRenBot git repository at
 https://gitlab.com/danpaul88/brenbot/issues
