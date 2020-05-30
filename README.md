@@ -263,7 +263,7 @@ it and then try to run BRenBot again.
 
 # Technical Support
 
-For technical support please visit httsp://w3dhub.com/forums and post your quer
+For technical support please visit httsp://w3dhub.com/forum/ and post your quer
 in the Help & Support subforum.
 
 To report a bug or request a new feature please create a new issue in the BRenBot git repository at
