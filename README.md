@@ -1,4 +1,4 @@
-# Readme file for BRenBot 1.55
+# Readme file for BRenBot
 
 This file contains setup instructions, general troubleshooting information and information on how to
 obtain support for BRenBot
@@ -21,7 +21,7 @@ Thanks also go to the following for code contributions;
 AmunRa
 v00d00
 
-BRenBot is Copyright 2003-2015 by Tiberian Technologies. All rights reserved.
+BRenBot is Copyright 2003-2020 by Tiberian Technologies. All rights reserved.
 
 Thanks to Gozy, Caveman, Hex, Fifaheld, cAmpa, trooprm02 and all the other official 1.43 & 1.51
 testers for helping find all the bugs during testing.
