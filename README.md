@@ -1,4 +1,4 @@
-# Readme file for BRenBot 1.55
+# Readme file for BRenBot
 
 This file contains setup instructions, general troubleshooting information and information on how to
 obtain support for BRenBot
@@ -11,17 +11,11 @@ Readme file written by danpaul88, with several useful parts taken from the pre-1
 
 ## Credits
 
-BRenBot has been developed by;
-Blazer
-Mac
-PackHunter
-danpaul88
+BRenBot has been developed by Blazer, Mac, PackHunter and danpaul88
 
-Thanks also go to the following for code contributions;
-AmunRa
-v00d00
+Thanks also go to AmunRa and v00d00 for code contributions
 
-BRenBot is Copyright 2003-2015 by Tiberian Technologies. All rights reserved.
+BRenBot is Copyright 2003-2020 by Tiberian Technologies. All rights reserved.
 
 Thanks to Gozy, Caveman, Hex, Fifaheld, cAmpa, trooprm02 and all the other official 1.43 & 1.51
 testers for helping find all the bugs during testing.
@@ -269,12 +263,11 @@ it and then try to run BRenBot again.
 
 # Technical Support
 
-For technical support please visit www.renegadeforums.com and post your query in the Technical
-Support -> Other subforum.
+For technical support please visit httsp://w3dhub.com/forum/ and post your quer
+in the Help & Support subforum.
 
 To report a bug or request a new feature please create a new issue in the BRenBot git repository at
-https://gitlab.com/danpaul88/brenbot/issues or create a new card on our Trello board at
-https://trello.com/b/dlqadUmV/brenbot
+https://gitlab.com/danpaul88/brenbot/issues
 
 
 # Source
@@ -288,8 +281,5 @@ The official BRenBot git repository is available at https://gitlab.com/danpaul88
 
 # Getting plugins
 
-The latest TT supplied plugins are available directly from the BRenBot git repository, which you can
+The latest official plugins are available directly from the BRenBot git repository, which you can
 find at https://gitlab.com/danpaul88/brenbot/tree/master/Plugins
-
-Additionally several plugins are available from the BRenBot website, http://new.brenbot.com, however
-in many cases these are outdated and may not function correctly on the latest version of BRenBot
