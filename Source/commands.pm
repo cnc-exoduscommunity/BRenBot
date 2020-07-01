@@ -2475,6 +2475,7 @@ sub addtempmod
 		{
 			#print "atm $args{arg1}..\n";
 			modules::AddTempModerator ( $args{arg1} );
+			brdatabase::writeLog ( 5, "[ATM] $args{arg1} was made tempmod by $args{nick}." );
 		}
 	}
 	or modules::display_error($@);
