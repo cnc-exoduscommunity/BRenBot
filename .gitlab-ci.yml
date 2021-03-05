@@ -1,0 +1,37 @@
+stages:
+  - Win64
+
+yml_embedded_script_on_windows:
+  stage: Win64
+  # There is no image: tag because Windows shared runners are shell runners.
+  # These tags are only required for targeting shared Windows runners on GitLab.com, remove for self-hosted private runners.
+  tags:  
+  - shared-windows
+  - windows
+  - windows-1809
+  only:
+    changes:
+      - Source/*
+
+  script:
+    - |
+      Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      choco install strawberryperl -y
+      $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+      cpan install App::cpanminus; cpanm --notest POE Class::Unload pp
+      pp -u -o BRenBot.exe -v -M XML::SAX::Expat -M XML::LibXML::SAX -l libexpat-1__.dll -l libxml2-2__.dll -l libiconv-2__.dll -l liblzma-5__.dll -l zlib1__.dll -I ./Source/ ./Source/brenbot.pl
+      Copy-Item Source/autoannounce.cfg,Source/brenbot.cfg,Source/commands.xml,Source/mapsettings.xml,Source/messages.cfg,Source/moderators.cfg,Source/presets.cfg,Source/teams.cfg -Destination ./ -PassThru
+  artifacts:
+    name: "BRenBot_${CI_BUILD_REF_NAME}_${CI_BUILD_ID}"
+    expire_in: never
+    paths:
+     - BRenBot.exe
+     - autoannounce.cfg
+     - brenbot.cfg
+     - commands.xml
+     - mapsettings.xml
+     - messages.cfg
+     - moderators.cfg
+     - presets.cfg
+     - teams.cfg
+    
