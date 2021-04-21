@@ -508,7 +508,7 @@ sub handle_input($)
   }
 
   # Start of the reply from the game_info command
-  if ($line =~ m/(.+?) mode active/g)
+  if ($line =~ m/(.+?) mode active/)
   {
     serverStatus::updateMode($1);
     return;

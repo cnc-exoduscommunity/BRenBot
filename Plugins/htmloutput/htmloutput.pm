@@ -222,7 +222,7 @@ sub buildingKilled
 	my $kernel = $_[KERNEL];
 	my $line = $args->{line};
 	
-	$line =~ m/KILLED;BUILDING;\d+;([^;]+);/gi;
+	$line =~ m/KILLED;BUILDING;\d+;([^;]+);/i;
 	
 	my $building = plugin::translatePreset($1);
 	
@@ -236,7 +236,7 @@ sub playerKilled
 	my $kernel = $_[KERNEL];
 	my $line = $args->{line};
 	
-	$line =~ m/KILLED;SOLDIER;(\d+);.+;(\d+);([^;]+);-?\d+;-?\d+;-?\d+;-?\d+;-?\d+/gi;
+	$line =~ m/KILLED;SOLDIER;(\d+);.+;(\d+);([^;]+);-?\d+;-?\d+;-?\d+;-?\d+;-?\d+/i;
 	
 	my $killedName = plugin::getPlayerFromObjectID($1);
 	my $killerName = plugin::getPlayerFromObjectID($2);
