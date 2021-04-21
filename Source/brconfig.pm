@@ -422,14 +422,12 @@ sub readServerSettings
 # it searches for available maps in the data folder
 sub GetAvailableMaps
 {
-	@installed_maps = ();
-
 	if ( $ssgm_version >= 4 )
 	{
 		# NB: We don't just read this from tt.cfg because the gamedefs can also include
 		# things which are not listed in that config file. Use a short delay otherwise
 		# the response comes back before we are listening for it
-		RenRem::RenRemCMDtimed("listgamedefs",2);
+		RenRem::RenRemCMDtimed("listgamedefs", 2);
 	}
 	else
 	{

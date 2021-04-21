@@ -158,7 +158,7 @@ sub find_result_file
 		my $filename = $_;
 		if(!(($_ eq ".") || ($_ eq "..")))
 		{
-			if ($filename =~ m/result(.+?).txt/g)
+			if ($filename =~ m/result(.+?).txt/i)
 			{
 				my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
 				  $atime,$mtime,$ctime,$blksize,$blocks)
