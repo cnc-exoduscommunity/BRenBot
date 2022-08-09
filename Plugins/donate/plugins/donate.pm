@@ -224,11 +224,11 @@ sub check_donate_limit($)
 {
   my $donator_id = shift;
 
-  my $donatelimit = plugin::get_map_setting('donatelimit');
-  my $maptime = time()-plugin::get_map_start_time();
-  if ( $donatelimit != 0 && $maptime < $donatelimit*60)
+  my $donatelimit = plugin::get_map_setting('donatelimit', 0);
+  my $mapElapsedTime = time()-plugin::get_map_start_time();
+  if ($donatelimit != 0 && $mapElapsedTime < $donatelimit*60)
   {
-    my $remaining = $donatelimit - int($maptime/60);
+    my $remaining = $donatelimit - int($mapElapsedTime/60);
     plugin::pagePlayer( $donator_id, 'BRenBot', 'Donations are not allowed on '.plugin::get_map()." in the first $donatelimit minutes. You have to wait $remaining more minutes" );
     return 0;
   }
