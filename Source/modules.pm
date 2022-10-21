@@ -1150,11 +1150,8 @@ sub applyMapSettings
 {
   my $applyTime = shift;  # False if we should skip applying the time limit - used if applying mid-map
 
-  if ( get_module ( "map_settings" ) != 1 )
-  {
-    $minelimit    = DEFAULT_MINE_LIMIT;
-    $vehiclelimit = DEFAULT_VEHICLE_LIMIT;
-  }
+  # Don't apply map settings at all if map_settings module is disabled
+  return if (get_module ( "map_settings" ) != 1);
 
   my $time      = get_map_setting('time');
   $minelimit    = get_map_setting('mines', DEFAULT_MINE_LIMIT);
